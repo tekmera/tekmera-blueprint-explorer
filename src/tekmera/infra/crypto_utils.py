@@ -28,7 +28,18 @@ iQIDAQAB
     
     @classmethod
     def load_public_key(cls):
-        """Load the embedded public key for signature verification."""
+        """Load public key for signature verification (file first, then embedded fallback)."""
+        # Try to load from file first (development/source)
+        public_key_file = Path(__file__).parent.parent.parent.parent / "license_public_key.pem"
+        
+        if public_key_file.exists():
+            try:
+                with open(public_key_file, 'rb') as f:
+                    return serialization.load_pem_public_key(f.read())
+            except Exception:
+                pass  # Fall back to embedded key
+        
+        # Fallback to embedded key (production/distribution)
         return serialization.load_pem_public_key(cls.PUBLIC_KEY_PEM.encode())
     
     @classmethod

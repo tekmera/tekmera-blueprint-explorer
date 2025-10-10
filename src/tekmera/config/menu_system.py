@@ -9,7 +9,6 @@ import json
 import logging
 
 from ..infra.license import LicenseType, license_manager
-from .premium_features import PremiumFeatureConfig
 
 
 logger = logging.getLogger(__name__)
@@ -368,13 +367,25 @@ class MenuSystem:
         return True
 
     def label_for(self, item: MenuItem, has_premium: bool) -> str:
-        """Generate display label with Pro marking - public API for testing"""
+        """Generate display label with Pro status indicators - public API for testing"""
         # Use display_label for rich rendering, fallback to label
         base_label = item.display_label or item.label
-        # Remove existing [Pro] markers first for idempotency
-        label = base_label.replace(" [Pro]", "")
-        if item.is_premium() and not has_premium:
-            label += " [Pro]"
+        
+        # Remove existing Pro markers first for idempotency
+        label = (base_label.replace(" [Pro]", "")
+                          .replace(" [Pro ✓]", "") 
+                          .replace(" [Pro ❌]", "")
+                          .replace(" [Pro 🔒]", "")
+                          .replace(" [dim][Pro][/dim]", "")
+                          .replace(" \033[90m[Pro]\033[0m", ""))
+        
+        # Add appropriate Pro indicator based on license status
+        if item.is_premium():
+            if has_premium:
+                label += " [Pro ✓]"  # Unlocked/active premium license
+            else:
+                label += " [Pro 🔒]"  # Locked/no premium license
+                
         return label
 
     def add_governance_checks(self, governance_checker):
@@ -423,7 +434,12 @@ class MenuSystem:
         # Centralized gating - enforce at execution time
         if not self.can_execute(item, ctx):
             # Use license manager for premium prompts
-            feature_name = item.label.replace(" [Pro]", "")
+            feature_name = (item.label.replace(" [Pro]", "")
+                                     .replace(" [Pro ✓]", "")
+                                     .replace(" [Pro 🔒]", "")
+                                     .replace(" [Pro ❌]", "")
+                                     .replace(" [dim][Pro][/dim]", "")
+                                     .replace(" \033[90m[Pro]\033[0m", ""))
             license_manager.show_premium_prompt(feature_name, getattr(handler_obj, 'console', None))
             return ExecResult.PREMIUM_REQUIRED
             

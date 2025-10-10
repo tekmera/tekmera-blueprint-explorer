@@ -25,7 +25,6 @@ echo "🎯 Usage:"
 echo "  source venv/bin/activate"
 echo "  tekmera ./blueprints"
 echo "  tekmera ./blueprints/CLIENTS/EY/production"
-echo "  tekmera --premium ./blueprints"
 echo ""
 echo "🔍 Starting Tekmera with EY production blueprints..."
 tekmera ./blueprints/CLIENTS/EY/production

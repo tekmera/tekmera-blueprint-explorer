@@ -19,7 +19,6 @@ from ...reporting.reporter import Reporter
 from ...governance import GovernanceChecker
 from ...config.menu_system import menu_system, ExecResult
 from ...infra.license import LicenseType, license_manager
-from ...infra.licensing_utils import FeatureRegistry, execute_with_license_check
 from .explorer import BlueprintExplorer
 from .search import SearchInterface
 from .trace import TraceInterface
@@ -190,22 +189,24 @@ class InteractiveCLI:
     
     def launch_scenario_explorer(self, ctx: dict, item) -> ExecResult:
         """Launch explorer for a specific scenario."""
-        # This would need scenario selection logic
-        scenario_key = self._select_scenario("exploration")
+        # Use pre-selected scenario if available, otherwise prompt for selection
+        scenario_key = getattr(self, '_selected_scenario_key', None) or self._select_scenario("exploration")
         if scenario_key:
             self._launch_scenario_explorer(scenario_key)
         return ExecResult.OK
     
     def launch_scenario_tracer(self, ctx: dict, item) -> ExecResult:
         """Launch live walkthrough for a specific scenario."""
-        scenario_key = self._select_scenario("walkthrough")
+        # Use pre-selected scenario if available, otherwise prompt for selection
+        scenario_key = getattr(self, '_selected_scenario_key', None) or self._select_scenario("walkthrough")
         if scenario_key:
             self._launch_scenario_tracer(scenario_key)
         return ExecResult.OK
     
     def describe_business_process(self, ctx: dict, item) -> ExecResult:
         """Describe the business process for the selected scenario using OpenAI."""
-        scenario_key = self._select_scenario("business process description")
+        # Use pre-selected scenario if available, otherwise prompt for selection
+        scenario_key = getattr(self, '_selected_scenario_key', None) or self._select_scenario("business process description")
         if scenario_key:
             self._describe_business_process(scenario_key)
         return ExecResult.OK
@@ -273,19 +274,28 @@ class InteractiveCLI:
     
     def _execute_scenario_action(self, action: str, scenario_key: str) -> bool:
         """Execute scenario action with centralized license enforcement."""
-        # Define execution functions
-        action_executors = {
-            "explore_modules": lambda: self._launch_scenario_explorer(scenario_key),
-            "trace_flow": lambda: self._launch_scenario_tracer(scenario_key),
-            "describe_process": lambda: self._describe_business_process(scenario_key)
+        # Map actions to menu item IDs
+        action_to_menu_id = {
+            "explore_modules": "explore.modules",
+            "trace_flow": "explore.walkthrough", 
+            "describe_process": "explore.ai_process"
         }
         
-        executor = action_executors.get(action)
-        if not executor:
+        menu_id = action_to_menu_id.get(action)
+        if not menu_id:
             return False
         
-        # Use centralized license checking
-        return execute_with_license_check(action, self.context, executor, self.console)
+        # Store scenario key for handlers to use
+        self._selected_scenario_key = scenario_key
+        
+        try:
+            # Use menu system for license enforcement and execution
+            choice_value = {"id": menu_id}
+            result = menu_system.resolve_and_execute(choice_value, self.context, self)
+            return result == ExecResult.OK
+        finally:
+            # Clean up the selected scenario key
+            self._selected_scenario_key = None
     
     def _handle_analyze_all_mode(self):
         """Handle analysis across all blueprints."""
@@ -304,18 +314,21 @@ class InteractiveCLI:
     
     def _execute_analysis_action(self, action: str) -> bool:
         """Execute analysis action with centralized license enforcement."""
-        # Define execution functions
-        action_executors = {
-            "static_report": lambda: self._handle_report_mode(),
-            "cross_search": lambda: self._handle_search_mode()
+        # Map actions to menu item IDs
+        action_to_menu_id = {
+            "static_report": "analyze.report",
+            "cross_search": "analyze.search"
         }
         
-        executor = action_executors.get(action)
-        if not executor:
+        menu_id = action_to_menu_id.get(action)
+        if not menu_id:
             return False
         
-        # Use centralized license checking
-        return execute_with_license_check(action, self.context, executor, self.console)
+        # Use menu system for license enforcement and execution
+        choice_value = {"id": menu_id}
+        result = menu_system.resolve_and_execute(choice_value, self.context, self)
+        
+        return result == ExecResult.OK
     
     def _handle_search_mode(self):
         """Handle cross-blueprint search mode."""
