@@ -72,14 +72,12 @@ Cross-blueprint analysis and reporting:
 - **Naming Analysis**: Detect inconsistent field naming patterns
 - **Connection Analysis**: Review connection usage across scenarios
 
-### ⚖️ **Governance Audit** (Free)
-Built-in governance checking with 15+ rules:
-- **Naming Conventions**: Scenario and module naming standards
-- **Structure Rules**: Router configuration, error handling
-- **Field Rules**: Field mapping complexity, variable usage
-- **Size Rules**: Functional density, module count limits
-- **Connection Rules**: Environment-specific connection validation
-- **Complexity Rules**: Flow complexity analysis
+### ⚖️ **Governance Audit** (Mixed: 5 Free + 6 Pro)
+Built-in governance checking with 11 comprehensive rules:
+- **Basic Rules (Free)**: Naming conventions, structure validation, connection checking
+- **Advanced Rules (Pro)**: Flow complexity analysis, functional density metrics, cognitive load assessment
+- **Categories**: Naming, Structure, Field, Size, Connection, and Complexity rules
+- **Pro Features**: Algorithmic complexity analysis, router density metrics, field mapping complexity
 
 ### 🔄 **Compare Scenarios** (Free)
 Advanced scenario comparison:
@@ -90,8 +88,9 @@ Advanced scenario comparison:
 
 ### 🎯 **Premium Features** (Pro License Required)
 - **🎥 Live Scenario Walkthrough**: Interactive step-by-step execution flow
-- **📝 AI Business Process Description**: OpenAI-powered business process analysis
-- **🔍 Advanced Analysis Features**: Enhanced exploration and governance capabilities
+- **📝 AI Business Process Description**: OpenAI-powered business process analysis (requires API key)
+- **🔎 Advanced Cross-Blueprint Search**: Enhanced search capabilities across all scenarios
+- **⚖️ Advanced Governance Rules**: 6 algorithmic complexity and density analysis rules
 
 ## 🏗️ Package Structure
 
@@ -122,9 +121,12 @@ src/tekmera/
 ├── reporting/              # Report generation
 │   └── reporter.py        # Static analysis reporting
 ├── config/                 # Configuration
-│   └── menu_system.py     # Centralized menu configuration
+│   ├── menu_system.py     # Centralized menu configuration
+│   └── premium_features.py # Premium feature definitions
 ├── infra/                  # Infrastructure
-│   └── license.py         # License management
+│   ├── license.py         # Core license management
+│   ├── license_ui.py      # License user interface
+│   └── licensing_utils.py # License enforcement utilities
 └── utils/                  # Shared utilities
 ```
 
@@ -140,49 +142,40 @@ The tool uses a hierarchical menu system with feature gating:
 │   └── 📝 Describe Business Process [Pro]
 ├── 📊 Analyze All Blueprints  
 │   ├── 📋 Generate static analysis report
-│   └── 🔎 Search across all blueprints
+│   └── 🔎 Search across all blueprints [Pro]
 ├── ⚖️ Governance Audit
 │   ├── GOV-NAME-001: Scenario Naming Prefix
 │   ├── GOV-NAME-002: Default Module Labels
 │   ├── GOV-STRUC-001: Router Without Default Branch
-│   ├── ... (15+ governance rules)
-│   └── GOV-COMP-002: Cognitive Load Assessment
+│   ├── GOV-STRUC-002: Orphan Module
+│   ├── GOV-CONN-001: Dev Connection in Prod
+│   ├── GOV-COMP-001: Flow Complexity Index [Pro]
+│   ├── GOV-SIZE-001: Functional Density Index [Pro]
+│   ├── GOV-COMP-002: Router Density Analysis [Pro]
+│   ├── GOV-COMP-003: Route Fan-Out Profile [Pro]
+│   ├── GOV-COMP-004: Flow Depth Estimate [Pro]
+│   └── GOV-FIELD-003: Field Mapping Complexity [Pro]
 └── 🔄 Compare Scenarios
 ```
 
 ## 🛡️ Governance Rules
 
-Built-in governance checking includes:
+Built-in governance checking with **5 Free** and **6 Premium** rules:
 
-### Naming Rules (GOV-NAME-*)
-- Scenario naming prefix compliance
-- Default module label detection
-- Consistent naming pattern enforcement
+### Free Governance Rules
+- **GOV-NAME-001**: Scenario Naming Prefix - Enforces standardized naming conventions
+- **GOV-NAME-002**: Default Module Labels - Identifies generic default labels
+- **GOV-STRUC-001**: Router Without Default Branch - Ensures fallback branches exist
+- **GOV-STRUC-002**: Orphan Module - Identifies disconnected modules
+- **GOV-CONN-001**: Dev Connection in Prod - Prevents dev connections in production
 
-### Structure Rules (GOV-STRUC-*)
-- Router default branch requirements
-- Error handler implementation
-- Module flow integrity
-
-### Field Rules (GOV-FIELD-*)
-- Field mapping complexity analysis
-- Variable usage patterns
-- Data transformation validation
-
-### Size Rules (GOV-SIZE-*)
-- Functional density index
-- Module count limits
-- Scenario complexity boundaries
-
-### Connection Rules (GOV-CONN-*)
-- Environment-specific connection validation
-- Production vs development connection detection
-- Connection naming standards
-
-### Complexity Rules (GOV-COMP-*)
-- Flow complexity index calculation
-- Cognitive load assessment
-- Maintainability scoring
+### Premium Governance Rules (Pro License Required)
+- **GOV-COMP-001**: Flow Complexity Index - Algorithmic complexity analysis
+- **GOV-SIZE-001**: Functional Density Index - Module clustering analysis
+- **GOV-COMP-002**: Router Density Analysis - Branching logic patterns
+- **GOV-COMP-003**: Route Fan-Out Profile - Complex router detection
+- **GOV-COMP-004**: Flow Depth Estimate - Execution path depth analysis
+- **GOV-FIELD-003**: Field Mapping Complexity - Deep field reference analysis
 
 ## 🔧 Advanced Usage
 
@@ -214,6 +207,18 @@ tekmera license deactivate
 
 # With active Pro license, premium features are automatically enabled
 tekmera analyze ./blueprints  # Automatically uses Pro features if licensed
+```
+
+### License Generation (Development/Testing)
+```bash
+# Generate a test license (30 days)
+python3 scripts/generate_license.py generate --issued-to "Test User" --days 30
+
+# Generate a trial license for customers
+python3 scripts/generate_license.py trial --name "Customer" --email "user@company.com" --trial-days 30
+
+# Generate permanent license
+python3 scripts/generate_license.py generate --issued-to "Permanent User" --days 0
 ```
 
 ### Governance Auditing
@@ -324,6 +329,7 @@ tekmera analyze ./blueprints
 ## 📚 Documentation
 
 - **Features Overview**: See `docs/FEATURES.md` for detailed feature documentation
+- **License Generation**: See `docs/LICENSE_GENERATION.md` for creating and managing license files
 - **Governance Rules**: Built-in rule descriptions available in governance audit mode
 - **API Reference**: Explore the `src/tekmera/` package structure for API details
 - **Licensing Business Plan**: See `docs/LICENSING_STRATEGY.md` for business model details

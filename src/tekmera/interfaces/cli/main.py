@@ -8,6 +8,7 @@ from rich.console import Console
 
 from .interactive import InteractiveCLI
 from ...infra.license import license_manager
+from ...infra.license_ui import LicenseUI
 
 
 @click.group()
@@ -58,30 +59,10 @@ def activate(license_file: str):
     success, message = license_manager.activate_license(license_path)
     
     if success:
-        console.print(f"✅ [green]{message}[/green]")
-        
-        # Show license info
         info = license_manager.get_license_info()
-        console.print(f"\n📋 [bold]License Details:[/bold]")
-        console.print(f"  Edition: {info['edition']}")
-        console.print(f"  License Key: {info['license_key']}")
-        console.print(f"  Issued To: {info['issued_to']}")
-        if info.get('expiry'):
-            if info.get('days_remaining') is not None:
-                days = info['days_remaining']
-                if days > 30:
-                    console.print(f"  Expires: {info['expiry']} ({days} days remaining)")
-                elif days > 0:
-                    console.print(f"  Expires: [yellow]{info['expiry']} ({days} days remaining)[/yellow]")
-                else:
-                    console.print(f"  Expires: [red]{info['expiry']} (EXPIRED)[/red]")
-        else:
-            console.print("  Expires: Never")
-        
-        console.print(f"\n🎉 [bold green]Pro features are now unlocked![/bold green]")
-        console.print("Use [bold]tekmera analyze --premium /path/to/blueprints[/bold] to access premium features.")
+        LicenseUI.show_license_activation_result(success, message, info, console)
     else:
-        console.print(f"❌ [red]{message}[/red]")
+        LicenseUI.show_license_activation_result(success, message, None, console)
         return 1
 
 
@@ -95,15 +76,10 @@ def deactivate():
         console.print("ℹ️  [yellow]No active license to deactivate[/yellow]")
         return
     
-    console.print("🔓 [bold yellow]Deactivating license...[/bold yellow]")
-    
     success, message = license_manager.deactivate_license()
+    LicenseUI.show_license_deactivation_result(success, message, console)
     
-    if success:
-        console.print(f"✅ [green]{message}[/green]")
-        console.print("Tekmera Fusion Explorer is now running in Free mode.")
-    else:
-        console.print(f"❌ [red]{message}[/red]")
+    if not success:
         return 1
 
 
@@ -113,36 +89,7 @@ def status():
     console = Console()
     
     info = license_manager.get_license_info()
-    
-    console.print("📄 [bold blue]Tekmera License Status[/bold blue]\n")
-    
-    if info['status'] == 'active':
-        console.print(f"Status: [green]✅ Active ({info['edition']} Edition)[/green]")
-        console.print(f"License Key: {info['license_key']}")
-        console.print(f"Issued To: {info['issued_to']}")
-        console.print(f"Issued At: {info['issued_at']}")
-        
-        if info.get('expiry'):
-            if info.get('days_remaining') is not None:
-                days = info['days_remaining']
-                if days > 30:
-                    console.print(f"Expires: {info['expiry']} ({days} days remaining)")
-                elif days > 0:
-                    console.print(f"Expires: [yellow]{info['expiry']} ({days} days remaining)[/yellow]")
-                else:
-                    console.print(f"Expires: [red]{info['expiry']} (EXPIRED)[/red]")
-        else:
-            console.print("Expires: [green]Never[/green]")
-            
-        console.print(f"\n🎯 Premium features are [green]enabled[/green]")
-        
-    else:
-        console.print(f"Status: [yellow]Free Edition[/yellow]")
-        console.print("License Key: None")
-        console.print("\n🔒 Premium features are [yellow]locked[/yellow]")
-        console.print("\nTo unlock premium features:")
-        console.print("1. Purchase a license at [link]https://tekmera.com/pricing[/link]")
-        console.print("2. Activate with: [bold]tekmera license activate --file license.json[/bold]")
+    LicenseUI.show_license_status(info, console)
 
 
 # Main entry point - for backward compatibility, if called with directory argument

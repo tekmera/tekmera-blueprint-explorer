@@ -178,24 +178,38 @@ class LicenseManager:
         return self.has_premium()
     
     def show_premium_prompt(self, feature_name: str, console=None) -> bool:
-        """Show upgrade prompt for premium features - non-interactive safe"""
-        if console:
-            console.print(f"\n[yellow]🔒 Premium Feature Required[/yellow]")
-            console.print(f"[bold]{feature_name}[/bold] requires Tekmera Pro.")
-            console.print("Upgrade to unlock advanced governance intelligence and AI features.")
-            console.print("\n[dim]Press Enter to continue...[/dim]")
+        """Show upgrade prompt for premium features - delegates to UI layer."""
+        from .license_ui import LicenseUI
+        return LicenseUI.show_premium_prompt(feature_name, console)
+    
+    def validate_license_on_access(self) -> bool:
+        """Validate license when accessing features. Shows warnings if needed."""
+        if not self._license_data:
+            return True  # Free license is always valid
             
-            # Guard for TTY and handle EOFError gracefully
-            if sys.stdin.isatty():
-                try:
-                    input()
-                except EOFError:
-                    pass
+        # Check if license is still valid
+        if not self._license_data.is_valid():
+            # License became invalid, reset to free
+            self._license_data = None
+            self.license_type = LicenseType.FREE
+            return False
+            
+        # Check for expiry warnings
+        info = self.get_license_info()
+        if info['status'] == 'active' and info.get('days_remaining') is not None:
+            days_remaining = info['days_remaining']
+            if days_remaining <= 30:  # Show warnings for licenses expiring within 30 days
+                from .license_ui import LicenseUI
+                LicenseUI.show_expiry_warning(days_remaining)
+                
         return True
     
     def get_context(self, additional_context: Dict[str, Any] = None) -> Dict[str, Any]:
         """Get license context for feature evaluation"""
         import os
+        
+        # Validate license when getting context
+        self.validate_license_on_access()
         
         context = {
             "license": self.license_type.value,

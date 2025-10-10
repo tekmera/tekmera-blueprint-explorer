@@ -19,6 +19,7 @@ from ...reporting.reporter import Reporter
 from ...governance import GovernanceChecker
 from ...config.menu_system import menu_system, ExecResult
 from ...infra.license import LicenseType, license_manager
+from ...infra.licensing_utils import FeatureRegistry, execute_with_license_check
 from .explorer import BlueprintExplorer
 from .search import SearchInterface
 from .trace import TraceInterface
@@ -220,13 +221,17 @@ class InteractiveCLI:
         return ExecResult.OK
     
     def run_governance_check(self, ctx: dict, item) -> ExecResult:
-        """Run a specific governance check."""
+        """Run a specific governance check using stored scenario context."""
         check_id = item.metadata.get("check_id")
         check_name = item.metadata.get("check_name")
         
-        scenario_key = self._select_scenario_for_governance()
+        # Use stored scenario context instead of re-selecting
+        scenario_key = getattr(self, '_current_governance_scenario', None)
         if not scenario_key:
-            return ExecResult.NOOP
+            # Fallback to selection if no stored context
+            scenario_key = self._select_scenario_for_governance()
+            if not scenario_key:
+                return ExecResult.NOOP
             
         blueprint = self.blueprints[scenario_key]
         scenario_name = blueprint['scenario_name']
@@ -238,12 +243,7 @@ class InteractiveCLI:
             violations = governance_checker.run_check(check_id, blueprint_data, scenario_name)
             self._display_governance_results(violations)
             
-            # Follow-up prompt
-            next_action = self._get_governance_next_action()
-            if next_action == "another_check":
-                return ExecResult.OK  # Continue in governance mode
-            elif next_action in ["different_scenario", "main_menu"]:
-                return ExecResult.OK  # Return to appropriate level
+            return ExecResult.OK
                 
         except Exception as e:
             self.console.print(f"[red]Error running governance check: {e}[/red]")
@@ -272,30 +272,20 @@ class InteractiveCLI:
                 break
     
     def _execute_scenario_action(self, action: str, scenario_key: str) -> bool:
-        """Execute scenario action with menu system enforcement. Returns True if executed, False if blocked."""
-        # Map actions to menu items for enforcement
-        action_to_item_id = {
-            "explore_modules": "explore.modules",
-            "trace_flow": "explore.walkthrough", 
-            "describe_process": "explore.ai_process"
+        """Execute scenario action with centralized license enforcement."""
+        # Define execution functions
+        action_executors = {
+            "explore_modules": lambda: self._launch_scenario_explorer(scenario_key),
+            "trace_flow": lambda: self._launch_scenario_tracer(scenario_key),
+            "describe_process": lambda: self._describe_business_process(scenario_key)
         }
         
-        # Check enforcement via menu system
-        if action in action_to_item_id:
-            item = menu_system.get_item(action_to_item_id[action])
-            if item and not menu_system.can_execute(item, self.context):
-                license_manager.show_premium_prompt(item.label, self.console)
-                return False
+        executor = action_executors.get(action)
+        if not executor:
+            return False
         
-        # Execute the action
-        if action == "explore_modules":
-            self._launch_scenario_explorer(scenario_key)
-        elif action == "trace_flow":
-            self._launch_scenario_tracer(scenario_key)
-        elif action == "describe_process":
-            self._describe_business_process(scenario_key)
-        
-        return True
+        # Use centralized license checking
+        return execute_with_license_check(action, self.context, executor, self.console)
     
     def _handle_analyze_all_mode(self):
         """Handle analysis across all blueprints."""
@@ -313,27 +303,19 @@ class InteractiveCLI:
                 break
     
     def _execute_analysis_action(self, action: str) -> bool:
-        """Execute analysis action with menu system enforcement. Returns True if executed, False if blocked."""
-        # Map actions to menu items for enforcement
-        action_to_item_id = {
-            "static_report": "analyze.report",
-            "cross_search": "analyze.search"
+        """Execute analysis action with centralized license enforcement."""
+        # Define execution functions
+        action_executors = {
+            "static_report": lambda: self._handle_report_mode(),
+            "cross_search": lambda: self._handle_search_mode()
         }
         
-        # Check enforcement via menu system
-        if action in action_to_item_id:
-            item = menu_system.get_item(action_to_item_id[action])
-            if item and not menu_system.can_execute(item, self.context):
-                license_manager.show_premium_prompt(item.label, self.console)
-                return False
+        executor = action_executors.get(action)
+        if not executor:
+            return False
         
-        # Execute the action
-        if action == "static_report":
-            self._handle_report_mode()
-        elif action == "cross_search":
-            self._handle_search_mode()
-        
-        return True
+        # Use centralized license checking
+        return execute_with_license_check(action, self.context, executor, self.console)
     
     def _handle_search_mode(self):
         """Handle cross-blueprint search mode."""
@@ -757,47 +739,48 @@ Your Output: A concise business-process description for a non-technical business
         return self._navigate_scenario_folders("governance checking")
     
     def _run_governance_checks(self, scenario_key: str) -> str:
-        """Run governance checks on a scenario."""
+        """Run governance checks on a scenario using standardized menu system."""
         blueprint = self.blueprints[scenario_key]
         scenario_name = blueprint['scenario_name']
-        blueprint_data = blueprint['data']
         
-        # Initialize governance checker
-        checker = GovernanceChecker()
+        # Store scenario context for the handlers
+        self._current_governance_scenario = scenario_key
         
         while True:
-            # Step 2: List available governance checks
+            # Step 2: List available governance checks using menu system
             self.console.print(f"\n⚖️ [bold]Governance Checks for: {scenario_name}[/bold]\n")
             
-            available_checks = checker.get_available_checks()
-            choices = []
+            governance_item = menu_system.get_item("main.governance")
+            if not governance_item or not governance_item.children:
+                self.console.print("[red]No governance checks available[/red]")
+                return "main_menu"
+                
+            has_premium = license_manager.has_premium()
+            governance_children = sorted(governance_item.children, key=lambda x: x.order)
+            choices = menu_system.to_inquirer_choices(governance_children, has_premium)
             
-            for check_id, check_name in available_checks:
-                choices.append({
-                    "name": f"{check_id}. {check_name}",
-                    "value": check_id
-                })
-            
+            # Add navigation options
             choices.extend([
                 Separator(),
-                {"name": "← Select different scenario", "value": "different_scenario"},
-                {"name": "← Return to main menu", "value": "main_menu"}
+                {"name": "← Select different scenario", "value": {"id": "different_scenario"}},
+                {"name": "← Return to main menu", "value": {"id": "main_menu"}}
             ])
             
-            check_selection = inquirer.select(
+            selection = inquirer.select(
                 message="Which check would you like to run?",
                 choices=choices
             ).execute()
             
-            if check_selection in ["different_scenario", "main_menu"]:
-                return check_selection
+            if selection.get("id") in ["different_scenario", "main_menu"]:
+                return selection["id"]
             
-            # Step 3: Run the selected check
+            # Use menu system for standardized execution and enforcement
             try:
-                violations = checker.run_check(check_selection, blueprint_data, scenario_name)
-                self._display_governance_results(violations)
-                
-                # Step 4: Follow-up prompt
+                result = menu_system.resolve_and_execute(selection, self.context, self)
+                if result == ExecResult.PREMIUM_REQUIRED:
+                    continue  # Premium prompt shown, go back to selection
+                    
+                # After running check, ask for next action
                 next_action = self._get_governance_next_action()
                 if next_action == "another_check":
                     continue
