@@ -124,10 +124,10 @@ class BlueprintExplorer:
         if self.corpus_loaded:
             choices.extend([
                 {"name": "🔎 Search for Workfront field (DE:)", "value": "field_search"},
-                {"name": "🔧 Search for module type", "value": "module_search"},
-                {"name": "📄 Search for text/string", "value": "text_search"},
-                {"name": "📊 Show field usage rankings", "value": "field_rankings"},
-                {"name": "📈 Show module type usage", "value": "module_rankings"},
+                {"name": "🔎 Search for module type", "value": "module_search"},
+                {"name": "🔎 Search for text/string", "value": "text_search"},
+                {"name": "📊 Field usage rankings", "value": "field_rankings"},
+                {"name": "📈 Module type usage", "value": "module_rankings"},
                 {"name": "⚠️  Detect inconsistent field naming", "value": "inconsistent_fields"},
                 {"name": "🔗 Analyze connections", "value": "connections"},
                 Separator()

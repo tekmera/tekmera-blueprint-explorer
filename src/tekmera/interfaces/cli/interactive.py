@@ -336,6 +336,25 @@ class InteractiveCLI:
         search_interface = SearchInterface()
         search_interface.start(self.directory_path)
     
+    def _handle_report_mode(self):
+        """Handle static report generation."""
+        # Generate static analysis report using the Reporter and Analyzer
+        reporter = Reporter()
+        
+        # Analyze each blueprint to get the correct format
+        analysis_results = []
+        for key, blueprint in self.blueprints.items():
+            # Use the analyzer to get proper format with module_count, etc.
+            result = self.analyzer.analyze_blueprint(
+                blueprint['data'], 
+                blueprint.get('filename', key),
+                self.parser
+            )
+            analysis_results.append(result)
+        
+        # Generate and display report (returns None, prints directly)
+        reporter.generate_report(analysis_results)
+    
     def _select_scenario(self, purpose: str = "analysis") -> Optional[str]:
         """Present scenario selection menu with hierarchical folder navigation."""
         if len(self.blueprints) == 1:

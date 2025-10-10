@@ -111,7 +111,7 @@ class MenuSystem:
         main_governance = MenuItem(
             id="main.governance",
             label="Governance Audit",
-            display_label="⚖️ Governance Audit",
+            display_label="⚖️  Governance Audit",
             description="Audit scenarios for compliance with governance rules",
             action="handle_governance_mode",
             order=3

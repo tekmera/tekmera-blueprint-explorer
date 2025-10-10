@@ -73,11 +73,11 @@
 
 ### 2.0 Main Explorer Options:
 **2.1** 🔍 Explore modules in '{scenario_name}' - Module navigation and exploration
-**2.2** 🔎 Search for Workfront field (DE:) - Find specific Workfront fields
-**2.3** 🔧 Search for module type - Locate module types
-**2.4** 📄 Search for text/string - Full-text search
-**2.5** 📊 Show field usage rankings - Field usage frequency
-**2.6** 📈 Show module type usage - Module type statistics
+**2.2** 🔍 Search for Workfront field (DE:) - Find specific Workfront fields
+**2.3** 🔍 Search for module type - Locate module types
+**2.4** 🔍 Search for text/string - Full-text search
+**2.5** 📊 Field usage rankings - Field usage frequency
+**2.6** 📈 Module type usage - Module type statistics
 **2.7** ⚠️ Detect inconsistent field naming - Field naming analysis
 **2.8** 🔗 Analyze connections - Connection configuration review
 **2.9** ❌ Quit - Exit explorer
