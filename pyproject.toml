@@ -11,7 +11,7 @@ requires-python = ">=3.10"
 authors = [
     {name = "Tekmera", email = "info@tekmera.com"}
 ]
-license = {text = "MIT"}
+license = {file = "LICENSE"}
 keywords = ["fusion", "workfront", "blueprint", "analysis", "governance"]
 classifiers = [
     "Development Status :: 4 - Beta",

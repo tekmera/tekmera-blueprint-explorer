@@ -1,183 +1,234 @@
 # Tekmera Fusion Explorer
 
-A command-line tool for analyzing exported Workfront Fusion blueprint JSON files. Provides both static reporting and interactive exploration modes to understand scenario structure, modules, and field dependencies.
+A professional command-line tool for analyzing exported Workfront Fusion blueprint JSON files. Provides comprehensive diagnostic capabilities including interactive exploration, governance auditing, AI-powered insights, and cross-blueprint analysis.
 
-## Features
+## 🚀 Quick Start
 
-### 📊 Static Analysis Mode (Default)
-- Scans directory of blueprint JSON files
-- Extracts scenario names, module counts, and types
-- Identifies Workfront field references (DE: keys)
-- Generates structured summary report
+```bash
+# Setup (run once)
+chmod +x init.sh
+./init.sh
 
-### 🔍 Interactive Explorer Mode 
+# Daily usage
+source venv/bin/activate
+tekmera ./blueprints
+```
+
+## 📦 Installation
+
+### Option 1: Quick Setup Script
+```bash
+./init.sh
+```
+
+### Option 2: Manual Installation
+```bash
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install dependencies and package
+pip install -r requirements.txt
+pip install -e .
+```
+
+## 🎯 Usage
+
+The `tekmera` command provides a centralized menu system with feature gating:
+
+```bash
+# Basic usage 
+tekmera analyze /path/to/blueprints/
+tekmera /path/to/blueprints/              # Backward compatibility
+
+# Premium features automatically enabled with active license
+
+# License management
+tekmera license status                    # Check current license
+tekmera license activate --file license.json
+tekmera license deactivate
+
+# General commands
+tekmera --version                         # Show version info
+tekmera --help                           # Show usage help
+```
+
+## ✨ Features
+
+### 🔍 **Explore Scenario** (Free)
+Interactive module-by-module exploration:
 - Navigate scenarios like a structured map
-- Drill down into individual modules  
+- Drill down into individual modules
 - View parameters, inputs, and Workfront fields
 - Inspect raw JSON data with syntax highlighting
-- **Built-in search capabilities**: All cross-blueprint search features integrated
-- Search for fields, modules, text, and analyze patterns within explorer
+- Built-in search capabilities within scenarios
 
-### 🔎 Cross-Blueprint Search Mode
-- Search for Workfront fields (DE:) across all blueprints
-- Find modules by type with partial or exact matching
-- Search for arbitrary text within module configurations  
-- Analyze field and module usage rankings
-- Detect inconsistent field naming patterns
-- Review connection usage across scenarios
-
-### 🔄 Execution Flow Trace Mode
-- Step-by-step trace through scenario execution paths
-- Visual tree or linear flow representation
-- Identify DE fields, variables, and external calls per step
-- Track router branches and conditional logic
-- Compare execution flows between scenarios
-- Export traces to JSON for documentation
-
-## Installation
-
-1. **Clone or download the project**
-2. **Create a virtual environment** (recommended):
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-3. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-## Usage
-
-### Interactive Mode (Default)
-
-Launch the interactive interface with mode selection:
-
-```bash
-python cli.py /path/to/blueprints/
-```
-
-This will present a menu:
-```
-What would you like to do?
-▸ Run static analysis report
-  Explore Scenario
-  Trace execution flow
-  Search across blueprints
-  Exit
-```
-
-### Direct Mode Access (Flags)
-
-You can also access specific modes directly using command-line flags:
-
-```bash
-# Static analysis report
-python cli.py --report /path/to/blueprints/
-
-# Interactive exploration
-python cli.py --explore /path/to/blueprints/
-
-# Cross-blueprint search
-python cli.py --search /path/to/blueprints/
-
-# Execution flow tracing
-python cli.py --trace /path/to/blueprints/
-```
-
-**Example output:**
-```
-============================================================
-WORKFRONT FUSION BLUEPRINT ANALYSIS REPORT
-============================================================
-
-Scenario: PROD WF Project Listener SA - Optimized
-File: blueprint-15793.json
-Modules: 5
-Module Types:
-  - builtin:BasicRouter
-  - datastore:SearchRecord
-  - workfront-workfront:custom
-  - workfront-workfront:watchEvents
-Workfront Fields:
-  - DE:eyk_ikp_activityID_fus
-  - DE:eyk_ikp_engagementID_fus
-  ...
-
-SUMMARY
---------------------
-Total Scenarios: 2
-Total Modules: 9
-Unique Module Types: 6
-Unique Workfront Fields: 11
-```
-
-### Interactive Explorer Mode
-
-Launch the interactive mode to explore scenarios in detail:
-
-```bash
-python cli.py --explore /path/to/blueprints/
-```
-
-**Interactive features:**
-- **Scenario Selection**: Choose from available blueprints
-- **Module Index**: View all modules with summaries
-- **Module Details**: Deep dive into parameters, inputs, and fields
-- **Raw JSON**: Inspect complete module data with syntax highlighting
-
-### Cross-Blueprint Search Mode
-
-Launch search mode to analyze patterns across all blueprints:
-
-```bash
-python cli.py --search /path/to/blueprints/
-```
-
-**Search capabilities:**
-- **Field Search**: Find all uses of specific Workfront fields (DE:)
-- **Module Search**: Locate modules by type with flexible matching
-- **Text Search**: Find arbitrary strings in any module configuration
-- **Usage Rankings**: See most/least used fields and module types
+### 📊 **Analyze All Blueprints** (Free)
+Cross-blueprint analysis and reporting:
+- **Static Reports**: Comprehensive summaries and module counts
+- **Cross-Blueprint Search**: Find patterns, fields, and modules across all scenarios
+- **Field Rankings**: Most/least used Workfront fields
+- **Module Usage**: Module type distribution analysis
 - **Naming Analysis**: Detect inconsistent field naming patterns
 - **Connection Analysis**: Review connection usage across scenarios
 
-### Execution Flow Trace Mode
+### ⚖️ **Governance Audit** (Free)
+Built-in governance checking with 15+ rules:
+- **Naming Conventions**: Scenario and module naming standards
+- **Structure Rules**: Router configuration, error handling
+- **Field Rules**: Field mapping complexity, variable usage
+- **Size Rules**: Functional density, module count limits
+- **Connection Rules**: Environment-specific connection validation
+- **Complexity Rules**: Flow complexity analysis
 
-Launch trace mode to follow execution paths step-by-step:
+### 🔄 **Compare Scenarios** (Free)
+Advanced scenario comparison:
+- Side-by-side blueprint diff analysis
+- Module-level change detection
+- Parameter and mapping comparisons
+- Export differences for documentation
 
+### 🎯 **Premium Features** (Pro License Required)
+- **🎥 Live Scenario Walkthrough**: Interactive step-by-step execution flow
+- **📝 AI Business Process Description**: OpenAI-powered business process analysis
+- **🔍 Advanced Analysis Features**: Enhanced exploration and governance capabilities
+
+## 🏗️ Package Structure
+
+```
+src/tekmera/
+├── core/                    # Core functionality
+│   ├── parser.py           # Blueprint parsing and loading
+│   └── analyzer.py         # Module analysis and field extraction
+├── interfaces/cli/          # Command-line interfaces
+│   ├── main.py            # Main CLI entry point
+│   ├── interactive.py     # Interactive menu system
+│   ├── explorer.py        # Scenario exploration interface
+│   ├── search.py          # Cross-blueprint search interface
+│   └── trace.py           # Live walkthrough interface
+├── analysis/               # Analysis engines
+│   ├── corpus_analyzer.py # Cross-blueprint analysis
+│   ├── connections.py     # Connection analysis
+│   ├── flow_tracer.py     # Execution flow tracing
+│   └── flow_walker.py     # Live scenario walkthrough
+├── governance/             # Governance rules and checking
+│   ├── checker.py         # Governance rule engine
+│   ├── models.py          # Governance data models
+│   └── rules/             # Individual governance rules
+├── comparison/             # Blueprint comparison tools
+│   ├── diff_engine.py     # Main diff interface
+│   ├── detailed_diff.py   # Detailed difference analysis
+│   └── simple_diff.py     # Simple diff utilities
+├── reporting/              # Report generation
+│   └── reporter.py        # Static analysis reporting
+├── config/                 # Configuration
+│   └── menu_system.py     # Centralized menu configuration
+├── infra/                  # Infrastructure
+│   └── license.py         # License management
+└── utils/                  # Shared utilities
+```
+
+## 📋 Menu System
+
+The tool uses a hierarchical menu system with feature gating:
+
+```
+🔍 Tekmera Fusion Explorer
+├── 📊 Explore Scenario
+│   ├── 🔍 Explore modules & search within scenario
+│   ├── 🎥 Live Scenario Walkthrough [Pro]
+│   └── 📝 Describe Business Process [Pro]
+├── 📊 Analyze All Blueprints  
+│   ├── 📋 Generate static analysis report
+│   └── 🔎 Search across all blueprints
+├── ⚖️ Governance Audit
+│   ├── GOV-NAME-001: Scenario Naming Prefix
+│   ├── GOV-NAME-002: Default Module Labels
+│   ├── GOV-STRUC-001: Router Without Default Branch
+│   ├── ... (15+ governance rules)
+│   └── GOV-COMP-002: Cognitive Load Assessment
+└── 🔄 Compare Scenarios
+```
+
+## 🛡️ Governance Rules
+
+Built-in governance checking includes:
+
+### Naming Rules (GOV-NAME-*)
+- Scenario naming prefix compliance
+- Default module label detection
+- Consistent naming pattern enforcement
+
+### Structure Rules (GOV-STRUC-*)
+- Router default branch requirements
+- Error handler implementation
+- Module flow integrity
+
+### Field Rules (GOV-FIELD-*)
+- Field mapping complexity analysis
+- Variable usage patterns
+- Data transformation validation
+
+### Size Rules (GOV-SIZE-*)
+- Functional density index
+- Module count limits
+- Scenario complexity boundaries
+
+### Connection Rules (GOV-CONN-*)
+- Environment-specific connection validation
+- Production vs development connection detection
+- Connection naming standards
+
+### Complexity Rules (GOV-COMP-*)
+- Flow complexity index calculation
+- Cognitive load assessment
+- Maintainability scoring
+
+## 🔧 Advanced Usage
+
+### Environment Variables
 ```bash
-python cli.py --trace /path/to/blueprints/
+export OPENAI_API_KEY="your-key-here"  # For AI business process descriptions
 ```
 
-**Trace features:**
-- **Tree View**: Hierarchical display showing router branches and nesting
-- **Linear View**: Step-by-step list with indentation for nested flows  
-- **JSON Export**: Structured data export for documentation/analysis
-- **Flow Comparison**: Side-by-side analysis of different scenarios
-- **Smart Detection**: Automatically identifies variables, external calls, DE fields
-- **Router Analysis**: Shows conditional branches and filter conditions
+### Premium Features
+```bash
+# Premium features are automatically enabled with an active license
+tekmera analyze ./blueprints
 
-## File Structure
-
-```
-fusion_parser/
-├── cli.py              # Command-line interface and main entry point
-├── parser.py           # JSON loading and blueprint parsing (with recursive module extraction)
-├── analyzer.py         # Module analysis and field extraction
-├── reporter.py         # Static report formatting
-├── explorer.py         # Interactive exploration interface
-├── corpus_analyzer.py  # Cross-blueprint analysis engine
-├── search_interface.py # Interactive search and analysis UI
-├── flow_tracer.py      # Execution flow tracing engine
-├── trace_interface.py  # Interactive trace and flow analysis UI
-├── requirements.txt    # Python dependencies
-└── README.md           # This file
+# Use AI business process description (requires OpenAI API key)
+export OPENAI_API_KEY="your-key-here"
+tekmera analyze ./blueprints
 ```
 
-## Blueprint Structure
+### License Management
+```bash
+# Check current license status
+tekmera license status
 
-The tool expects Workfront Fusion blueprint JSON files with this structure:
+# Activate a Pro license (after purchase)
+tekmera license activate --file /path/to/license.json
+
+# Deactivate current license (revert to free)
+tekmera license deactivate
+
+# With active Pro license, premium features are automatically enabled
+tekmera analyze ./blueprints  # Automatically uses Pro features if licensed
+```
+
+### Governance Auditing
+```bash
+# Interactive governance checking
+tekmera analyze ./blueprints
+# Select "Governance Audit" → Choose scenario → Select rule
+
+# Premium governance rules require Pro license (automatically detected)
+```
+
+## 📁 Blueprint Structure
+
+The tool supports standard Workfront Fusion blueprint exports:
+
 ```json
 {
   "name": "Scenario Name",
@@ -193,120 +244,117 @@ The tool expects Workfront Fusion blueprint JSON files with this structure:
 }
 ```
 
-## Dependencies
-
-- **click**: Command-line interface framework
-- **InquirerPy**: Interactive terminal prompts and menus
-- **rich**: Rich text formatting and syntax highlighting
-
-## Examples
-
-### Interactive Usage
-```bash
-# Launch interactive mode (default)
-python cli.py ./blueprints
-
-# The interface will guide you through:
-# 1. Mode selection (report/explore/trace/search)
-# 2. Scenario selection (when applicable)
-# 3. Configuration options for each mode
+Also supports diff blueprint format:
+```json
+{
+  "blueprint": {
+    "name": "Scenario Name", 
+    "flow": [...]
+  }
+}
 ```
 
-### Direct Mode Usage
-```bash
-# Generate static report directly
-python cli.py --report ./blueprints
+## 🔍 Search Capabilities
 
-# Launch specific modes directly
-python cli.py --explore ./blueprints
-python cli.py --search ./blueprints  
-python cli.py --trace ./blueprints
+### Field Search
+- Find all uses of Workfront fields (DE:)
+- Exact or partial matching
+- Cross-scenario usage analysis
+
+### Module Search  
+- Locate modules by type
+- Flexible pattern matching
+- Instance counting across blueprints
+
+### Text Search
+- Find arbitrary strings in configurations
+- Case-sensitive/insensitive options
+- Context preview and pagination
+
+### Analytics
+- Field usage rankings
+- Module type distribution
+- Inconsistent naming detection
+- Connection environment analysis
+
+## 🚀 Getting Started Examples
+
+### Quick Analysis
+```bash
+# Generate a static report for all blueprints
+tekmera analyze ./blueprints
+# Select "Analyze All Blueprints" → "Generate static analysis report"
 ```
 
 ### Interactive Exploration
 ```bash
-# Launch explorer mode
-python cli.py --explore ./blueprints
-
-# Navigate through the interface:
-# 1. Select a scenario from the list
-# 2. View module index with summaries
-# 3. Choose a module to examine in detail
-# 4. View parameters, inputs, Workfront fields, or raw JSON
-# 5. Navigate back or switch scenarios
+# Explore a specific scenario in detail
+tekmera analyze ./blueprints
+# Select "Explore Scenario" → Choose scenario → "Explore modules"
 ```
 
-### Cross-Blueprint Search
+### Governance Auditing  
 ```bash
-# Launch search mode
-python cli.py --search ./blueprints
-
-# Search capabilities:
-# 1. Search for specific DE fields (e.g., "DE:client_id")
-# 2. Find modules by type (e.g., "workfront" or exact match)
-# 3. Text search across all configurations
-# 4. View field usage rankings (most/least used)
-# 5. Analyze module type distribution
-# 6. Detect inconsistent field naming patterns
-# 7. Review connection usage across scenarios
+# Run governance checks
+tekmera analyze ./blueprints
+# Select "Governance Audit" → Choose scenario → Select rule
 ```
 
-### Execution Flow Tracing
+### License Activation
 ```bash
-# Launch trace mode
-python cli.py --trace ./blueprints
+# Purchase license from https://tekmera.com/pricing
+# Activate the license
+tekmera license activate --file ~/Downloads/license.json
 
-# Trace capabilities:
-# 1. Select scenario and output format (tree/linear/json)
-# 2. Follow execution paths from trigger to completion
-# 3. See router branches and conditional logic
-# 4. Identify variables, DE fields, external calls per step
-# 5. Compare flows between different scenarios
-# 6. Export traces to JSON for documentation
+# Check activation status
+tekmera license status
+
+# Pro features now work automatically
+tekmera analyze ./blueprints
 ```
 
-### Typical Workflow
-1. **Export blueprints**: Download `.json` files from Workfront Fusion
-2. **Launch analyzer**: Run `python cli.py blueprints/` for interactive mode selection
-3. **Choose your approach**:
-   - **Quick overview**: Select "Run static analysis report"
-   - **Deep investigation**: Select "Explore Scenario" (includes built-in search)
-   - **Flow understanding**: Select "Trace execution flow"
-   - **Pattern analysis**: Select "Search across blueprints" (dedicated search mode)
-4. **Direct access**: Use flags (`--report`, `--explore`, `--trace`, `--search`) for direct mode access
-5. **Documentation**: Use findings to document integrations and dependencies
+### Premium AI Analysis
+```bash
+# Get AI-powered business process description (requires Pro license)
+export OPENAI_API_KEY="your-key-here"
+tekmera analyze ./blueprints
+# Select "Explore Scenario" → Choose scenario → "Describe Business Process"
+```
 
-## Output Details
+## 📚 Documentation
 
-### Static Report
-- **Scenario Name**: From JSON metadata or filename
-- **Module Count**: Total modules in the scenario
-- **Module Types**: Unique module types (e.g., `workfront-workfront:searchv3`)
-- **Workfront Fields**: All DE: field references found
+- **Features Overview**: See `docs/FEATURES.md` for detailed feature documentation
+- **Governance Rules**: Built-in rule descriptions available in governance audit mode
+- **API Reference**: Explore the `src/tekmera/` package structure for API details
+- **Licensing Business Plan**: See `docs/LICENSING_STRATEGY.md` for business model details
+- **Terms of Service**: See `docs/TERMS_OF_SERVICE.md` for Pro user terms
+- **Privacy Policy**: See `docs/PRIVACY_POLICY.md` for data handling information
 
-### Interactive Explorer
-- **Module Summaries**: Context-aware descriptions (e.g., "Search PROJ objects")
-- **Parameters**: Module configuration settings
-- **Mapper/Inputs**: Input field mappings and transformations
-- **DE Fields**: Workfront custom fields used by the module
-- **Raw JSON**: Complete module data for technical review
-
-## Error Handling
-
-The tool handles common issues gracefully:
-- **Malformed JSON**: Skips files with warnings, continues processing
-- **Missing fields**: Uses fallbacks and safe defaults
-- **Empty directories**: Reports no files found
-- **Keyboard interrupts**: Clean exit from interactive mode
-
-## Contributing
+## 🤝 Contributing
 
 To extend functionality:
-1. **Add new analysis**: Extend `analyzer.py` methods
-2. **Improve summaries**: Update `_generate_module_summary()` for new module types
-3. **Enhance UI**: Modify `explorer.py` for better navigation
-4. **Add export formats**: Create new output modules
 
-## License
+1. **Add governance rules**: Extend `src/tekmera/governance/rules/`
+2. **Enhance analysis**: Modify `src/tekmera/analysis/` modules
+3. **Improve UI**: Update `src/tekmera/interfaces/cli/` interfaces
+4. **Add features**: Integrate with `src/tekmera/config/menu_system.py`
 
-[Add your license information here]
+## 📄 Dependencies
+
+- **click**: Command-line interface framework
+- **InquirerPy**: Interactive terminal prompts and menus
+- **rich**: Rich text formatting and syntax highlighting  
+- **openai**: AI-powered business process analysis (premium features)
+
+## 📋 Requirements
+
+- Python 3.8+
+- Virtual environment (recommended)
+- Workfront Fusion blueprint JSON exports
+- OpenAI API key (optional, for premium AI features)
+
+## 🏷️ Version
+
+Current version: 0.1.0
+
+Install the package and use `tekmera --version` to check your installed version.

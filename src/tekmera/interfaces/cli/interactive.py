@@ -28,15 +28,15 @@ from ...comparison.diff_engine import FusionDiff
 class InteractiveCLI:
     """Main interactive CLI interface for the Fusion Blueprint Analyzer."""
     
-    def __init__(self, premium_license: bool = False):
+    def __init__(self):
         self.console = Console()
         self.parser = BlueprintParser()
         self.analyzer = BlueprintAnalyzer()
         self.blueprints = {}
         self.directory_path = None
         
-        # Set up license management
-        license_manager.license_type = LicenseType.PREMIUM if premium_license else LicenseType.FREE
+        # License is automatically detected from ~/.tekmera/license.json on startup
+        # No manual override needed - users activate licenses with 'tekmera license activate'
         self.context = license_manager.get_context()
         
         # Initialize governance checks in menu system
@@ -80,7 +80,17 @@ class InteractiveCLI:
         welcome_text.append("🔍 ", style="blue")
         welcome_text.append("Tekmera Fusion Explorer", style="bold blue")
         
-        license_text = "Premium" if license_manager.has_premium() else "Free"
+        # Get detailed license information
+        license_info = license_manager.get_license_info()
+        if license_info['status'] == 'active':
+            license_text = f"Pro ({license_info['edition']})"
+            if license_info.get('days_remaining') is not None:
+                days = license_info['days_remaining']
+                if days <= 30:
+                    license_text += f" - {days} days left"
+        else:
+            license_text = "Free"
+        
         info_text = f"Directory: {self.directory_path}\nLicense: {license_text}"
         
         panel = Panel(
@@ -253,14 +263,39 @@ class InteractiveCLI:
                 action = self._select_scenario_action(scenario_key)
                 if action == "back":
                     break
-                elif action == "explore_modules":
-                    self._launch_scenario_explorer(scenario_key)
-                elif action == "trace_flow":
-                    self._launch_scenario_tracer(scenario_key)
-                elif action == "describe_process":
-                    self._describe_business_process(scenario_key)
+                
+                # Use menu system for centralized enforcement
+                if not self._execute_scenario_action(action, scenario_key):
+                    continue  # Premium prompt was shown, continue loop
+                    
             except KeyboardInterrupt:
                 break
+    
+    def _execute_scenario_action(self, action: str, scenario_key: str) -> bool:
+        """Execute scenario action with menu system enforcement. Returns True if executed, False if blocked."""
+        # Map actions to menu items for enforcement
+        action_to_item_id = {
+            "explore_modules": "explore.modules",
+            "trace_flow": "explore.walkthrough", 
+            "describe_process": "explore.ai_process"
+        }
+        
+        # Check enforcement via menu system
+        if action in action_to_item_id:
+            item = menu_system.get_item(action_to_item_id[action])
+            if item and not menu_system.can_execute(item, self.context):
+                license_manager.show_premium_prompt(item.label, self.console)
+                return False
+        
+        # Execute the action
+        if action == "explore_modules":
+            self._launch_scenario_explorer(scenario_key)
+        elif action == "trace_flow":
+            self._launch_scenario_tracer(scenario_key)
+        elif action == "describe_process":
+            self._describe_business_process(scenario_key)
+        
+        return True
     
     def _handle_analyze_all_mode(self):
         """Handle analysis across all blueprints."""
@@ -269,12 +304,36 @@ class InteractiveCLI:
                 action = self._select_analysis_action()
                 if action == "back":
                     break
-                elif action == "static_report":
-                    self._handle_report_mode()
-                elif action == "cross_search":
-                    self._handle_search_mode()
+                
+                # Use menu system for centralized enforcement
+                if not self._execute_analysis_action(action):
+                    continue  # Premium prompt was shown, continue loop
+                    
             except KeyboardInterrupt:
                 break
+    
+    def _execute_analysis_action(self, action: str) -> bool:
+        """Execute analysis action with menu system enforcement. Returns True if executed, False if blocked."""
+        # Map actions to menu items for enforcement
+        action_to_item_id = {
+            "static_report": "analyze.report",
+            "cross_search": "analyze.search"
+        }
+        
+        # Check enforcement via menu system
+        if action in action_to_item_id:
+            item = menu_system.get_item(action_to_item_id[action])
+            if item and not menu_system.can_execute(item, self.context):
+                license_manager.show_premium_prompt(item.label, self.console)
+                return False
+        
+        # Execute the action
+        if action == "static_report":
+            self._handle_report_mode()
+        elif action == "cross_search":
+            self._handle_search_mode()
+        
+        return True
     
     def _handle_search_mode(self):
         """Handle cross-blueprint search mode."""
@@ -432,28 +491,33 @@ class InteractiveCLI:
         
         self.console.print(f"\n🎯 [bold]Selected Scenario:[/bold] {scenario_name} ({module_count} modules)\n")
         
-        choices = [
-            {
-                "name": "🔍 Explore modules & search within scenario",
-                "value": "explore_modules",
-                "description": "Interactive module exploration with built-in search capabilities"
-            },
-            {
-                "name": "🎥 Live Scenario Walkthrough",
-                "value": "trace_flow", 
-                "description": "Interactive step-by-step walkthrough of scenario execution"
-            },
-            {
-                "name": "📝 Describe Business Process",
-                "value": "describe_process",
-                "description": "AI-powered business process description of the scenario"
-            },
+        # Use menu system to get proper Pro labels
+        has_premium = license_manager.has_premium()
+        explore_children = menu_system.get_children('main.explore')
+        
+        # Map menu items to action values
+        action_map = {
+            'explore.modules': 'explore_modules',
+            'explore.walkthrough': 'trace_flow',
+            'explore.ai_process': 'describe_process'
+        }
+        
+        choices = []
+        for item in sorted(explore_children, key=lambda x: x.order):
+            if item.id in action_map:
+                choices.append({
+                    "name": menu_system.label_for(item, has_premium),
+                    "value": action_map[item.id],
+                    "description": item.description
+                })
+        
+        choices.extend([
             Separator(),
             {
                 "name": "← Back",
                 "value": "back"
             }
-        ]
+        ])
         
         return inquirer.select(
             message="What would you like to do with this scenario?",
@@ -464,23 +528,32 @@ class InteractiveCLI:
         """Present analysis options for all blueprints."""
         self.console.print(f"\n📊 [bold]Analyzing All Blueprints:[/bold] {len(self.blueprints)} scenarios loaded\n")
         
-        choices = [
-            {
-                "name": "📋 Generate static analysis report",
-                "value": "static_report",
-                "description": "Comprehensive summaries, module counts, and field analysis"
-            },
-            {
-                "name": "🔎 Search across all blueprints",
-                "value": "cross_search",
-                "description": "Find patterns, fields, and modules across all scenarios"
-            },
+        # Use menu system to get proper Pro labels
+        has_premium = license_manager.has_premium()
+        analyze_children = menu_system.get_children('main.analyze')
+        
+        # Map menu items to action values
+        action_map = {
+            'analyze.report': 'static_report',
+            'analyze.search': 'cross_search'
+        }
+        
+        choices = []
+        for item in sorted(analyze_children, key=lambda x: x.order):
+            if item.id in action_map:
+                choices.append({
+                    "name": menu_system.label_for(item, has_premium),
+                    "value": action_map[item.id],
+                    "description": item.description
+                })
+        
+        choices.extend([
             Separator(),
             {
                 "name": "← Back",
                 "value": "back"
             }
-        ]
+        ])
         
         return inquirer.select(
             message="What type of analysis would you like to perform?",
