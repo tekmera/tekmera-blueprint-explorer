@@ -8,8 +8,8 @@ from InquirerPy.separator import Separator
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from parser import BlueprintParser
-from flow_walker import FlowWalker
+from ...core.parser import BlueprintParser
+from ...analysis.flow_walker import FlowWalker
 
 
 class TraceInterface:

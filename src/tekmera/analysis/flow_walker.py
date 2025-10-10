@@ -16,7 +16,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 from rich.syntax import Syntax
-from connection_utils import ConnectionAnalyzer
+from .connections import ConnectionAnalyzer
 
 
 @dataclass

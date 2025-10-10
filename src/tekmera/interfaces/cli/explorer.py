@@ -11,10 +11,10 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.syntax import Syntax
 from rich.text import Text
-from parser import BlueprintParser
-from analyzer import BlueprintAnalyzer
-from corpus_analyzer import CorpusAnalyzer
-from connection_utils import display_connection_table, display_connection_warnings, display_connection_summary, classify_connection_environment, ConnectionAnalyzer
+from ...core.parser import BlueprintParser
+from ...core.analyzer import BlueprintAnalyzer
+from ...analysis.corpus_analyzer import CorpusAnalyzer
+from ...analysis.connections import display_connection_table, display_connection_warnings, display_connection_summary, classify_connection_environment, ConnectionAnalyzer
 
 
 class BlueprintExplorer:

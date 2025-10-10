@@ -2,7 +2,7 @@
 Complexity-related governance rules for advanced structural analysis.
 """
 from typing import Dict, List, Any
-from .models import GovernanceViolation
+from ..models import GovernanceViolation
 
 
 def check_flow_complexity_index(blueprint_data: Dict[str, Any], scenario_name: str) -> List[GovernanceViolation]:

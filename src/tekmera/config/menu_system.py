@@ -1,21 +1,17 @@
 """
 Menu Configuration System for Tekmera Fusion Explorer
-Centralized menu definitions with hierarchy, licensing, and paywall integration
+Centralized menu definitions with hierarchy and paywall integration
 """
 from typing import Dict, List, Optional, Callable, Any, Union
 from dataclasses import dataclass, field
 from enum import Enum
 import json
-import sys
 import logging
+
+from ..infra.license import LicenseType, license_manager
 
 
 logger = logging.getLogger(__name__)
-
-
-class LicenseType(Enum):
-    FREE = "free"
-    PREMIUM = "premium"
 
 
 class ExecResult(Enum):
@@ -230,7 +226,7 @@ class MenuSystem:
 
     def can_execute(self, item: MenuItem, ctx: dict) -> bool:
         """Centralized gating logic for menu item execution - public API for testing"""
-        # Robust license check - accept both enum and string
+        # Use license manager for robust license checking
         has_pro = ctx.get("license") in {LicenseType.PREMIUM, LicenseType.PREMIUM.value}
         
         # Check premium license requirement
@@ -326,8 +322,10 @@ class MenuSystem:
             
         # Centralized gating - enforce at execution time
         if not self.can_execute(item, ctx):
-            prompt_result = self.show_premium_prompt(item, ctx, handler_obj)
-            return ExecResult.PREMIUM_REQUIRED if prompt_result else ExecResult.NOOP
+            # Use license manager for premium prompts
+            feature_name = item.label.replace(" [Pro]", "")
+            license_manager.show_premium_prompt(feature_name, getattr(handler_obj, 'console', None))
+            return ExecResult.PREMIUM_REQUIRED
             
         # Dispatch to handler method with context and item
         if item.action and handler_obj:
@@ -340,23 +338,6 @@ class MenuSystem:
                 raise AttributeError(f"Action '{item.action}' not found on handler")
                 
         return ExecResult.NOOP
-
-    def show_premium_prompt(self, item: MenuItem, ctx: dict, handler_obj=None) -> bool:
-        """Show upgrade prompt for premium features - non-interactive safe"""
-        if handler_obj and hasattr(handler_obj, 'console'):
-            console = handler_obj.console
-            console.print(f"\n[yellow]🔒 Premium Feature Required[/yellow]")
-            console.print(f"[bold]{item.label.replace(' [Pro]', '')}[/bold] requires Tekmera Pro.")
-            console.print("Upgrade to unlock advanced governance intelligence and AI features.")
-            console.print("\n[dim]Press Enter to continue...[/dim]")
-            
-            # Guard for TTY and handle EOFError gracefully
-            if sys.stdin.isatty():
-                try:
-                    input()
-                except EOFError:
-                    pass
-        return True
 
     def export_config(self, include_roots: bool = True, include_all: bool = True) -> str:
         """Export menu configuration as JSON with size options"""

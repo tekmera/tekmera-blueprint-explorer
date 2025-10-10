@@ -264,6 +264,7 @@ credentials.json
 .pytest_cache/
 .coverage
 htmlcov/
+blueprints/
 
 # Documentation build artifacts
 docs/build/

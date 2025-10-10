@@ -2,7 +2,7 @@
 Structure-related governance rules.
 """
 from typing import Dict, List, Any
-from .models import GovernanceViolation
+from ..models import GovernanceViolation
 
 
 def check_router_default_branch(blueprint_data: Dict[str, Any], scenario_name: str) -> List[GovernanceViolation]:

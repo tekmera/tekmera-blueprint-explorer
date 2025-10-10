@@ -2,7 +2,7 @@
 Size-related governance rules for analyzing scenario scale and density.
 """
 from typing import Dict, List, Any, Set
-from .models import GovernanceViolation
+from ..models import GovernanceViolation
 
 
 def check_functional_density_index(blueprint_data: Dict[str, Any], scenario_name: str) -> List[GovernanceViolation]:

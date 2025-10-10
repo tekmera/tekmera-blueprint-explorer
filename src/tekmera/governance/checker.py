@@ -3,17 +3,17 @@ Main governance checker that orchestrates all rule checks.
 """
 from typing import Dict, List, Any, Tuple
 from .models import GovernanceViolation
-from .naming_rules import check_scenario_naming_prefix, check_default_module_labels
-from .structure_rules import check_router_default_branch, check_orphan_modules
-from .connection_rules import check_dev_connection_in_prod
-from .complexity_rules import (
+from .rules.naming_rules import check_scenario_naming_prefix, check_default_module_labels
+from .rules.structure_rules import check_router_default_branch, check_orphan_modules
+from .rules.connection_rules import check_dev_connection_in_prod
+from .rules.complexity_rules import (
     check_flow_complexity_index, 
     check_router_density_analysis, 
     check_route_fan_out_profile, 
     check_flow_depth_estimate
 )
-from .size_rules import check_functional_density_index
-from .field_rules import check_field_mapping_complexity
+from .rules.size_rules import check_functional_density_index
+from .rules.field_rules import check_field_mapping_complexity
 
 
 class GovernanceChecker:

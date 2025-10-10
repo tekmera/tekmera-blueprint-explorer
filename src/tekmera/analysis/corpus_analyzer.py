@@ -7,9 +7,9 @@ from pathlib import Path
 from typing import Dict, List, Set, Any, Tuple, Optional
 from collections import Counter, defaultdict
 from difflib import SequenceMatcher
-from parser import BlueprintParser
-from analyzer import BlueprintAnalyzer
-from connection_utils import ConnectionAnalyzer
+from ..core.parser import BlueprintParser
+from ..core.analyzer import BlueprintAnalyzer
+from .connections import ConnectionAnalyzer
 
 
 class CorpusAnalyzer:

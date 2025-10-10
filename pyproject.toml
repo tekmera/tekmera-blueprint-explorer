@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tekmera-fusion-explorer"
+version = "0.1.0"
+description = "Diagnostic CLI for Fusion blueprints"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    {name = "Tekmera", email = "info@tekmera.com"}
+]
+license = {text = "MIT"}
+keywords = ["fusion", "workfront", "blueprint", "analysis", "governance"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "InquirerPy>=0.3.4",
+    "rich>=13.0.0",
+    "click>=8.0.0",
+    "openai>=1.0.0",  # Optional for AI features
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/tekmera/fusion-explorer"
+Repository = "https://github.com/tekmera/fusion-explorer"
+Documentation = "https://github.com/tekmera/fusion-explorer/docs"
+"Bug Tracker" = "https://github.com/tekmera/fusion-explorer/issues"
+
+[project.scripts]
+tekmera = "tekmera.interfaces.cli.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.black]
+line-length = 100
+target-version = ['py310']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 100
+src_paths = ["src", "tests"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true

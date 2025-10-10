@@ -10,8 +10,8 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.syntax import Syntax
-from parser import BlueprintParser
-from analyzer import BlueprintAnalyzer
+from ..core.parser import BlueprintParser
+from ..core.analyzer import BlueprintAnalyzer
 
 
 class FusionDiff:

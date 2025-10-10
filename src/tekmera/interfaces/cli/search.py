@@ -11,8 +11,8 @@ from rich.table import Table
 from rich.text import Text
 from rich.syntax import Syntax
 from rich.columns import Columns
-from corpus_analyzer import CorpusAnalyzer
-from connection_utils import display_connection_table, display_connection_warnings, display_connection_summary, classify_connection_environment
+from ...analysis.corpus_analyzer import CorpusAnalyzer
+from ...analysis.connections import display_connection_table, display_connection_warnings, display_connection_summary, classify_connection_environment
 
 
 class SearchInterface:

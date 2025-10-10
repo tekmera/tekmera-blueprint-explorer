@@ -3,8 +3,8 @@ Connection-related governance rules.
 """
 from typing import Dict, List, Any
 from rich.console import Console
-from .models import GovernanceViolation
-from connection_utils import display_connection_table, classify_connection_environment, ConnectionAnalyzer
+from ..models import GovernanceViolation
+from ...analysis.connections import display_connection_table, classify_connection_environment, ConnectionAnalyzer
 
 
 def check_dev_connection_in_prod(blueprint_data: Dict[str, Any], scenario_name: str) -> List[GovernanceViolation]:

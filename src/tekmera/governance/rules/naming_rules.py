@@ -3,7 +3,7 @@ Naming-related governance rules.
 """
 import re
 from typing import Dict, List, Any
-from .models import GovernanceViolation
+from ..models import GovernanceViolation
 
 
 def check_scenario_naming_prefix(blueprint_data: Dict[str, Any], scenario_name: str) -> List[GovernanceViolation]:

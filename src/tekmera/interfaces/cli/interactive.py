@@ -1,8 +1,9 @@
 """
-Interactive CLI interface for Workfront Fusion Blueprint Analyzer
+Interactive CLI interface for Tekmera Fusion Explorer
 """
 import json
 import os
+import tempfile
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from InquirerPy import inquirer
@@ -10,32 +11,33 @@ from InquirerPy.separator import Separator
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
+from rich.markdown import Markdown
 
-from parser import BlueprintParser
-from analyzer import BlueprintAnalyzer
-from reporter import Reporter
-from explorer import BlueprintExplorer
-from search_interface import SearchInterface
-from trace_interface import TraceInterface
-from governance import GovernanceChecker
-from menu_config import menu_system, LicenseType, ExecResult
+from ...core.parser import BlueprintParser
+from ...core.analyzer import BlueprintAnalyzer
+from ...reporting.reporter import Reporter
+from ...governance import GovernanceChecker
+from ...config.menu_system import menu_system, ExecResult
+from ...infra.license import LicenseType, license_manager
+from .explorer import BlueprintExplorer
+from .search import SearchInterface
+from .trace import TraceInterface
+from ...comparison.diff_engine import FusionDiff
 
 
 class InteractiveCLI:
     """Main interactive CLI interface for the Fusion Blueprint Analyzer."""
     
-    def __init__(self):
+    def __init__(self, premium_license: bool = False):
         self.console = Console()
         self.parser = BlueprintParser()
         self.analyzer = BlueprintAnalyzer()
         self.blueprints = {}
         self.directory_path = None
         
-        # License and capability context
-        self.context = {
-            "license": LicenseType.FREE.value,  # Default to free tier
-            "openai_api_available": bool(os.getenv('OPENAI_API_KEY'))
-        }
+        # Set up license management
+        license_manager.license_type = LicenseType.PREMIUM if premium_license else LicenseType.FREE
+        self.context = license_manager.get_context()
         
         # Initialize governance checks in menu system
         governance_checker = GovernanceChecker()
@@ -76,9 +78,10 @@ class InteractiveCLI:
         """Display welcome banner and directory info."""
         welcome_text = Text()
         welcome_text.append("🔍 ", style="blue")
-        welcome_text.append("Workfront Fusion Blueprint Analyzer", style="bold blue")
+        welcome_text.append("Tekmera Fusion Explorer", style="bold blue")
         
-        info_text = f"Directory: {self.directory_path}"
+        license_text = "Premium" if license_manager.has_premium() else "Free"
+        info_text = f"Directory: {self.directory_path}\nLicense: {license_text}"
         
         panel = Panel(
             f"{welcome_text}\n\n{info_text}",
@@ -140,7 +143,7 @@ class InteractiveCLI:
     
     def _select_mode(self) -> Optional[Dict[str, str]]:
         """Present mode selection menu using menu system."""
-        has_premium = self.context.get("license") == LicenseType.PREMIUM.value
+        has_premium = license_manager.has_premium()
         root_items = menu_system.get_root_items()
         choices = menu_system.to_inquirer_choices(root_items, has_premium)
         
@@ -782,7 +785,7 @@ Your Output: A concise business-process description for a non-technical business
     
     def _handle_diff_mode(self):
         """Handle blueprint comparison mode."""
-        from diff_cli import FusionDiff
+        from ...comparison.diff_engine import FusionDiff
         
         diff_tool = FusionDiff()
         diff_tool.run(self.directory_path)
