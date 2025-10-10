@@ -2,6 +2,7 @@
 Interactive CLI interface for Workfront Fusion Blueprint Analyzer
 """
 import json
+import os
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from InquirerPy import inquirer
@@ -17,6 +18,7 @@ from explorer import BlueprintExplorer
 from search_interface import SearchInterface
 from trace_interface import TraceInterface
 from governance import GovernanceChecker
+from menu_config import menu_system, LicenseType, ExecResult
 
 
 class InteractiveCLI:
@@ -28,6 +30,16 @@ class InteractiveCLI:
         self.analyzer = BlueprintAnalyzer()
         self.blueprints = {}
         self.directory_path = None
+        
+        # License and capability context
+        self.context = {
+            "license": LicenseType.FREE.value,  # Default to free tier
+            "openai_api_available": bool(os.getenv('OPENAI_API_KEY'))
+        }
+        
+        # Initialize governance checks in menu system
+        governance_checker = GovernanceChecker()
+        menu_system.add_governance_checks(governance_checker)
     
     def start(self, directory: Path):
         """Start the interactive CLI session."""
@@ -46,13 +58,15 @@ class InteractiveCLI:
         # Main interaction loop
         while True:
             try:
-                mode = self._select_mode()
-                if mode == "exit":
+                choice = self._select_mode()
+                if choice and choice.get("id") == "exit":
                     self.console.print("\n[yellow]👋 Goodbye![/yellow]")
                     break
-                
-                # Handle the selected mode
-                self._handle_mode(mode)
+                elif choice:
+                    # Use menu system to resolve and execute
+                    result = menu_system.resolve_and_execute(choice, self.context, self)
+                    if result == ExecResult.PREMIUM_REQUIRED:
+                        continue  # Premium prompt already shown, continue loop
                 
             except KeyboardInterrupt:
                 self.console.print("\n[yellow]👋 Goodbye![/yellow]")
@@ -124,51 +138,105 @@ class InteractiveCLI:
         
         self.console.print(f"✅ Loaded {len(self.blueprints)} blueprint(s) from directory tree\n")
     
-    def _select_mode(self) -> str:
-        """Present mode selection menu."""
-        choices = [
-            {
-                "name": "🔍 Explore Scenario", 
-                "value": "explore",
-                "description": "Interactive exploration, search, and trace execution flow for a single scenario"
-            },
-            {
-                "name": "📊 Analyze All Blueprints",
-                "value": "analyze_all",
-                "description": "Generate reports and search across all scenarios in the directory"
-            },
-            {
-                "name": "⚖️  Governance Audit",
-                "value": "governance",
-                "description": "Audit scenarios for compliance with governance rules"
-            },
-            {
-                "name": "🔄 Compare Scenarios",
-                "value": "diff",
-                "description": "Compare two blueprint scenarios to identify functional differences"
-            },
-            Separator(),
-            {
-                "name": "❌ Exit",
-                "value": "exit"
-            }
-        ]
+    def _select_mode(self) -> Optional[Dict[str, str]]:
+        """Present mode selection menu using menu system."""
+        has_premium = self.context.get("license") == LicenseType.PREMIUM.value
+        root_items = menu_system.get_root_items()
+        choices = menu_system.to_inquirer_choices(root_items, has_premium)
+        
+        # Add exit option
+        choices.append({"name": "❌ Exit", "value": {"id": "exit"}})
         
         return inquirer.select(
             message="What would you like to do?",
             choices=choices
         ).execute()
     
-    def _handle_mode(self, mode: str):
-        """Handle the selected mode."""
-        if mode == "explore":
-            self._handle_explore_mode()
-        elif mode == "analyze_all":
-            self._handle_analyze_all_mode()
-        elif mode == "governance":
-            self._handle_governance_mode()
-        elif mode == "diff":
-            self._handle_diff_mode()
+    # Handler methods for menu system actions - must accept (ctx, item) and return ExecResult
+    
+    def handle_explore_mode(self, ctx: dict, item) -> ExecResult:
+        """Handle single scenario exploration with all capabilities."""
+        self._handle_explore_mode()
+        return ExecResult.OK
+    
+    def handle_analyze_all_mode(self, ctx: dict, item) -> ExecResult:
+        """Handle analysis across all blueprints."""
+        self._handle_analyze_all_mode()
+        return ExecResult.OK
+    
+    def handle_governance_mode(self, ctx: dict, item) -> ExecResult:
+        """Handle governance checking mode."""
+        self._handle_governance_mode()
+        return ExecResult.OK
+    
+    def handle_diff_mode(self, ctx: dict, item) -> ExecResult:
+        """Handle blueprint comparison mode."""
+        self._handle_diff_mode()
+        return ExecResult.OK
+    
+    def launch_scenario_explorer(self, ctx: dict, item) -> ExecResult:
+        """Launch explorer for a specific scenario."""
+        # This would need scenario selection logic
+        scenario_key = self._select_scenario("exploration")
+        if scenario_key:
+            self._launch_scenario_explorer(scenario_key)
+        return ExecResult.OK
+    
+    def launch_scenario_tracer(self, ctx: dict, item) -> ExecResult:
+        """Launch live walkthrough for a specific scenario."""
+        scenario_key = self._select_scenario("walkthrough")
+        if scenario_key:
+            self._launch_scenario_tracer(scenario_key)
+        return ExecResult.OK
+    
+    def describe_business_process(self, ctx: dict, item) -> ExecResult:
+        """Describe the business process for the selected scenario using OpenAI."""
+        scenario_key = self._select_scenario("business process description")
+        if scenario_key:
+            self._describe_business_process(scenario_key)
+        return ExecResult.OK
+    
+    def handle_report_mode(self, ctx: dict, item) -> ExecResult:
+        """Handle static report generation."""
+        self._handle_report_mode()
+        return ExecResult.OK
+    
+    def handle_search_mode(self, ctx: dict, item) -> ExecResult:
+        """Handle cross-blueprint search mode."""
+        self._handle_search_mode()
+        return ExecResult.OK
+    
+    def run_governance_check(self, ctx: dict, item) -> ExecResult:
+        """Run a specific governance check."""
+        check_id = item.metadata.get("check_id")
+        check_name = item.metadata.get("check_name")
+        
+        scenario_key = self._select_scenario_for_governance()
+        if not scenario_key:
+            return ExecResult.NOOP
+            
+        blueprint = self.blueprints[scenario_key]
+        scenario_name = blueprint['scenario_name']
+        blueprint_data = blueprint['data']
+        
+        # Initialize governance checker and run the specific check
+        governance_checker = GovernanceChecker()
+        try:
+            violations = governance_checker.run_check(check_id, blueprint_data, scenario_name)
+            self._display_governance_results(violations)
+            
+            # Follow-up prompt
+            next_action = self._get_governance_next_action()
+            if next_action == "another_check":
+                return ExecResult.OK  # Continue in governance mode
+            elif next_action in ["different_scenario", "main_menu"]:
+                return ExecResult.OK  # Return to appropriate level
+                
+        except Exception as e:
+            self.console.print(f"[red]Error running governance check: {e}[/red]")
+            input("\nPress Enter to continue...")
+            
+        return ExecResult.OK
     
     def _handle_explore_mode(self):
         """Handle single scenario exploration with all capabilities."""

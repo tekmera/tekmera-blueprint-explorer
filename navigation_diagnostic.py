@@ -17,7 +17,7 @@ def main():
     
     # Main menu branches
     explore_branch = tree.add("🔍 [green]Explore Scenario[/green]")
-    analyze_branch = tree.add("📊 [green]Analyze All Blueprints[/green]")
+A    analyze_branch = tree.add("📊 [green]Analyze All Blueprints[/green]")
     
     # Explore Scenario flow
     scenario_select = explore_branch.add("📋 Select scenario from list")
