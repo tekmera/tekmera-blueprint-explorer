@@ -44,6 +44,12 @@ class LicenseUI:
             console.print(f"Issued To: {license_info['issued_to']}")
             console.print(f"Issued At: {license_info['issued_at']}")
             
+            # Show signature status
+            if license_info.get('digitally_signed'):
+                console.print(f"Digital Signature: [green]✅ Verified[/green]")
+            else:
+                console.print(f"Digital Signature: [yellow]Not present[/yellow]")
+            
             if license_info.get('expiry'):
                 days_remaining = license_info.get('days_remaining')
                 if days_remaining is not None:
@@ -84,6 +90,12 @@ class LicenseUI:
                 console.print(f"  Edition: {license_info['edition']}")
                 console.print(f"  License Key: {license_info['license_key']}")
                 console.print(f"  Issued To: {license_info['issued_to']}")
+                
+                # Show signature status in activation details
+                if license_info.get('digitally_signed'):
+                    console.print(f"  Digital Signature: [green]✅ Verified[/green]")
+                else:
+                    console.print(f"  Digital Signature: [yellow]Not present[/yellow]")
                 
                 if license_info.get('expiry'):
                     days_remaining = license_info.get('days_remaining')

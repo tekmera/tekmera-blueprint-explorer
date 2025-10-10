@@ -6,9 +6,14 @@ Generates license files for testing the premium licensing system.
 """
 import json
 import uuid
+import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 import click
+
+# Add src to path for crypto utils import
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+from tekmera.infra.crypto_utils import LicenseCrypto
 
 
 @click.command()
@@ -16,7 +21,8 @@ import click
 @click.option('--issued-to', required=True, help='Name or organization the license is issued to')
 @click.option('--days', default=365, help='Number of days until expiry (default: 365, 0 = never expires)')
 @click.option('--output', '-o', default='license.json', help='Output file path')
-def generate_license(edition: str, issued_to: str, days: int, output: str):
+@click.option('--private-key', default='license_private_key.pem', help='Private key file for signing')
+def generate_license(edition: str, issued_to: str, days: int, output: str, private_key: str):
     """Generate a Tekmera Pro license file."""
     
     # Generate unique license key
@@ -38,6 +44,20 @@ def generate_license(edition: str, issued_to: str, days: int, output: str):
         "expiry": expiry
     }
     
+    # Add digital signature
+    private_key_path = Path(private_key)
+    if not private_key_path.exists():
+        click.echo(f"❌ Private key file not found: {private_key_path}")
+        click.echo("Run 'python scripts/generate_keys.py' to generate keys first.")
+        return
+    
+    try:
+        signature = LicenseCrypto.sign_license(license_data, private_key_path)
+        license_data["signature"] = signature
+    except Exception as e:
+        click.echo(f"❌ Failed to sign license: {e}")
+        return
+    
     # Write license file
     output_path = Path(output)
     with open(output_path, 'w') as f:
@@ -49,6 +69,7 @@ def generate_license(edition: str, issued_to: str, days: int, output: str):
     print(f"👤 Issued To: {issued_to}")
     print(f"🏷️  Edition: {edition.title()}")
     print(f"📅 Issued: {issued_at}")
+    print(f"🔒 Digitally Signed: Yes")
     
     if expiry:
         print(f"⏰ Expires: {expiry} ({days} days)")
@@ -65,7 +86,8 @@ def generate_license(edition: str, issued_to: str, days: int, output: str):
 @click.option('--company', help='Company name (optional)')
 @click.option('--trial-days', default=30, help='Trial period in days (default: 30)')
 @click.option('--output', '-o', help='Output file path (default: {name}_trial_license.json)')
-def generate_trial(name: str, email: str, company: str, trial_days: int, output: str):
+@click.option('--private-key', default='license_private_key.pem', help='Private key file for signing')
+def generate_trial(name: str, email: str, company: str, trial_days: int, output: str, private_key: str):
     """Generate a trial license with customer information."""
     
     # Build issued_to string
@@ -98,6 +120,20 @@ def generate_trial(name: str, email: str, company: str, trial_days: int, output:
         "trial": True
     }
     
+    # Add digital signature
+    private_key_path = Path(private_key)
+    if not private_key_path.exists():
+        click.echo(f"❌ Private key file not found: {private_key_path}")
+        click.echo("Run 'python scripts/generate_keys.py' to generate keys first.")
+        return
+    
+    try:
+        signature = LicenseCrypto.sign_license(license_data, private_key_path)
+        license_data["signature"] = signature
+    except Exception as e:
+        click.echo(f"❌ Failed to sign license: {e}")
+        return
+    
     # Write license file
     output_path = Path(output)
     with open(output_path, 'w') as f:
@@ -107,6 +143,7 @@ def generate_trial(name: str, email: str, company: str, trial_days: int, output:
     print(f"📄 File: {output_path.absolute()}")
     print(f"🔑 License Key: {license_key}")
     print(f"👤 Customer: {issued_to}")
+    print(f"🔒 Digitally Signed: Yes")
     print(f"⏰ Trial Expires: {expiry} ({trial_days} days)")
     print(f"\n🚀 Customer can activate with:")
     print(f"   tekmera license activate --file {output}")

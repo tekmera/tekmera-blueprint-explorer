@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
 from typing import Dict, Any, Optional
+from .crypto_utils import LicenseCrypto
 
 
 class LicenseType(Enum):
@@ -37,9 +38,14 @@ class LicenseData:
             return None
     
     def is_valid(self) -> bool:
-        """Check if license is valid (not expired)"""
+        """Check if license is valid (not expired and signature verified)"""
         if not self.license_key or not self.edition:
             return False
+        
+        # Verify digital signature if present
+        if self.signature:
+            if not LicenseCrypto.verify_license_signature(self.to_dict()):
+                return False
         
         if self.expiry:
             try:
@@ -100,6 +106,11 @@ class LicenseManager:
             if not license_data:
                 return False, "Invalid license file format"
             
+            # Check signature verification first
+            if license_data.signature:
+                if not LicenseCrypto.verify_license_signature(license_data.to_dict()):
+                    return False, "License signature verification failed - license may be tampered"
+            
             if not license_data.is_valid():
                 return False, "License is invalid or expired"
             
@@ -145,6 +156,7 @@ class LicenseManager:
                 "issued_to": self._license_data.issued_to,
                 "issued_at": self._license_data.issued_at,
                 "expiry": self._license_data.expiry,
+                "digitally_signed": bool(self._license_data.signature),
             }
             
             # Add expiry status if applicable

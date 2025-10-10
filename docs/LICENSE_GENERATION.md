@@ -6,6 +6,21 @@ This guide explains how to generate license files for Tekmera Fusion Explorer's 
 
 The license generation system creates JSON-formatted license files that can be activated using the `tekmera license activate` command. These licenses enable premium features in Tekmera Fusion Explorer.
 
+## Prerequisites
+
+Before generating licenses, you must first create RSA key pairs for digital signatures:
+
+```bash
+# Generate RSA key pair (required before first license generation)
+python3 scripts/generate_keys.py
+```
+
+This creates:
+- `license_private_key.pem` - Private key for signing licenses (keep secure!)
+- `license_public_key.pem` - Public key for verification (embedded in application)
+
+⚠️  **SECURITY WARNING**: Keep the private key secure and never commit it to version control.
+
 ## License Generator Script
 
 The license generator is located at `scripts/generate_license.py` and provides two main commands:
@@ -21,6 +36,7 @@ python3 scripts/generate_license.py generate [OPTIONS]
 - `--issued-to`: **Required** - Name or organization the license is issued to
 - `--days`: Number of days until expiry (default: `365`, use `0` for never expires)
 - `--output`, `-o`: Output file path (default: `license.json`)
+- `--private-key`: Private key file for signing (default: `license_private_key.pem`)
 
 **Examples:**
 
@@ -47,6 +63,7 @@ python3 scripts/generate_license.py trial [OPTIONS]
 - `--company`: Company name (optional)
 - `--trial-days`: Trial period in days (default: `30`)
 - `--output`, `-o`: Output file path (auto-generated if not specified)
+- `--private-key`: Private key file for signing (default: `license_private_key.pem`)
 
 **Examples:**
 
@@ -71,7 +88,8 @@ Generated license files follow this JSON structure:
   "edition": "pro",
   "issued_to": "Customer Name <email@example.com> (Company Name)",
   "issued_at": "2025-10-10T13:44:32.166874",
-  "expiry": "2026-10-10T13:44:32.166874"
+  "expiry": "2026-10-10T13:44:32.166874",
+  "signature": "dGhpcyBpcyBhIGJhc2U2NCBlbmNvZGVkIGRpZ2l0YWwgc2lnbmF0dXJl..."
 }
 ```
 
@@ -81,12 +99,18 @@ Generated license files follow this JSON structure:
 - `issued_to`: Customer identification string
 - `issued_at`: ISO 8601 timestamp when license was issued
 - `expiry`: ISO 8601 expiry timestamp (null for permanent licenses)
+- `signature`: Base64-encoded RSA-PSS digital signature for tamper detection
 
 ## License Distribution Workflow
 
 ### For Customer Sales
 
-1. **Generate Customer License:**
+1. **Generate RSA Keys (one-time setup):**
+   ```bash
+   python3 scripts/generate_keys.py
+   ```
+
+2. **Generate Customer License:**
    ```bash
    python3 scripts/generate_license.py generate \
      --issued-to "Customer Name <email@example.com> (Company)" \
@@ -94,9 +118,9 @@ Generated license files follow this JSON structure:
      --output customer_license.json
    ```
 
-2. **Send to Customer:** Provide the generated JSON file to the customer
+3. **Send to Customer:** Provide the generated JSON file to the customer
 
-3. **Customer Activation:**
+4. **Customer Activation:**
    ```bash
    tekmera license activate --file customer_license.json
    ```
@@ -155,21 +179,45 @@ When a valid license is activated, these premium features become available:
 ## License File Security
 
 ### Current Implementation
-- Uses UUID4 for license keys (cryptographically secure)
-- Trust-based validation (no cryptographic signatures)
-- Local file storage in `~/.tekmera/license.json`
+- **Digital Signatures**: RSA-PSS signatures with SHA-256 for tamper detection
+- **UUID4 License Keys**: Cryptographically secure license identifiers
+- **Public Key Embedding**: Public key embedded in application for verification
+- **Local File Storage**: Licenses stored in `~/.tekmera/license.json`
+
+### Security Features
+- **Tamper Detection**: Any modification to license data invalidates the signature
+- **Signature Verification**: All license fields (except signature) are verified
+- **Canonical JSON**: Consistent JSON serialization for reliable signature verification
+- **Secure Private Key Storage**: Private keys are protected with 0600 permissions
+
+### Security Considerations
+- **Private Key Protection**: Keep `license_private_key.pem` secure and off version control
+- **Key Rotation**: If private key is compromised, generate new keys and re-sign all licenses
+- **Trust Model**: Public key is embedded in application - secure distribution is critical
+- **Offline Verification**: No network required for license validation
 
 ### Future Enhancements
-- Digital signatures for license authenticity
-- Server-based license validation
+- Hardware security module (HSM) integration for production environments
+- Server-based license validation for real-time revocation
 - License transfer and migration support
 
 ## Troubleshooting
+
+### License Generation Issues
+
+**Problem:** "Private key file not found"
+- **Solution:** Run `python3 scripts/generate_keys.py` first to generate key pair
+
+**Problem:** "Failed to sign license"
+- **Solution:** Check private key file permissions and format
 
 ### License Activation Issues
 
 **Problem:** "Invalid license file format"
 - **Solution:** Ensure JSON is valid and contains required fields
+
+**Problem:** "License signature verification failed"
+- **Solution:** License may be tampered with or generated with wrong key - regenerate license
 
 **Problem:** "License expired" 
 - **Solution:** Generate new license with extended expiry date
@@ -222,22 +270,25 @@ For license generation issues:
 ## Example Complete Workflow
 
 ```bash
-# 1. Generate customer license
+# 1. Generate RSA keys (one-time setup)
+python3 scripts/generate_keys.py
+
+# 2. Generate customer license with digital signature
 python3 scripts/generate_license.py generate \
   --issued-to "Acme Corp <admin@acme.com>" \
   --days 365 \
   --output acme_corp_license.json
 
-# 2. Verify license file
+# 3. Verify license file (should show signature field)
 cat acme_corp_license.json
 
-# 3. Test activation
+# 4. Test activation (signature will be verified)
 tekmera license activate --file acme_corp_license.json
 
-# 4. Verify status
+# 5. Verify status (should show "Digital Signature: ✅ Verified")
 tekmera license status
 
-# 5. Test premium features
+# 6. Test premium features
 tekmera analyze ./blueprints
 # Navigate to premium features and confirm [Pro] labels are gone
 ```
