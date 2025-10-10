@@ -128,7 +128,7 @@ class InteractiveCLI:
         """Present mode selection menu."""
         choices = [
             {
-                "name": "🔍 Explore a Scenario", 
+                "name": "🔍 Explore Scenario", 
                 "value": "explore",
                 "description": "Interactive exploration, search, and trace execution flow for a single scenario"
             },
@@ -138,12 +138,12 @@ class InteractiveCLI:
                 "description": "Generate reports and search across all scenarios in the directory"
             },
             {
-                "name": "⚖️ Run a governance check",
+                "name": "⚖️  Governance Audit",
                 "value": "governance",
                 "description": "Audit scenarios for compliance with governance rules"
             },
             {
-                "name": "🔄 Compare scenarios (Diff)",
+                "name": "🔄 Compare Scenarios",
                 "value": "diff",
                 "description": "Compare two blueprint scenarios to identify functional differences"
             },
@@ -269,7 +269,7 @@ class InteractiveCLI:
             # Add navigation options
             choices.extend([
                 Separator(),
-                {"name": "← Back to main menu", "value": "back"}
+                {"name": "← Back", "value": "back"}
             ])
             
             # Show current path in message
@@ -379,7 +379,7 @@ class InteractiveCLI:
             },
             Separator(),
             {
-                "name": "← Back to main menu",
+                "name": "← Back",
                 "value": "back"
             }
         ]
@@ -406,7 +406,7 @@ class InteractiveCLI:
             },
             Separator(),
             {
-                "name": "← Back to main menu",
+                "name": "← Back",
                 "value": "back"
             }
         ]

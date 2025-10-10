@@ -16,10 +16,10 @@ def main():
     tree = Tree("🏠 [bold blue]python cli.py ./blueprints[/bold blue]")
     
     # Main menu branches
-    explore_branch = tree.add("🔍 [green]Explore a Scenario[/green]")
+    explore_branch = tree.add("🔍 [green]Explore Scenario[/green]")
     analyze_branch = tree.add("📊 [green]Analyze All Blueprints[/green]")
     
-    # Explore a Scenario flow
+    # Explore Scenario flow
     scenario_select = explore_branch.add("📋 Select scenario from list")
     scenario_actions = scenario_select.add("🎯 Scenario-specific actions")
     

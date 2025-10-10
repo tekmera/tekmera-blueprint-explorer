@@ -153,7 +153,7 @@ class BlueprintExplorer:
             })
         
         choices.append(Separator())
-        choices.append({"name": "← Back to main menu", "value": "back"})
+        choices.append({"name": "← Back", "value": "back"})
         
         selection = inquirer.select(
             message="Select a scenario to explore:",
@@ -222,7 +222,7 @@ class BlueprintExplorer:
             
             choices.extend([
                 Separator(),
-                {"name": "← Back to main menu", "value": "back"}
+                {"name": "← Back", "value": "back"}
             ])
             
             selection = inquirer.select(

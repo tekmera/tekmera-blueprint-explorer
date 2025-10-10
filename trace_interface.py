@@ -112,7 +112,7 @@ class TraceInterface:
             })
         
         scenario_choices.append(Separator())
-        scenario_choices.append({"name": "← Back to main menu", "value": "back"})
+        scenario_choices.append({"name": "← Back", "value": "back"})
         
         selected_scenario = inquirer.select(
             message="Select a scenario for live walkthrough:",
