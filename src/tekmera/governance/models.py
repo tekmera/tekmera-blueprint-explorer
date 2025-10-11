@@ -1,6 +1,7 @@
 """
 Data models for governance checking.
 """
+
 from dataclasses import dataclass
 from typing import Optional
 
@@ -8,6 +9,7 @@ from typing import Optional
 @dataclass
 class GovernanceViolation:
     """Represents a governance rule violation or result."""
+
     rule_id: str
     rule_title: str
     message: str

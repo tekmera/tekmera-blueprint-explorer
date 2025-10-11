@@ -8,6 +8,7 @@ __build_date__ = "dev"
 __commit__ = "dev"
 __platform__ = "dev"
 
+
 def get_version_info():
     """Get comprehensive version information."""
     return {
@@ -16,6 +17,7 @@ def get_version_info():
         "commit": __commit__,
         "platform": __platform__,
     }
+
 
 def get_version_string():
     """Get a formatted version string for display."""

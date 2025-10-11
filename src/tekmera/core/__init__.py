@@ -2,7 +2,7 @@
 Core parsing and analysis functionality
 """
 
-from .parser import BlueprintParser
 from .analyzer import BlueprintAnalyzer
+from .parser import BlueprintParser
 
 __all__ = ["BlueprintParser", "BlueprintAnalyzer"]

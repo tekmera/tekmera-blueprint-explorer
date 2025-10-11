@@ -2,7 +2,7 @@
 Command-line interfaces for Tekmera Fusion Explorer
 """
 
-from .main import main
 from .interactive import InteractiveCLI
+from .main import main
 
 __all__ = ["main", "InteractiveCLI"]
