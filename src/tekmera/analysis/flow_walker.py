@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional
 try:
     import termios
     import tty
+
     KEYBOARD_INPUT_AVAILABLE = True
 except ImportError:
     # Windows doesn't have termios
@@ -1653,7 +1654,7 @@ You've successfully completed the live walkthrough of all {len(self.flow_steps)}
         if not KEYBOARD_INPUT_AVAILABLE:
             # Fallback for Windows
             return input().lower().strip() or "enter"
-            
+
         try:
             # Save terminal settings
             fd = sys.stdin.fileno()
