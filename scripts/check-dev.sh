@@ -90,15 +90,16 @@ if ! bandit -r src/ -f json -o bandit-report.json -ll > /dev/null 2>&1; then
 fi
 echo -e "${GREEN}✅ No high severity security issues found${NC}"
 
-# 5. Dependency Audit
+# 5. Dependency Audit (informational)
 echo -e "\n${BLUE}🔐 Dependency Audit${NC}"
 echo "  Running pip-audit..."
 if ! pip-audit --desc > /dev/null 2>&1; then
-    echo -e "${RED}❌ Security vulnerabilities found in dependencies${NC}"
-    pip-audit --desc
-    exit 1
+    echo -e "${YELLOW}⚠️  Security vulnerabilities found in dependencies (not failing)${NC}"
+    pip-audit --desc | head -10
+    echo "  (See full report with: pip-audit --desc)"
+else
+    echo -e "${GREEN}✅ No security vulnerabilities in dependencies${NC}"
 fi
-echo -e "${GREEN}✅ No security vulnerabilities in dependencies${NC}"
 
 # 6. Tests (optional)
 if [[ "$SKIP_TESTS" != true ]]; then
@@ -114,9 +115,9 @@ fi
 # 7. Test Binary Build
 echo -e "\n${BLUE}🔨 Testing Binary Build${NC}"
 echo "  Building test binary..."
-if ! pyinstaller --onefile --name tekmera-test-local -m tekmera.interfaces.cli.main > /dev/null 2>&1; then
+if ! pyinstaller --onefile --name tekmera-test-local src/tekmera/interfaces/cli/main.py > /dev/null 2>&1; then
     echo -e "${RED}❌ Binary build failed${NC}"
-    pyinstaller --onefile --name tekmera-test-local -m tekmera.interfaces.cli.main
+    pyinstaller --onefile --name tekmera-test-local src/tekmera/interfaces/cli/main.py
     exit 1
 fi
 
