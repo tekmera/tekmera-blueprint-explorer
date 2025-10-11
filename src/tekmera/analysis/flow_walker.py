@@ -6,10 +6,17 @@ Interactive step-by-step exploration of scenario execution paths
 import json
 import re
 import sys
-import termios
-import tty
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
+
+# Platform-specific imports
+try:
+    import termios
+    import tty
+    KEYBOARD_INPUT_AVAILABLE = True
+except ImportError:
+    # Windows doesn't have termios
+    KEYBOARD_INPUT_AVAILABLE = False
 
 from InquirerPy import inquirer
 from InquirerPy.separator import Separator
@@ -1643,6 +1650,10 @@ You've successfully completed the live walkthrough of all {len(self.flow_steps)}
 
     def _get_keyboard_input(self) -> str:
         """Get a single keyboard input without requiring Enter."""
+        if not KEYBOARD_INPUT_AVAILABLE:
+            # Fallback for Windows
+            return input().lower().strip() or "enter"
+            
         try:
             # Save terminal settings
             fd = sys.stdin.fileno()
@@ -1812,6 +1823,8 @@ You've successfully completed the live walkthrough of all {len(self.flow_steps)}
 
     def _test_keyboard_input(self) -> bool:
         """Test if keyboard input functionality is available."""
+        if not KEYBOARD_INPUT_AVAILABLE:
+            return False
         try:
             # Quick test to see if we can access terminal settings
             fd = sys.stdin.fileno()

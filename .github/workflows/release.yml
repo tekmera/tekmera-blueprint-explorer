@@ -113,7 +113,7 @@ jobs:
           --hidden-import "tekmera.reporting" \
           --hidden-import "tekmera.utils" \
           --console \
-          src/tekmera/interfaces/cli/main.py
+          src/tekmera/__main__.py
     
     - name: Build binary with PyInstaller (Windows)
       if: matrix.platform == 'windows'
@@ -130,7 +130,7 @@ jobs:
           --hidden-import "tekmera.reporting" `
           --hidden-import "tekmera.utils" `
           --console `
-          src/tekmera/interfaces/cli/main.py
+          src/tekmera/__main__.py
     
     - name: Test binary
       shell: bash

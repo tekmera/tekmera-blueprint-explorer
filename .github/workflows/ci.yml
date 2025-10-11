@@ -144,7 +144,7 @@ jobs:
     
     - name: Test PyInstaller build
       run: |
-        pyinstaller --onefile --name ${{ matrix.binary_name }} src/tekmera/interfaces/cli/main.py
+        pyinstaller --onefile --name ${{ matrix.binary_name }} src/tekmera/__main__.py
     
     - name: Test binary execution
       shell: bash

@@ -115,9 +115,9 @@ fi
 # 7. Test Binary Build
 echo -e "\n${BLUE}🔨 Testing Binary Build${NC}"
 echo "  Building test binary..."
-if ! pyinstaller --onefile --name tekmera-test-local src/tekmera/interfaces/cli/main.py > /dev/null 2>&1; then
+if ! pyinstaller --onefile --name tekmera-test-local src/tekmera/__main__.py > /dev/null 2>&1; then
     echo -e "${RED}❌ Binary build failed${NC}"
-    pyinstaller --onefile --name tekmera-test-local src/tekmera/interfaces/cli/main.py
+    pyinstaller --onefile --name tekmera-test-local src/tekmera/__main__.py
     exit 1
 fi
 
