@@ -307,7 +307,7 @@ class BlueprintExplorer:
         mapper_count = len(module.get("mapper", {}) or {})
 
         content = f"""[bold]{module['name']}[/bold]
-        
+
 [dim]Type:[/dim] {module['type']}
 [dim]ID:[/dim] {module['id']}
 [dim]Summary:[/dim] {module['summary']}

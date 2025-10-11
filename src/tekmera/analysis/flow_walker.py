@@ -1675,7 +1675,7 @@ You've successfully completed the live walkthrough of all {len(self.flow_steps)}
 
         except (KeyboardInterrupt, EOFError):
             return "q"  # Treat Ctrl+C or EOF as quit
-        except:
+        except Exception:
             # Fallback for systems that don't support raw input
             return input().lower().strip() or "enter"
 
@@ -1817,6 +1817,6 @@ You've successfully completed the live walkthrough of all {len(self.flow_steps)}
             fd = sys.stdin.fileno()
             termios.tcgetattr(fd)
             return True
-        except:
+        except Exception:
             # Fall back to traditional menu if keyboard input not available
             return False

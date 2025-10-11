@@ -103,7 +103,6 @@ jobs:
       run: |
         pyinstaller --onefile \
           --name ${{ matrix.binary_name }} \
-          --add-data "src/tekmera:tekmera" \
           --hidden-import "tekmera.interfaces.cli.main" \
           --hidden-import "tekmera.core" \
           --hidden-import "tekmera.analysis" \
@@ -113,14 +112,13 @@ jobs:
           --hidden-import "tekmera.reporting" \
           --hidden-import "tekmera.utils" \
           --console \
-          src/tekmera/interfaces/cli/main.py
+          -m tekmera.interfaces.cli.main
     
     - name: Build binary with PyInstaller (Windows)
       if: matrix.platform == 'windows'
       run: |
         pyinstaller --onefile `
           --name ${{ matrix.binary_name }} `
-          --add-data "src/tekmera;tekmera" `
           --hidden-import "tekmera.interfaces.cli.main" `
           --hidden-import "tekmera.core" `
           --hidden-import "tekmera.analysis" `
@@ -130,7 +128,7 @@ jobs:
           --hidden-import "tekmera.reporting" `
           --hidden-import "tekmera.utils" `
           --console `
-          src/tekmera/interfaces/cli/main.py
+          -m tekmera.interfaces.cli.main
     
     - name: Test binary
       shell: bash

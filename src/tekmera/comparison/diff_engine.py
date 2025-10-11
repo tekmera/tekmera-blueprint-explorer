@@ -383,7 +383,7 @@ class FusionDiff:
                             obj.sort(key=lambda x: str(x["id"]))
                     elif isinstance(obj[0], str):
                         obj.sort()
-                except:
+                except Exception:
                     pass  # Skip sorting if comparison fails
 
             # Recursively sort nested structures
