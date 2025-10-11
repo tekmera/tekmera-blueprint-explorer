@@ -3,7 +3,7 @@ Version information for Tekmera CLI.
 This file is automatically updated during the build process.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __build_date__ = "dev"
 __commit__ = "dev"
 __platform__ = "dev"
