@@ -3,24 +3,20 @@ Interactive CLI interface for Tekmera Fusion Explorer
 """
 
 import json
-import os
-import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from InquirerPy import inquirer
 from InquirerPy.separator import Separator
 from rich.console import Console
-from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.text import Text
 
-from ...comparison.diff_engine import FusionDiff
 from ...config.menu_system import ExecResult, menu_system
 from ...core.analyzer import BlueprintAnalyzer
 from ...core.parser import BlueprintParser
 from ...governance import GovernanceChecker
-from ...infra.license import LicenseType, license_manager
+from ...infra.license import license_manager
 from ...reporting.reporter import Reporter
 from .explorer import BlueprintExplorer
 from .search import SearchInterface
@@ -228,7 +224,7 @@ class InteractiveCLI:
     def run_governance_check(self, ctx: dict, item) -> ExecResult:
         """Run a specific governance check using stored scenario context."""
         check_id = item.metadata.get("check_id")
-        check_name = item.metadata.get("check_name")
+        item.metadata.get("check_name")
 
         # Use stored scenario context instead of re-selecting
         scenario_key = getattr(self, "_current_governance_scenario", None)

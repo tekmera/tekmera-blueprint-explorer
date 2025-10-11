@@ -3,11 +3,10 @@ Cross-blueprint analysis functionality for corpus-wide insights
 """
 
 import json
-import re
-from collections import Counter, defaultdict
+from collections import defaultdict
 from difflib import SequenceMatcher
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
 from ..core.analyzer import BlueprintAnalyzer
 from ..core.parser import BlueprintParser

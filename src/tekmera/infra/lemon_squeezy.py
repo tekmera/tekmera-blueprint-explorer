@@ -3,7 +3,6 @@ Lemon Squeezy License API integration for Tekmera Fusion Explorer
 """
 
 import json
-import os
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, Optional, Tuple

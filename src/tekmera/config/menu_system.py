@@ -396,7 +396,6 @@ class MenuSystem:
         since all governance checks are defined statically in _build_menu_structure().
         """
         # All governance checks are now statically defined above
-        pass
 
     def to_inquirer_choices(
         self, items: List[MenuItem], has_premium: bool = False

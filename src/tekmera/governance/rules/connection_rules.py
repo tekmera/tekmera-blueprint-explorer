@@ -8,7 +8,6 @@ from rich.console import Console
 
 from ...analysis.connections import (
     ConnectionAnalyzer,
-    classify_connection_environment,
     display_connection_table,
 )
 from ..models import GovernanceViolation
@@ -81,7 +80,7 @@ def check_dev_connection_in_prod(
         # Check if connection label contains development keywords
         for keyword in dev_keywords:
             if keyword in connection_lower:
-                is_orphan = "orphan" in context.lower()
+                "orphan" in context.lower()
 
                 # Collect all contexts where this connection appears
                 all_contexts = [
@@ -132,7 +131,7 @@ def check_dev_connection_in_prod(
         )
 
     # Use the connection data from the analyzer (already has proper types and environment classification)
-    connection_types = connection_analysis["connection_types"]
+    connection_analysis["connection_types"]
 
     # Display connection table
     console = Console()

@@ -3,7 +3,7 @@ Shared utilities for connection analysis and display.
 """
 
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 from rich.console import Console
 from rich.panel import Panel
@@ -378,7 +378,7 @@ def display_connection_table(
     # Populate table
     for conn_id, usages in sorted(connections.items()):
         scenarios = list(set(usage["scenario_name"] for usage in usages))
-        module_types = list(set(usage["module_type"] for usage in usages))
+        list(set(usage["module_type"] for usage in usages))
 
         # Extract actual module IDs from usage data
         module_ids = []

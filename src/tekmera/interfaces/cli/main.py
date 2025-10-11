@@ -43,7 +43,6 @@ def analyze(directory: str):
 @cli.group()
 def license():
     """Manage Tekmera Pro licenses"""
-    pass
 
 
 @license.command()

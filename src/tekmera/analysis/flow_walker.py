@@ -9,15 +9,13 @@ import sys
 import termios
 import tty
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from InquirerPy import inquirer
 from InquirerPy.separator import Separator
 from rich.console import Console
 from rich.panel import Panel
 from rich.syntax import Syntax
-from rich.table import Table
-from rich.text import Text
 
 from .connections import ConnectionAnalyzer
 
@@ -310,7 +308,6 @@ class FlowWalker:
 
     def _extract_de_fields(self, module: Dict[str, Any]) -> List[str]:
         """Extract DE fields from module configuration."""
-        de_fields = []
         module_str = json.dumps(module)
 
         # Find all DE: field references
@@ -1290,7 +1287,7 @@ At each step, you'll see what the module does and how it's configured.
     def _get_user_action(self) -> str:
         """Get the next action from the user."""
         choices = []
-        current_step = self.flow_steps[self.current_step_index]
+        self.flow_steps[self.current_step_index]
 
         # Navigation options
         if self.current_step_index in self.branch_points:
@@ -1781,7 +1778,7 @@ You've successfully completed the live walkthrough of all {len(self.flow_steps)}
     def _get_user_action_fallback(self) -> str:
         """Fallback to traditional menu system."""
         choices = []
-        current_step = self.flow_steps[self.current_step_index]
+        self.flow_steps[self.current_step_index]
 
         # Navigation options
         if self.current_step_index in self.branch_points:

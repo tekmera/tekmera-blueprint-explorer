@@ -2,11 +2,9 @@
 
 import difflib
 import json
-import sys
 from pathlib import Path
 
 from rich.console import Console
-from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.table import Table
 

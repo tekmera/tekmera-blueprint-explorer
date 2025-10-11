@@ -2,7 +2,6 @@
 Blueprint analysis functionality
 """
 
-import json
 from typing import Any, Dict, List, Set
 
 

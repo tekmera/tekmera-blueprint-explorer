@@ -5,7 +5,7 @@ Flow tracer for Workfront Fusion blueprints - traces execution paths through sce
 import json
 import re
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from rich.console import Console
 from rich.text import Text
@@ -244,7 +244,6 @@ class FlowTracer:
 
     def _find_dynamic_values(self, module: Dict[str, Any]) -> List[str]:
         """Find dynamic value references."""
-        dynamic_values = []
         module_json = json.dumps(module)
 
         # Look for module data references
@@ -325,11 +324,11 @@ class FlowTracer:
             if step.route_name and step.depth > 0:
                 # This is a route branch
                 route_node = current_branch.add(f"🔀 [yellow]{step.route_name}[/yellow]")
-                step_node = route_node.add(node_text)
+                route_node.add(node_text)
                 branch_stack.append(route_node)
                 current_branch = route_node
             else:
-                step_node = current_branch.add(node_text)
+                current_branch.add(node_text)
 
             last_depth = step.depth
 

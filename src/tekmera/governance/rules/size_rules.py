@@ -2,7 +2,7 @@
 Size-related governance rules for analyzing scenario scale and density.
 """
 
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List
 
 from ..models import GovernanceViolation
 

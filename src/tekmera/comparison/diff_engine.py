@@ -10,7 +10,6 @@ from typing import Any, Dict, List, Optional, Set
 from InquirerPy import inquirer
 from rich.console import Console
 from rich.panel import Panel
-from rich.syntax import Syntax
 from rich.table import Table
 
 from ..core.analyzer import BlueprintAnalyzer
@@ -264,7 +263,7 @@ class FusionDiff:
         modules1_by_id = {mod.get("id"): mod for mod in modules1 if mod.get("id")}
         modules2_by_id = {mod.get("id"): mod for mod in modules2 if mod.get("id")}
 
-        all_ids = set(modules1_by_id.keys()) | set(modules2_by_id.keys())
+        set(modules1_by_id.keys()) | set(modules2_by_id.keys())
         only_in_1 = set(modules1_by_id.keys()) - set(modules2_by_id.keys())
         only_in_2 = set(modules2_by_id.keys()) - set(modules1_by_id.keys())
         common_ids = set(modules1_by_id.keys()) & set(modules2_by_id.keys())

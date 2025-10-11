@@ -3,13 +3,10 @@ Interactive Live Scenario Walkthrough for Workfront Fusion blueprint flow analys
 """
 
 from pathlib import Path
-from typing import Any, Dict, List
 
 from InquirerPy import inquirer
 from InquirerPy.separator import Separator
 from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
 
 from ...analysis.flow_walker import FlowWalker
 from ...core.parser import BlueprintParser

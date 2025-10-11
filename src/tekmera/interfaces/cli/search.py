@@ -3,16 +3,13 @@ Interactive search interface for cross-blueprint analysis
 """
 
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from InquirerPy import inquirer
 from InquirerPy.separator import Separator
-from rich.columns import Columns
 from rich.console import Console
 from rich.panel import Panel
-from rich.syntax import Syntax
 from rich.table import Table
-from rich.text import Text
 
 from ...analysis.connections import (
     classify_connection_environment,

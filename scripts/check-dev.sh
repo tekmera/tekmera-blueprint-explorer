@@ -1,6 +1,6 @@
 #!/bin/bash
-# Local CI check script - runs all the same checks as GitHub Actions
-# Usage: ./scripts/check.sh [--fix] [--skip-tests]
+# Development check and auto-fix script
+# Usage: ./scripts/check.sh [--skip-tests]
 
 set -e
 
@@ -12,21 +12,15 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Parse arguments
-FIX_MODE=false
 SKIP_TESTS=false
 for arg in "$@"; do
     case $arg in
-        --fix)
-            FIX_MODE=true
-            shift
-            ;;
         --skip-tests)
             SKIP_TESTS=true
             shift
             ;;
         *)
-            echo "Usage: $0 [--fix] [--skip-tests]"
-            echo "  --fix: Auto-fix formatting and import issues"
+            echo "Usage: $0 [--skip-tests]"
             echo "  --skip-tests: Skip running the test suite"
             exit 1
             ;;
@@ -49,32 +43,23 @@ fi
 # Install CI dependencies
 echo -e "${BLUE}📦 Installing CI dependencies...${NC}"
 pip install -e ".[dev]" > /dev/null 2>&1
-pip install black isort mypy flake8 bandit pip-audit pyinstaller types-requests > /dev/null 2>&1
+pip install black isort mypy flake8 bandit pip-audit pyinstaller types-requests autoflake > /dev/null 2>&1
 
 echo -e "${GREEN}✅ Dependencies installed${NC}\n"
 
-# 1. Code Formatting
-echo -e "${BLUE}🎨 Code Formatting${NC}"
-if [[ "$FIX_MODE" == true ]]; then
-    echo "  Running black and isort (fixing)..."
-    black src tests
-    isort src tests
-    echo -e "${GREEN}✅ Code formatted${NC}"
-else
-    echo "  Checking formatting..."
-    if ! black --check src tests > /dev/null 2>&1; then
-        echo -e "${RED}❌ Black formatting issues found. Run with --fix to auto-format${NC}"
-        black --check src tests
-        exit 1
-    fi
-    
-    if ! isort --check-only src tests > /dev/null 2>&1; then
-        echo -e "${RED}❌ Import sorting issues found. Run with --fix to auto-format${NC}"
-        isort --check-only src tests
-        exit 1
-    fi
-    echo -e "${GREEN}✅ Code is properly formatted${NC}"
-fi
+# 1. Auto-fix What We Can
+echo -e "${BLUE}🔧 Auto-fixing code issues...${NC}"
+echo "  Removing unused imports and variables..."
+autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive src/
+
+echo "  Sorting imports..."
+isort src tests
+
+echo "  Formatting code structure..."
+black src tests
+
+echo -e "${GREEN}✅ Auto-fixes applied${NC}"
+echo -e "${YELLOW}ℹ️  Note: Line length (E501) and f-string placeholders (F541) require manual fixing${NC}"
 
 # 2. Type Checking (lenient for now)
 echo -e "\n${BLUE}🔍 Type Checking (warnings only)${NC}"
@@ -178,18 +163,28 @@ print('✅ All license CLI commands are properly wired')
 echo -e "${GREEN}✅ License integration test passed${NC}"
 
 # Summary
-echo -e "\n${GREEN}🎉 All CI checks passed!${NC}"
-echo -e "Ready to commit. The following checks were run:"
-echo "  ✅ Code formatting (black, isort)"
-echo "  ✅ Type checking (mypy)"
-echo "  ✅ Linting (flake8, pylint)"
-echo "  ✅ Security scanning (bandit)"
-echo "  ✅ Dependency audit (pip-audit)"
+echo -e "\n${GREEN}🎉 Development checks complete!${NC}"
+echo -e "The following auto-fixes and checks were run:"
+echo "  🔧 Removed unused imports/variables (autoflake)"
+echo "  🔧 Sorted imports (isort)"
+echo "  🔧 Formatted code (black)"
+echo "  🔍 Type checking (mypy - warnings only)"
+echo "  🔍 Linting (flake8)"
+echo "  🔒 Security scanning (bandit)"
+echo "  🔐 Dependency audit (pip-audit)"
 if [[ "$SKIP_TESTS" != true ]]; then
-    echo "  ✅ Test suite"
+    echo "  🧪 Test suite"
 fi
-echo "  ✅ Binary build test"
-echo "  ✅ License integration test"
+echo "  🔨 Binary build test"
+echo "  📄 License integration test"
+
+# Show remaining issues that need manual fixing
+echo -e "\n${BLUE}📋 Issues requiring manual fixes:${NC}"
+echo -e "${YELLOW}Line length (E501) and f-string placeholders (F541) need manual attention:${NC}"
+flake8 src/ --max-line-length=100 --extend-ignore=E203,W503,F401,F841 --select=E501,F541 || echo "  ✅ No manual fixes needed!"
+
+echo -e "\n${BLUE}📋 All remaining flake8 issues:${NC}"
+flake8 src/ --max-line-length=100 --extend-ignore=E203,W503,F401,F841 --statistics || echo "  ✅ No other issues!"
 
 # Clean up reports
 rm -f bandit-report.json audit-report.json coverage.xml .coverage

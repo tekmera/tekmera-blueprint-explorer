@@ -4,7 +4,7 @@ Interactive explorer for Workfront Fusion blueprints
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from InquirerPy import inquirer
 from InquirerPy.separator import Separator
@@ -12,14 +12,11 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.table import Table
-from rich.text import Text
 
 from ...analysis.connections import (
     ConnectionAnalyzer,
-    classify_connection_environment,
     display_connection_summary,
     display_connection_table,
-    display_connection_warnings,
 )
 from ...analysis.corpus_analyzer import CorpusAnalyzer
 from ...core.analyzer import BlueprintAnalyzer
