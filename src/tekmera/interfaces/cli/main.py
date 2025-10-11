@@ -9,11 +9,12 @@ from rich.console import Console
 
 from ...infra.license import license_manager
 from ...infra.license_ui import LicenseUI
+from ..._version import get_version_string
 from .interactive import InteractiveCLI
 
 
 @click.group()
-@click.version_option(version="0.1.0", prog_name="tekmera-fusion-explorer")
+@click.version_option(version=get_version_string(), prog_name="tekmera-fusion-explorer")
 @click.pass_context
 def cli(ctx):
     """
