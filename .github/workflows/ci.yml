@@ -1,0 +1,227 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  test:
+    name: Test Suite
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.10', '3.11', '3.12']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+        pip install -r requirements.txt
+    
+    - name: Run code formatting check
+      run: |
+        black --check src tests
+        isort --check-only src tests
+    
+    - name: Run type checking
+      run: |
+        mypy src/tekmera
+    
+    - name: Run tests
+      run: |
+        pytest tests/ -v --cov=tekmera --cov-report=xml --cov-report=term
+    
+    - name: Upload coverage to Codecov
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  lint-and-security:
+    name: Linting and Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install bandit safety pylint flake8
+        pip install -e .
+    
+    - name: Run security scan with bandit
+      run: |
+        bandit -r src/ -f json -o bandit-report.json || true
+        bandit -r src/ --severity-level medium
+    
+    - name: Check for known security vulnerabilities
+      run: |
+        safety check --json --output safety-report.json || true
+        safety check
+    
+    - name: Run additional linting
+      run: |
+        flake8 src/ --max-line-length=100 --extend-ignore=E203,W503
+        pylint src/tekmera --rcfile=.pylintrc || true
+    
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-reports
+        path: |
+          bandit-report.json
+          safety-report.json
+        retention-days: 30
+
+  build-test:
+    name: Test Binary Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: macos-latest
+            platform: macos
+          - os: windows-latest
+            platform: windows
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        pip install -e .
+        pip install -r requirements.txt
+    
+    - name: Test PyInstaller build
+      shell: bash
+      run: |
+        # Create a simple test build to ensure PyInstaller works
+        if [[ "${{ matrix.platform }}" == "windows" ]]; then
+          pyinstaller --onefile --name tekmera-test-${{ matrix.platform }} src/tekmera/interfaces/cli/main.py
+          ./dist/tekmera-test-${{ matrix.platform }}.exe --version
+        else
+          pyinstaller --onefile --name tekmera-test-${{ matrix.platform }} src/tekmera/interfaces/cli/main.py
+          ./dist/tekmera-test-${{ matrix.platform }} --version
+        fi
+    
+    - name: Upload test binary
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-binary-${{ matrix.platform }}
+        path: dist/tekmera-test-*
+        retention-days: 7
+
+  license-validation:
+    name: License Integration Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+    
+    - name: Test license manager integration
+      run: |
+        python -c "
+        import sys, os
+        sys.path.insert(0, 'src')
+        
+        # Test license manager imports
+        from tekmera.infra.license import license_manager
+        from tekmera.infra.license_ui import LicenseUI
+        
+        print('✅ License components imported successfully')
+        
+        # Test license info retrieval (should work in free mode)
+        info = license_manager.get_license_info()
+        print(f'✅ License info retrieved: {info[\"status\"]}')
+        
+        # Test CLI license commands are wired up
+        from tekmera.interfaces.cli.main import cli
+        license_cmd = cli.commands.get('license')
+        assert license_cmd is not None, 'License command not found'
+        
+        subcommands = list(license_cmd.commands.keys())
+        expected = ['activate', 'deactivate', 'status']
+        for cmd in expected:
+            assert cmd in subcommands, f'Missing subcommand: {cmd}'
+        
+        print('✅ All license CLI commands are properly wired')
+        print('🎉 License integration validation complete')
+        "
+
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install pip-audit
+      run: |
+        python -m pip install --upgrade pip
+        pip install pip-audit
+    
+    - name: Run dependency audit
+      run: |
+        pip-audit --desc --format=json --output=audit-report.json .
+        pip-audit --desc .
+    
+    - name: Upload audit report
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: dependency-audit-report
+        path: audit-report.json
+        retention-days: 30

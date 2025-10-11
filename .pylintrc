@@ -1,0 +1,34 @@
+[MASTER]
+extension-pkg-whitelist=
+
+[MESSAGES CONTROL]
+disable=missing-docstring,
+        too-few-public-methods,
+        too-many-arguments,
+        too-many-locals,
+        too-many-branches,
+        too-many-statements,
+        import-error,
+        no-name-in-module
+
+[REPORTS]
+output-format=text
+reports=no
+score=no
+
+[REFACTORING]
+max-nested-blocks=5
+
+[BASIC]
+good-names=i,j,k,ex,Run,_,id,ui
+
+[FORMAT]
+max-line-length=100
+indent-string='    '
+
+[DESIGN]
+max-attributes=10
+max-locals=20
+max-returns=6
+max-branches=15
+max-statements=50

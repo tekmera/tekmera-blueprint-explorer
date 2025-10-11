@@ -1,0 +1,314 @@
+name: Build and Release Multi-Platform Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build (optional, defaults to current commit)'
+        required: false
+        type: string
+
+env:
+  PYTHON_VERSION: '3.11'
+  
+jobs:
+  build:
+    name: Build ${{ matrix.platform }} binary
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            platform: macos
+            arch: x64
+            binary_name: tekmera-macos-x64
+            artifact_name: tekmera-macos-x64.tar.gz
+          - os: macos-latest
+            platform: macos
+            arch: arm64
+            binary_name: tekmera-macos-arm64
+            artifact_name: tekmera-macos-arm64.tar.gz
+          - os: windows-latest
+            platform: windows
+            arch: x64
+            binary_name: tekmera-windows-x64.exe
+            artifact_name: tekmera-windows-x64.zip
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+            binary_name: tekmera-linux-x64
+            artifact_name: tekmera-linux-x64.tar.gz
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Get version from tag or commit
+      shell: bash
+      run: |
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.tag }}" != "" ]]; then
+          VERSION="${{ github.event.inputs.tag }}"
+        elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+        else
+          VERSION="dev-$(git rev-parse --short HEAD)"
+        fi
+        echo "VERSION=${VERSION}" >> $GITHUB_ENV
+        echo "Building version: $VERSION"
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller build
+        pip install -e .
+        pip install -r requirements.txt
+    
+    - name: Inject version into CLI
+      shell: bash
+      run: |
+        # Update version in pyproject.toml
+        sed -i.bak "s/version = \".*\"/version = \"${{ env.VERSION }}\"/" pyproject.toml
+        
+        # Update version in main.py CLI
+        if [[ "${{ matrix.platform }}" == "windows" ]]; then
+          sed -i "s/@click.version_option(version='.*'/@click.version_option(version='${{ env.VERSION }}'/" src/tekmera/interfaces/cli/main.py
+        else
+          sed -i.bak "s/@click.version_option(version='.*'/@click.version_option(version='${{ env.VERSION }}'/" src/tekmera/interfaces/cli/main.py
+        fi
+    
+    - name: Create version info file
+      shell: bash
+      run: |
+        cat > src/tekmera/_version.py << EOF
+        __version__ = "${{ env.VERSION }}"
+        __build_date__ = "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        __commit__ = "${{ github.sha }}"
+        __platform__ = "${{ matrix.platform }}-${{ matrix.arch }}"
+        EOF
+    
+    - name: Build binary with PyInstaller (macOS/Linux)
+      if: matrix.platform != 'windows'
+      run: |
+        pyinstaller --onefile \
+          --name ${{ matrix.binary_name }} \
+          --add-data "src/tekmera:tekmera" \
+          --hidden-import "tekmera.interfaces.cli.main" \
+          --hidden-import "tekmera.core" \
+          --hidden-import "tekmera.analysis" \
+          --hidden-import "tekmera.comparison" \
+          --hidden-import "tekmera.governance" \
+          --hidden-import "tekmera.infra" \
+          --hidden-import "tekmera.reporting" \
+          --hidden-import "tekmera.utils" \
+          --console \
+          src/tekmera/interfaces/cli/main.py
+    
+    - name: Build binary with PyInstaller (Windows)
+      if: matrix.platform == 'windows'
+      run: |
+        pyinstaller --onefile `
+          --name ${{ matrix.binary_name }} `
+          --add-data "src/tekmera;tekmera" `
+          --hidden-import "tekmera.interfaces.cli.main" `
+          --hidden-import "tekmera.core" `
+          --hidden-import "tekmera.analysis" `
+          --hidden-import "tekmera.comparison" `
+          --hidden-import "tekmera.governance" `
+          --hidden-import "tekmera.infra" `
+          --hidden-import "tekmera.reporting" `
+          --hidden-import "tekmera.utils" `
+          --console `
+          src/tekmera/interfaces/cli/main.py
+    
+    - name: Test binary
+      shell: bash
+      run: |
+        if [[ "${{ matrix.platform }}" == "windows" ]]; then
+          ./dist/${{ matrix.binary_name }} --version
+        else
+          ./dist/${{ matrix.binary_name }} --version
+        fi
+    
+    - name: Generate checksums
+      shell: bash
+      run: |
+        cd dist
+        if [[ "${{ matrix.platform }}" == "windows" ]]; then
+          certutil -hashfile ${{ matrix.binary_name }} SHA256 > ${{ matrix.binary_name }}.sha256
+        else
+          shasum -a 256 ${{ matrix.binary_name }} > ${{ matrix.binary_name }}.sha256
+        fi
+        echo "Generated checksum:"
+        cat ${{ matrix.binary_name }}.sha256
+    
+    - name: Package binary (macOS/Linux)
+      if: matrix.platform != 'windows'
+      run: |
+        cd dist
+        tar -czf ${{ matrix.artifact_name }} ${{ matrix.binary_name }} ${{ matrix.binary_name }}.sha256
+        echo "Created package: ${{ matrix.artifact_name }}"
+        ls -la ${{ matrix.artifact_name }}
+    
+    - name: Package binary (Windows)
+      if: matrix.platform == 'windows'
+      run: |
+        cd dist
+        Compress-Archive -Path ${{ matrix.binary_name }}, ${{ matrix.binary_name }}.sha256 -DestinationPath ${{ matrix.artifact_name }}
+        echo "Created package: ${{ matrix.artifact_name }}"
+        Get-ChildItem ${{ matrix.artifact_name }}
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.artifact_name }}
+        path: dist/${{ matrix.artifact_name }}
+        retention-days: 30
+    
+    - name: Upload individual binary for debugging
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.binary_name }}-debug
+        path: |
+          dist/${{ matrix.binary_name }}*
+        retention-days: 7
+
+  release:
+    name: Create Release and Attach Binaries
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Get version from tag
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "VERSION=${VERSION}" >> $GITHUB_ENV
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: artifacts
+    
+    - name: Prepare release assets
+      run: |
+        mkdir -p release-assets
+        find artifacts -name "*.tar.gz" -o -name "*.zip" | while read file; do
+          cp "$file" release-assets/
+        done
+        ls -la release-assets/
+    
+    - name: Generate release notes
+      run: |
+        cat > release-notes.md << EOF
+        # Tekmera CLI ${{ env.VERSION }}
+        
+        ## Binary Downloads
+        
+        ### macOS
+        - \`tekmera-macos-x64.tar.gz\` - Intel Macs
+        - \`tekmera-macos-arm64.tar.gz\` - Apple Silicon Macs
+        
+        ### Windows
+        - \`tekmera-windows-x64.zip\` - Windows 64-bit
+        
+        ### Linux
+        - \`tekmera-linux-x64.tar.gz\` - Linux 64-bit
+        
+        ## Installation
+        
+        1. Download the appropriate binary for your platform
+        2. Extract the archive
+        3. Run the binary: \`./tekmera --help\`
+        
+        ## Checksums
+        
+        Each binary includes a corresponding \`.sha256\` file for verification.
+        
+        ## What's Changed
+        
+        - Multi-platform binary support
+        - Version injection and build metadata
+        - Checksum generation for security verification
+        - License validation hooks (ready for future integration)
+        
+        Built from commit: ${{ github.sha }}
+        EOF
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ env.VERSION }}
+        name: "Tekmera CLI ${{ env.VERSION }}"
+        body_path: release-notes.md
+        files: release-assets/*
+        draft: false
+        prerelease: ${{ contains(env.VERSION, 'rc') || contains(env.VERSION, 'beta') || contains(env.VERSION, 'alpha') }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  validate-license-hooks:
+    name: Validate License Integration Points
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install pytest
+    
+    - name: Validate license integration points
+      run: |
+        echo "🔍 Validating license integration points..."
+        
+        # Check if license manager is properly imported
+        python -c "from tekmera.infra.license import license_manager; print('✅ License manager import successful')"
+        
+        # Check if license UI is available
+        python -c "from tekmera.infra.license_ui import LicenseUI; print('✅ License UI import successful')"
+        
+        # Validate CLI license commands are available
+        python -c "
+        import sys
+        sys.path.insert(0, 'src')
+        from tekmera.interfaces.cli.main import cli
+        
+        # Check if license command group exists
+        assert 'license' in [cmd.name for cmd in cli.commands.values() if hasattr(cmd, 'name')]
+        print('✅ License command group available')
+        
+        # Check license subcommands
+        license_cmd = cli.commands['license']
+        subcommands = [cmd.name for cmd in license_cmd.commands.values() if hasattr(cmd, 'name')]
+        expected = ['activate', 'deactivate', 'status']
+        
+        for cmd in expected:
+            assert cmd in subcommands, f'Missing license subcommand: {cmd}'
+            print(f'✅ License subcommand {cmd} available')
+        "
+        
+        echo "🎉 All license integration points validated successfully!"
