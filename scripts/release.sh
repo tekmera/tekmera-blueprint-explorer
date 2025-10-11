@@ -1,6 +1,6 @@
 #!/bin/bash
-# Automated release script for Tekmera CLI
-# Usage: ./scripts/release.sh [major|minor|patch] [--dry-run]
+# Shared release functions for Tekmera CLI
+# This file is sourced by individual release scripts
 
 set -e
 
@@ -12,108 +12,64 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default values
-BUMP_TYPE="patch"
-DRY_RUN=false
 BRANCH="main"
 
-# Parse arguments
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        major|minor|patch)
-            BUMP_TYPE="$1"
-            shift
-            ;;
-        --dry-run)
-            DRY_RUN=true
-            shift
-            ;;
-        --branch)
-            BRANCH="$2"
-            shift 2
-            ;;
-        -h|--help)
-            cat << EOF
-Usage: $0 [major|minor|patch] [--dry-run] [--branch BRANCH]
+# Main release function
+do_release() {
+    local BUMP_TYPE="$1"
+    local DRY_RUN="${2:-false}"
 
-Arguments:
-  major|minor|patch    Version bump type (default: patch)
-  --dry-run           Show what would be done without making changes
-  --branch BRANCH     Release branch (default: main)
+    echo -e "${BLUE}🚀 Tekmera CLI Release Automation${NC}"
+    echo -e "Bump type: ${YELLOW}$BUMP_TYPE${NC}"
+    echo -e "Branch: ${YELLOW}$BRANCH${NC}"
+    echo -e "Dry run: ${YELLOW}$DRY_RUN${NC}"
+    echo ""
 
-Examples:
-  $0 patch            # Bump patch version (1.0.0 -> 1.0.1)
-  $0 minor --dry-run  # Preview minor version bump
-  $0 major            # Bump major version (1.0.0 -> 2.0.0)
+    # Check prerequisites
+    echo -e "${BLUE}🔍 Checking prerequisites...${NC}"
 
-This script will:
-1. Check for clean working directory
-2. Ensure we're on the correct branch
-3. Run all checks/tests
-4. Bump version in pyproject.toml
-5. Create and push a git tag
-6. GitHub Actions will build and create the release
-EOF
-            exit 0
-            ;;
-        *)
-            echo "Unknown option: $1"
-            echo "Use --help for usage information"
+    # Check if we're in a git repository
+    if ! git rev-parse --git-dir > /dev/null 2>&1; then
+        echo -e "${RED}❌ Not in a git repository${NC}"
+        exit 1
+    fi
+
+    # Check if we have the required tools
+    for tool in python git; do
+        if ! command -v $tool > /dev/null 2>&1; then
+            echo -e "${RED}❌ Required tool not found: $tool${NC}"
             exit 1
-            ;;
-    esac
-done
+        fi
+    done
 
-echo -e "${BLUE}🚀 Tekmera CLI Release Automation${NC}"
-echo -e "Bump type: ${YELLOW}$BUMP_TYPE${NC}"
-echo -e "Branch: ${YELLOW}$BRANCH${NC}"
-echo -e "Dry run: ${YELLOW}$DRY_RUN${NC}"
-echo ""
-
-# Check prerequisites
-echo -e "${BLUE}🔍 Checking prerequisites...${NC}"
-
-# Check if we're in a git repository
-if ! git rev-parse --git-dir > /dev/null 2>&1; then
-    echo -e "${RED}❌ Not in a git repository${NC}"
-    exit 1
-fi
-
-# Check if we have the required tools
-for tool in python git jq; do
-    if ! command -v $tool > /dev/null 2>&1; then
-        echo -e "${RED}❌ Required tool not found: $tool${NC}"
+    # Check for clean working directory
+    if [[ -n $(git status --porcelain) ]]; then
+        echo -e "${RED}❌ Working directory is not clean. Please commit or stash changes.${NC}"
+        git status --short
         exit 1
     fi
-done
 
-# Check for clean working directory
-if [[ -n $(git status --porcelain) ]]; then
-    echo -e "${RED}❌ Working directory is not clean. Please commit or stash changes.${NC}"
-    git status --short
-    exit 1
-fi
-
-# Check current branch
-CURRENT_BRANCH=$(git branch --show-current)
-if [[ "$CURRENT_BRANCH" != "$BRANCH" ]]; then
-    echo -e "${RED}❌ Not on release branch '$BRANCH' (currently on '$CURRENT_BRANCH')${NC}"
-    echo "Use --branch $CURRENT_BRANCH or switch to $BRANCH"
-    exit 1
-fi
-
-# Ensure we're up to date with remote
-echo -e "${BLUE}📡 Fetching latest changes...${NC}"
-if ! $DRY_RUN; then
-    git fetch origin
-    if [[ $(git rev-parse HEAD) != $(git rev-parse origin/$BRANCH) ]]; then
-        echo -e "${RED}❌ Local branch is not up to date with origin/$BRANCH${NC}"
-        echo "Run: git pull origin $BRANCH"
+    # Check current branch
+    CURRENT_BRANCH=$(git branch --show-current)
+    if [[ "$CURRENT_BRANCH" != "$BRANCH" ]]; then
+        echo -e "${RED}❌ Not on release branch '$BRANCH' (currently on '$CURRENT_BRANCH')${NC}"
+        echo "Switch to $BRANCH first"
         exit 1
     fi
-fi
 
-# Get current version from pyproject.toml
-CURRENT_VERSION=$(python -c "
+    # Ensure we're up to date with remote
+    echo -e "${BLUE}📡 Fetching latest changes...${NC}"
+    if ! $DRY_RUN; then
+        git fetch origin
+        if [[ $(git rev-parse HEAD) != $(git rev-parse origin/$BRANCH) ]]; then
+            echo -e "${RED}❌ Local branch is not up to date with origin/$BRANCH${NC}"
+            echo "Run: git pull origin $BRANCH"
+            exit 1
+        fi
+    fi
+
+    # Get current version from pyproject.toml
+    CURRENT_VERSION=$(python -c "
 import re
 with open('pyproject.toml', 'r') as f:
     content = f.read()
@@ -124,10 +80,10 @@ with open('pyproject.toml', 'r') as f:
         print('0.0.0')
 ")
 
-echo -e "Current version: ${YELLOW}$CURRENT_VERSION${NC}"
+    echo -e "Current version: ${YELLOW}$CURRENT_VERSION${NC}"
 
-# Calculate new version
-NEW_VERSION=$(python -c "
+    # Calculate new version
+    NEW_VERSION=$(python -c "
 import sys
 from packaging.version import Version
 
@@ -147,39 +103,39 @@ else:
 print(str(new))
 ")
 
-echo -e "New version: ${GREEN}$NEW_VERSION${NC}"
+    echo -e "New version: ${GREEN}$NEW_VERSION${NC}"
 
-# Run checks
-echo -e "\n${BLUE}🧪 Running pre-release checks...${NC}"
-if ! $DRY_RUN; then
-    # Run the development checks
-    if [[ -f "scripts/check-dev.sh" ]]; then
-        echo "Running check-dev.sh..."
-        ./scripts/check-dev.sh --skip-tests
-    else
-        echo "⚠️  check-dev.sh not found, running basic checks..."
-        
-        # Check if virtual environment exists and activate it
-        if [[ -f "venv/bin/activate" ]]; then
-            source venv/bin/activate
+    # Run checks
+    echo -e "\n${BLUE}🧪 Running pre-release checks...${NC}"
+    if ! $DRY_RUN; then
+        # Run the development checks
+        if [[ -f "scripts/check-dev.sh" ]]; then
+            echo "Running check-dev.sh..."
+            ./scripts/check-dev.sh --skip-tests
+        else
+            echo "⚠️  check-dev.sh not found, running basic checks..."
+            
+            # Check if virtual environment exists and activate it
+            if [[ -f "venv/bin/activate" ]]; then
+                source venv/bin/activate
+            fi
+            
+            # Install packaging for version calculations
+            pip install packaging > /dev/null 2>&1
+            
+            # Run basic tests
+            if [[ -f "pyproject.toml" ]] && command -v pytest > /dev/null 2>&1; then
+                pytest tests/ --tb=short
+            fi
         fi
-        
-        # Install packaging for version calculations
-        pip install packaging > /dev/null 2>&1
-        
-        # Run basic tests
-        if [[ -f "pyproject.toml" ]] && command -v pytest > /dev/null 2>&1; then
-            pytest tests/ --tb=short
-        fi
+        echo -e "${GREEN}✅ Pre-release checks passed${NC}"
     fi
-    echo -e "${GREEN}✅ Pre-release checks passed${NC}"
-fi
 
-# Update version in pyproject.toml
-echo -e "\n${BLUE}📝 Updating version...${NC}"
-if ! $DRY_RUN; then
-    # Update pyproject.toml
-    python -c "
+    # Update version in pyproject.toml
+    echo -e "\n${BLUE}📝 Updating version...${NC}"
+    if ! $DRY_RUN; then
+        # Update pyproject.toml
+        python -c "
 import re
 
 with open('pyproject.toml', 'r') as f:
@@ -196,9 +152,9 @@ with open('pyproject.toml', 'w') as f:
 
 print('Updated pyproject.toml')
 "
-    
-    # Update _version.py for development
-    cat > src/tekmera/_version.py << EOF
+        
+        # Update _version.py for development
+        cat > src/tekmera/_version.py << EOF
 """
 Version information for Tekmera CLI.
 This file is automatically updated during the build process.
@@ -226,71 +182,83 @@ def get_version_string():
         return f"{__version__} (development)"
     return f"{__version__} (built {__build_date__})"
 EOF
-    
-    echo -e "${GREEN}✅ Version updated to $NEW_VERSION${NC}"
-else
-    echo -e "${YELLOW}📝 Would update version to $NEW_VERSION${NC}"
-fi
+        
+        echo -e "${GREEN}✅ Version updated to $NEW_VERSION${NC}"
+    else
+        echo -e "${YELLOW}📝 Would update version to $NEW_VERSION${NC}"
+    fi
 
-# Commit version bump
-echo -e "\n${BLUE}💾 Committing version bump...${NC}"
-if ! $DRY_RUN; then
-    git add pyproject.toml src/tekmera/_version.py
-    git commit -m "chore: bump version to $NEW_VERSION
+    # Commit version bump
+    echo -e "\n${BLUE}💾 Committing version bump...${NC}"
+    if ! $DRY_RUN; then
+        git add pyproject.toml src/tekmera/_version.py
+        git commit -m "chore: bump version to $NEW_VERSION
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
-    echo -e "${GREEN}✅ Version bump committed${NC}"
-else
-    echo -e "${YELLOW}💾 Would commit version bump${NC}"
-fi
+        echo -e "${GREEN}✅ Version bump committed${NC}"
+    else
+        echo -e "${YELLOW}💾 Would commit version bump${NC}"
+    fi
 
-# Create and push tag
-TAG_NAME="v$NEW_VERSION"
-echo -e "\n${BLUE}🏷️  Creating tag $TAG_NAME...${NC}"
-if ! $DRY_RUN; then
-    git tag -a "$TAG_NAME" -m "Release $NEW_VERSION
+    # Create and push tag
+    TAG_NAME="v$NEW_VERSION"
+    echo -e "\n${BLUE}🏷️  Creating tag $TAG_NAME...${NC}"
+    if ! $DRY_RUN; then
+        git tag -a "$TAG_NAME" -m "Release $NEW_VERSION
 
 Tekmera CLI $NEW_VERSION
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
-    
-    echo "Pushing tag to origin..."
-    git push origin "$TAG_NAME"
-    git push origin $BRANCH
-    
-    echo -e "${GREEN}✅ Tag $TAG_NAME created and pushed${NC}"
-else
-    echo -e "${YELLOW}🏷️  Would create and push tag $TAG_NAME${NC}"
-fi
+        
+        echo "Pushing tag to origin..."
+        git push origin "$TAG_NAME"
+        git push origin $BRANCH
+        
+        echo -e "${GREEN}✅ Tag $TAG_NAME created and pushed${NC}"
+    else
+        echo -e "${YELLOW}🏷️  Would create and push tag $TAG_NAME${NC}"
+    fi
 
-# Final instructions
-echo -e "\n${GREEN}🎉 Release process completed!${NC}"
-echo ""
-if ! $DRY_RUN; then
-    echo "✅ Version bumped to $NEW_VERSION"
-    echo "✅ Tag $TAG_NAME created and pushed" 
-    echo "✅ GitHub Actions will now build and create the release"
+    # Final instructions
+    echo -e "\n${GREEN}🎉 Release process completed!${NC}"
     echo ""
-    echo "🔗 Monitor the release build at:"
-    REPO_URL=$(git remote get-url origin | sed 's/\.git$//' | sed 's/git@github\.com:/https:\/\/github.com\//')
-    echo "   $REPO_URL/actions"
-    echo ""
-    echo "📦 The release will be available at:"
-    echo "   $REPO_URL/releases/tag/$TAG_NAME"
-else
-    echo "🔍 Dry run completed - no changes made"
-    echo ""
-    echo "To perform the actual release, run:"
-    echo "   $0 $BUMP_TYPE"
-fi
+    if ! $DRY_RUN; then
+        echo "✅ Version bumped to $NEW_VERSION"
+        echo "✅ Tag $TAG_NAME created and pushed" 
+        echo "✅ GitHub Actions will now build and create the release"
+        echo ""
+        echo "🔗 Monitor the release build at:"
+        REPO_URL=$(git remote get-url origin | sed 's/\.git$//' | sed 's/git@github\.com:/https:\/\/github.com\//') 
+        echo "   $REPO_URL/actions"
+        echo ""
+        echo "📦 The release will be available at:"
+        echo "   $REPO_URL/releases/tag/$TAG_NAME"
+    else
+        echo "🔍 Dry run completed - no changes made"
+    fi
 
-echo ""
-echo "Release timeline:"
-echo "  📝 Version bumped and tagged     ← Done"
-echo "  🔨 CI builds multi-platform bins ← In progress" 
-echo "  🚀 GitHub release created        ← ~5-10 minutes"
-echo "  📦 Binaries attached to release  ← ~5-10 minutes"
+    echo ""
+    echo "Release timeline:"
+    echo "  📝 Version bumped and tagged     ← Done"
+    echo "  🔨 CI builds multi-platform bins ← In progress" 
+    echo "  🚀 GitHub release created        ← ~5-10 minutes"
+    echo "  📦 Binaries attached to release  ← ~5-10 minutes"
+}
+
+# If this script is run directly (not sourced), show usage
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    echo "🚀 Tekmera CLI Release Scripts"
+    echo ""
+    echo "Available release scripts:"
+    echo "  ./scripts/release-patch.sh     - Patch release (1.0.0 → 1.0.1)"
+    echo "  ./scripts/release-minor.sh     - Minor release (1.0.0 → 1.1.0)"
+    echo "  ./scripts/release-major.sh     - Major release (1.0.0 → 2.0.0)"
+    echo "  ./scripts/release-dry-run.sh   - Preview any release changes"
+    echo ""
+    echo "Each script is self-contained and does exactly what the name suggests."
+    exit 0
+fi
