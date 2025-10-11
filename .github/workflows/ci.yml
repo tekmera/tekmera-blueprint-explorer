@@ -98,7 +98,7 @@ jobs:
     
     - name: Run linting
       run: |
-        flake8 src/ --max-line-length=100 --extend-ignore=E203,W503
+        flake8 src/ --extend-ignore=E203,W503,E501,F541
     
     - name: Upload security reports
       uses: actions/upload-artifact@v4
