@@ -6,4 +6,4 @@ flake8==7.3.0
 bandit==1.8.6
 pip-audit==2.9.0
 pyinstaller==6.16.0
-types-requests==2.32.0.20241215
+types-requests==2.32.4.20250913
