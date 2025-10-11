@@ -34,7 +34,7 @@ def analyze(directory: str):
     """
     directory_path = Path(directory)
     
-    # Launch interactive CLI - license auto-detected from ~/.tekmera/license.json
+    # Launch interactive CLI - license auto-detected from environment variables
     cli_instance = InteractiveCLI()
     cli_instance.start(directory_path)
 
@@ -46,17 +46,14 @@ def license():
 
 
 @license.command()
-@click.option('--file', 'license_file', required=True, 
-              type=click.Path(exists=True, file_okay=True, dir_okay=False),
-              help='Path to license.json file')
-def activate(license_file: str):
-    """Activate a Tekmera Pro license from file"""
+@click.argument('license_key', type=str)
+def activate(license_key: str):
+    """Activate a Tekmera Pro license using a license key"""
     console = Console()
     
     console.print("🔑 [bold blue]Activating Tekmera Pro License...[/bold blue]\n")
     
-    license_path = Path(license_file)
-    success, message = license_manager.activate_license(license_path)
+    success, message = license_manager.activate_license_key(license_key)
     
     if success:
         info = license_manager.get_license_info()

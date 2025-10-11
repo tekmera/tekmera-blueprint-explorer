@@ -44,11 +44,8 @@ class LicenseUI:
             console.print(f"Issued To: {license_info['issued_to']}")
             console.print(f"Issued At: {license_info['issued_at']}")
             
-            # Show signature status
-            if license_info.get('digitally_signed'):
-                console.print(f"Digital Signature: [green]✅ Verified[/green]")
-            else:
-                console.print(f"Digital Signature: [yellow]Not present[/yellow]")
+            # Lemon Squeezy licenses are always verified online
+            console.print(f"Validation: [green]✅ Lemon Squeezy Verified[/green]")
             
             if license_info.get('expiry'):
                 days_remaining = license_info.get('days_remaining')
@@ -70,7 +67,7 @@ class LicenseUI:
             console.print("\n🔒 Premium features are [yellow]locked[/yellow]")
             console.print("\nTo unlock premium features:")
             console.print("1. Purchase a license at [link]https://tekmera.com/pricing[/link]")
-            console.print("2. Activate with: [bold]tekmera license activate --file license.json[/bold]")
+            console.print("2. Activate with: [bold]tekmera license activate YOUR-LICENSE-KEY[/bold]")
     
     @staticmethod
     def show_license_activation_result(success: bool, message: str, 
@@ -91,11 +88,8 @@ class LicenseUI:
                 console.print(f"  License Key: {license_info['license_key']}")
                 console.print(f"  Issued To: {license_info['issued_to']}")
                 
-                # Show signature status in activation details
-                if license_info.get('digitally_signed'):
-                    console.print(f"  Digital Signature: [green]✅ Verified[/green]")
-                else:
-                    console.print(f"  Digital Signature: [yellow]Not present[/yellow]")
+                # Lemon Squeezy licenses are validated online
+                console.print(f"  Validation: [green]✅ Lemon Squeezy Verified[/green]")
                 
                 if license_info.get('expiry'):
                     days_remaining = license_info.get('days_remaining')

@@ -126,7 +126,22 @@ class Reporter:
             with open(filename, 'w', encoding='utf-8') as f:
                 f.write(self.last_report_content)
             
-            self.console.print(f"[green]✅ Report exported to: {filename}[/green]")
+            # Get file info for display
+            file_path = Path(filename).resolve()
+            file_size = file_path.stat().st_size
+            
+            # Format file size
+            if file_size < 1024:
+                size_str = f"{file_size} bytes"
+            elif file_size < 1024 * 1024:
+                size_str = f"{file_size / 1024:.1f} KB"
+            else:
+                size_str = f"{file_size / (1024 * 1024):.1f} MB"
+            
+            self.console.print(f"[green]✅ Static analysis report exported successfully![/green]")
+            self.console.print(f"[cyan]📄 File: {filename}[/cyan]")
+            self.console.print(f"[cyan]📁 Location: {file_path.parent}[/cyan]")
+            self.console.print(f"[cyan]📊 Size: {size_str}[/cyan]")
             
         except Exception as e:
             self.console.print(f"[red]❌ Failed to export report: {str(e)}[/red]")
