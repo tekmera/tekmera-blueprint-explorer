@@ -83,11 +83,18 @@ class InteractiveCLI:
         # Get detailed license information
         license_info = license_manager.get_license_info()
         if license_info["status"] == "active":
-            license_text = f"Pro ({license_info['edition']})"
-            if license_info.get("days_remaining") is not None:
-                days = license_info["days_remaining"]
-                if days <= 30:
-                    license_text += f" - {days} days left"
+            if license_info.get("is_evaluation", False):
+                license_text = f"Evaluation"
+                if license_info.get("days_remaining") is not None:
+                    days = license_info["days_remaining"]
+                    license_text += f" - {days} day{'s' if days != 1 else ''} remaining"
+            else:
+                license_text = f"Pro ({license_info['edition']})"
+        elif license_info["status"] == "expired":
+            if license_info.get("is_evaluation", False):
+                license_text = "Free (evaluation expired)"
+            else:
+                license_text = "Free (license expired)"
         else:
             license_text = "Free"
 

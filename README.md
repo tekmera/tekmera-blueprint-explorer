@@ -41,13 +41,34 @@ pip install -e .
 ```bash
 # Analyze blueprint directory
 tekmera analyze /path/to/blueprints/
+```
 
-# License management
+## License Installation
+
+Tekmera uses simple license key activation for premium features:
+
+### Check Current License
+```bash
 tekmera license status
-tekmera license activate YOUR-LICENSE-KEY-HERE  # Example placeholder
-tekmera license deactivate
+```
 
-# Development mode (enables all features)
+### Install Evaluation License (30-day trial)
+```bash
+tekmera license activate TEKMERA-eyJwYXlsb2FkIjp7ImxpY2Vuc2VfdHlwZSI6ImV2YWx1YXRpb24iLCJlZGl0aW9uIjoicHJvIiwiZXhwaXJ5IjoiMjAyNC0wMi0xNVQxMDozMDowMC4wMDAwMDAiLCJldmFsdWF0aW9uX2RheXMiOjMwLCJpc19ldmFsdWF0aW9uIjp0cnVlLCJpc3N1ZWRfYXQiOiIyMDI0LTAxLTE2VDEwOjMwOjAwLjAwMDAwMCIsIm1hY2hpbmVfZmluZ2VycHJpbnQiOiJhMWIyYzNkNGU1ZjZnN2g4IiwibGljZW5zZV9pZCI6ImFiY2RlZjEyLTM0NTYtNzg5MC1hYmNkLWVmMTIzNDU2Nzg5MCIsInZlcnNpb24iOiIyLjAifSwic2lnbmF0dXJlIjoiYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MCJ9
+```
+
+### Install Premium License (permanent)
+```bash
+tekmera license activate TEKMERA-eyJwYXlsb2FkIjp7ImxpY2Vuc2VfdHlwZSI6InByZW1pdW0iLCJlZGl0aW9uIjoicHJvIiwiZXhwaXJ5IjpudWxsLCJpc19ldmFsdWF0aW9uIjpmYWxzZSwiaXNzdWVkX2F0IjoiMjAyNC0wMS0xNlQxMDozMDowMC4wMDAwMDAiLCJtYWNoaW5lX2ZpbmdlcnByaW50IjoiYTFiMmMzZDRlNWY2ZzdoOCIsImxpY2Vuc2VfaWQiOiJhYmNkZWYxMi0zNDU2LTc4OTAtYWJjZC1lZjEyMzQ1Njc4OTAiLCJ2ZXJzaW9uIjoiMi4wIn0sInNpZ25hdHVyZSI6IjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTAifQ==
+```
+
+### Remove License
+```bash
+tekmera license deactivate
+```
+
+### Development Mode (all features enabled)
+```bash
 export TEKMERA_LOCAL_PRO=true
 tekmera analyze ./blueprints
 ```
@@ -89,23 +110,24 @@ All AI features require OpenAI API key and Pro license. Premium governance rules
 
 ## Licensing
 
-**Free Tier**  
+**Free**  
 Exploration, basic governance (5 rules), blueprint comparison
 
-**Pro Tier**  
+**Paid** (Evaluation or Permanent)  
 AI features, advanced governance (6 additional rules), live walkthrough
 
 ```bash
-# License activation
+# License activation (evaluation or permanent)
 tekmera license status
-tekmera license activate YOUR-LICENSE-KEY-HERE
+tekmera license activate TEKMERA-eyJwYXlsb2FkIjp7ImxpY2Vuc2VfdHlwZSI6ImV2YWx1YXRpb24iLCJlZGl0aW9uIjoicHJvIiwiZXhwaXJ5IjoiMjAyNC0wMi0xNVQxMDozMDowMC4wMDAwMDAiLCJldmFsdWF0aW9uX2RheXMiOjMwfQ  # 30-day trial
+tekmera license activate TEKMERA-eyJwYXlsb2FkIjp7ImxpY2Vuc2VfdHlwZSI6InByZW1pdW0iLCJlZGl0aW9uIjoicHJvIiwiZXhwaXJ5IjpudWxsfQ  # Permanent paid license
 
 # Development mode (all features enabled)
 export TEKMERA_LOCAL_PRO=true
 ```
 
 **AI Requirements**  
-Set `OPENAI_API_KEY` environment variable for AI features
+Set `OPENAI_API_KEY` environment variable for AI features (paid license required)
 
 ## Blueprint Structure
 
@@ -184,18 +206,20 @@ tekmera analyze ./blueprints
 
 ### License Activation
 ```bash
-# Purchase license from https://tekmera.com/pricing
-# Activate the license
-tekmera license activate --file ~/Downloads/license.json
+# Activate evaluation license (30-day trial) 
+tekmera license activate TEKMERA-eyJwYXlsb2FkIjp7ImxpY2Vuc2VfdHlwZSI6ImV2YWx1YXRpb24iLCJlZGl0aW9uIjoicHJvIiwiZXhwaXJ5IjoiMjAyNC0wMi0xNVQxMDozMDowMC4wMDAwMDAiLCJldmFsdWF0aW9uX2RheXMiOjMwfQ
+
+# Activate permanent paid license
+tekmera license activate TEKMERA-eyJwYXlsb2FkIjp7ImxpY2Vuc2VfdHlwZSI6InByZW1pdW0iLCJlZGl0aW9uIjoicHJvIiwiZXhwaXJ5IjpudWxsfQ
 
 # Check activation status
 tekmera license status
 
-# Pro features now work automatically
+# Paid features now work automatically
 tekmera analyze ./blueprints
 ```
 
-### Premium AI Analysis
+### Paid AI Analysis
 ```bash
 # Set up OpenAI API key for AI features
 export OPENAI_API_KEY="your-key-here"
@@ -236,11 +260,10 @@ tekmera analyze ./blueprints
 ## Documentation
 
 - **Features Overview**: See `docs/FEATURES.md` for detailed feature documentation
-- **License Generation**: See `docs/LICENSE_GENERATION.md` for creating and managing license files
+- **Licensing Guide**: See `docs/LICENSING.md` for comprehensive licensing documentation
 - **Governance Rules**: Built-in rule descriptions available in governance audit mode
 - **API Reference**: Explore the `src/tekmera/` package structure for API details
-- **Licensing Business Plan**: See `docs/LICENSING_STRATEGY.md` for business model details
-- **Terms of Service**: See `docs/TERMS_OF_SERVICE.md` for Pro user terms
+- **Terms of Service**: See `docs/TERMS_OF_SERVICE.md` for user terms
 - **Privacy Policy**: See `docs/PRIVACY_POLICY.md` for data handling information
 
 ## Contributing

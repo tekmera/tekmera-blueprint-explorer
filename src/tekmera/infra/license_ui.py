@@ -14,12 +14,12 @@ class LicenseUI:
 
     @staticmethod
     def show_premium_prompt(feature_name: str, console: Optional[Console] = None) -> bool:
-        """Show upgrade prompt for premium features - non-interactive safe."""
+        """Show upgrade prompt for paid features - non-interactive safe."""
         if not console:
             console = Console()
 
-        console.print(f"\n[yellow]🔒 Premium Feature Required[/yellow]")
-        console.print(f"[bold]{feature_name}[/bold] requires Tekmera Pro.")
+        console.print(f"\n[yellow]🔒 Paid Feature Required[/yellow]")
+        console.print(f"[bold]{feature_name}[/bold] requires a paid Tekmera license.")
         console.print("Upgrade to unlock advanced governance intelligence and AI features.")
         console.print("\n[dim]Press Enter to continue...[/dim]")
 
@@ -41,7 +41,8 @@ class LicenseUI:
         console.print("📄 [bold blue]Tekmera License Status[/bold blue]\n")
 
         if license_info["status"] == "active":
-            console.print(f"Status: [green]✅ Active ({license_info['edition']} Edition)[/green]")
+            license_type = "Paid" if license_info.get('license_type') in ["evaluation", "premium"] else "Free"
+            console.print(f"Status: [green]✅ Active ({license_type})[/green]")
             console.print(f"License Key: {license_info['license_key']}")
             console.print(f"Issued To: {license_info['issued_to']}")
             console.print(f"Issued At: {license_info['issued_at']}")
@@ -68,13 +69,13 @@ class LicenseUI:
             else:
                 console.print("Expires: [green]Never[/green]")
 
-            console.print(f"\n🎯 Premium features are [green]enabled[/green]")
+            console.print(f"\n🎯 Paid features are [green]enabled[/green]")
 
         else:
-            console.print(f"Status: [yellow]Free Edition[/yellow]")
+            console.print(f"Status: [yellow]Free[/yellow]")
             console.print("License Key: None")
-            console.print("\n🔒 Premium features are [yellow]locked[/yellow]")
-            console.print("\nTo unlock premium features:")
+            console.print("\n🔒 Paid features are [yellow]locked[/yellow]")
+            console.print("\nTo unlock paid features:")
             console.print("1. Purchase a license at [link]https://tekmera.com/pricing[/link]")
             console.print(
                 "2. Activate with: [bold]tekmera license activate YOUR-LICENSE-KEY[/bold]"
@@ -91,14 +92,15 @@ class LicenseUI:
         if not console:
             console = Console()
 
-        console.print("🔑 [bold blue]Activating Tekmera Pro License...[/bold blue]\n")
+        console.print("🔑 [bold blue]Activating Tekmera License...[/bold blue]\n")
 
         if success:
             console.print(f"✅ [green]{message}[/green]")
 
             if license_info:
                 console.print(f"\n📋 [bold]License Details:[/bold]")
-                console.print(f"  Edition: {license_info['edition']}")
+                license_type = "Paid" if license_info.get('license_type') in ["evaluation", "premium"] else "Free"
+                console.print(f"  Type: {license_type}")
                 console.print(f"  License Key: {license_info['license_key']}")
                 console.print(f"  Issued To: {license_info['issued_to']}")
 
@@ -126,9 +128,9 @@ class LicenseUI:
                 else:
                     console.print("  Expires: Never")
 
-            console.print(f"\n🎉 [bold green]Pro features are now unlocked![/bold green]")
+            console.print(f"\n🎉 [bold green]Paid features are now unlocked![/bold green]")
             console.print(
-                "Use [bold]tekmera analyze /path/to/blueprints[/bold] to access premium features."
+                "Use [bold]tekmera analyze /path/to/blueprints[/bold] to access paid features."
             )
         else:
             console.print(f"❌ [red]{message}[/red]")
@@ -156,14 +158,14 @@ class LicenseUI:
             console = Console()
 
         if days_remaining <= 0:
-            console.print("[red]⚠️  Your Tekmera Pro license has expired![/red]")
-            console.print("Premium features are now disabled. Please renew your license.")
+            console.print("[red]⚠️  Your Tekmera license has expired![/red]")
+            console.print("Paid features are now disabled. Please renew your license.")
         elif days_remaining <= 7:
             console.print(
-                f"[yellow]⚠️  Your Tekmera Pro license expires in {days_remaining} days![/yellow]"
+                f"[yellow]⚠️  Your Tekmera license expires in {days_remaining} days![/yellow]"
             )
-            console.print("Consider renewing to avoid interruption of premium features.")
+            console.print("Consider renewing to avoid interruption of paid features.")
         elif days_remaining <= 30:
             console.print(
-                f"[dim]ℹ️  Your Tekmera Pro license expires in {days_remaining} days.[/dim]"
+                f"[dim]ℹ️  Your Tekmera license expires in {days_remaining} days.[/dim]"
             )
