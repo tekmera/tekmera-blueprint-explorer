@@ -80,7 +80,6 @@ class MenuSystem:
     def __init__(self):
         self.items: Dict[str, MenuItem] = {}
         self.root_items: List[MenuItem] = []
-        self._governance_warned = False  # Track if we've warned about inference
         self._build_menu_structure()
 
     def _build_menu_structure(self):
@@ -109,22 +108,13 @@ class MenuSystem:
             order=2,
         )
 
-        main_governance = MenuItem(
-            id="main.governance",
-            label="Governance Audit",
-            display_label="⚖️  Governance Audit",
-            description="Audit scenarios for compliance with governance rules",
-            action="handle_governance_mode",
-            order=3,
-        )
-
         main_diff = MenuItem(
             id="main.diff",
             label="Compare Scenarios",
             display_label="🔄 Compare Scenarios",
             description="Compare two blueprint scenarios to identify functional differences",
             action="handle_diff_mode",
-            order=4,
+            order=3,
             separator_after=True,
         )
 
@@ -213,138 +203,11 @@ class MenuSystem:
         main_analyze.add_child(analyze_search)
         main_analyze.add_child(analyze_ai_query)
 
-        # 1.3 Governance Audit Submenu - Static governance checks
-        # Basic/Free governance checks
-        gov_scenario_naming = MenuItem(
-            id="governance.check_1",
-            label="GOV-NAME-001: Scenario Naming Prefix",
-            description="Enforces standardized scenario naming conventions",
-            action="run_governance_check",
-            license_required=LicenseType.FREE,
-            metadata={"check_id": "1", "check_name": "Scenario Naming Prefix"},
-            order=1,
-        )
-
-        gov_default_labels = MenuItem(
-            id="governance.check_2",
-            label="GOV-NAME-002: Default Module Labels",
-            description="Identifies modules using generic default labels",
-            action="run_governance_check",
-            license_required=LicenseType.FREE,
-            metadata={"check_id": "2", "check_name": "Default Module Labels"},
-            order=2,
-        )
-
-        gov_router_default = MenuItem(
-            id="governance.check_3",
-            label="GOV-STRUC-001: Router Without Default Branch",
-            description="Ensures routers have fallback branches",
-            action="run_governance_check",
-            license_required=LicenseType.FREE,
-            metadata={"check_id": "3", "check_name": "Router Without Default Branch"},
-            order=3,
-        )
-
-        gov_orphan_module = MenuItem(
-            id="governance.check_4",
-            label="GOV-STRUC-002: Orphan Module",
-            description="Identifies disconnected modules in blueprint metadata",
-            action="run_governance_check",
-            license_required=LicenseType.FREE,
-            metadata={"check_id": "4", "check_name": "Orphan Module"},
-            order=4,
-        )
-
-        gov_dev_connection = MenuItem(
-            id="governance.check_5",
-            label="GOV-CONN-001: Dev Connection in Prod",
-            description="Prevents production scenarios from using development connections",
-            action="run_governance_check",
-            license_required=LicenseType.FREE,
-            metadata={"check_id": "5", "check_name": "Dev Connection in Prod"},
-            order=5,
-            separator_after=True,
-        )
-
-        # Premium governance checks
-        gov_flow_complexity = MenuItem(
-            id="governance.check_6",
-            label="GOV-COMP-001: Flow Complexity Index",
-            description="Identifies overly complex scenarios using algorithmic analysis",
-            action="run_governance_check",
-            license_required=LicenseType.PREMIUM,
-            metadata={"check_id": "6", "check_name": "Flow Complexity Index"},
-            order=6,
-        )
-
-        gov_functional_density = MenuItem(
-            id="governance.check_7",
-            label="GOV-SIZE-001: Functional Density Index",
-            description="Analyzes modules per functional cluster ratio",
-            action="run_governance_check",
-            license_required=LicenseType.PREMIUM,
-            metadata={"check_id": "7", "check_name": "Functional Density Index"},
-            order=7,
-        )
-
-        gov_router_density = MenuItem(
-            id="governance.check_8",
-            label="GOV-COMP-002: Router Density Analysis",
-            description="Identifies excessive branching logic patterns",
-            action="run_governance_check",
-            license_required=LicenseType.PREMIUM,
-            metadata={"check_id": "8", "check_name": "Router Density Analysis"},
-            order=8,
-        )
-
-        gov_route_fanout = MenuItem(
-            id="governance.check_9",
-            label="GOV-COMP-003: Route Fan-Out Profile",
-            description="Flags complex individual routers with many branches",
-            action="run_governance_check",
-            license_required=LicenseType.PREMIUM,
-            metadata={"check_id": "9", "check_name": "Route Fan-Out Profile"},
-            order=9,
-        )
-
-        gov_flow_depth = MenuItem(
-            id="governance.check_10",
-            label="GOV-COMP-004: Flow Depth Estimate",
-            description="Calculates longest linear execution path depth",
-            action="run_governance_check",
-            license_required=LicenseType.PREMIUM,
-            metadata={"check_id": "10", "check_name": "Flow Depth Estimate"},
-            order=10,
-        )
-
-        gov_field_mapping = MenuItem(
-            id="governance.check_11",
-            label="GOV-FIELD-003: Field Mapping Complexity",
-            description="Analyzes deep field references and nesting levels",
-            action="run_governance_check",
-            license_required=LicenseType.PREMIUM,
-            metadata={"check_id": "11", "check_name": "Field Mapping Complexity"},
-            order=11,
-        )
-
-        # Add all governance checks to the governance item
-        main_governance.add_child(gov_scenario_naming)
-        main_governance.add_child(gov_default_labels)
-        main_governance.add_child(gov_router_default)
-        main_governance.add_child(gov_orphan_module)
-        main_governance.add_child(gov_dev_connection)
-        main_governance.add_child(gov_flow_complexity)
-        main_governance.add_child(gov_functional_density)
-        main_governance.add_child(gov_router_density)
-        main_governance.add_child(gov_route_fanout)
-        main_governance.add_child(gov_flow_depth)
-        main_governance.add_child(gov_field_mapping)
-
         # Register all items (children are registered recursively)
-        self._register_items([main_explore, main_analyze, main_governance, main_diff])
+        self._register_items([main_explore, main_analyze, main_diff])
 
         # Set root items
-        self.root_items = [main_explore, main_analyze, main_governance, main_diff]
+        self.root_items = [main_explore, main_analyze, main_diff]
 
     def _register_items(self, items: List[MenuItem]):
         """Register items in the lookup dictionary with duplicate protection"""
@@ -412,14 +275,6 @@ class MenuSystem:
                 label += " [Pro 🔒]"  # Locked/no premium license
 
         return label
-
-    def add_governance_checks(self, governance_checker):
-        """Legacy method - governance checks are now statically defined.
-
-        This method is kept for backward compatibility but is now a no-op
-        since all governance checks are defined statically in _build_menu_structure().
-        """
-        # All governance checks are now statically defined above
 
     def to_inquirer_choices(
         self, items: List[MenuItem], has_premium: bool = False

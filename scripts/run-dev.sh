@@ -42,7 +42,7 @@ fi
 if [[ $# -eq 0 ]]; then
     echo -e "${BLUE}📋 No arguments provided. Available commands:${NC}"
     echo ""
-    python -m tekmera.interfaces.cli.main --help
+    python -m tekmera.interfaces.cli --help
     echo ""
     echo "Examples:"
     echo "  ./scripts/run-dev.sh analyze ./blueprints"
@@ -51,5 +51,5 @@ if [[ $# -eq 0 ]]; then
 else
     # Run the CLI with provided arguments
     echo -e "${BLUE}🏃 Running: tekmera $*${NC}"
-    python -m tekmera.interfaces.cli.main "$@"
+    python -m tekmera.interfaces.cli "$@"
 fi

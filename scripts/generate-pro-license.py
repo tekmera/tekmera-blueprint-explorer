@@ -42,7 +42,7 @@ License Format:
   TEKMERA-{base64_encoded_signed_data}
   
 Features:
-  - All premium features (AI analysis, advanced governance, etc.)
+  - All premium features (AI analysis, cross-blueprint search, etc.)
   - No expiration (permanent license)
   - Cryptographically signed for tamper resistance
   - Machine-bound for security

@@ -28,22 +28,22 @@ class SimpleLicenseManager:
         self.license_dir = Path.home() / ".tekmera"
         self.license_file = self.license_dir / "license.json"
         self._ensure_license_dir()
-        
+
         # Signing secret - in production, this should be securely managed
         # For now, we'll use a fixed secret. In production, use env var or secure key management
         self._signing_secret = self._get_or_create_signing_secret()
-    
+
     def _get_or_create_signing_secret(self) -> str:
         """Get or create signing secret for license validation"""
         # In production, this should come from environment variable or secure key store
         # For now, we'll use a application-specific secret
         secret_file = self.license_dir / ".signing_secret"
-        
+
         if secret_file.exists():
             return secret_file.read_text().strip()
         else:
             # Generate a new secret key
-            secret = base64.b64encode(secrets.token_bytes(32)).decode('ascii')
+            secret = base64.b64encode(secrets.token_bytes(32)).decode("ascii")
             secret_file.write_text(secret)
             secret_file.chmod(0o600)  # Make it readable only by owner
             return secret
@@ -77,101 +77,102 @@ class SimpleLicenseManager:
         """Convert timestamp to ISO format, handling various input types"""
         if timestamp is None:
             return datetime.now().isoformat()
-        
+
         # If already a string (ISO format), return as-is
         if isinstance(timestamp, str):
             return timestamp
-            
+
         # If timestamp (float/int), convert to ISO
         try:
             return datetime.fromtimestamp(float(timestamp)).isoformat()
         except (ValueError, TypeError):
             return datetime.now().isoformat()
 
-    def _generate_license_payload(self, license_type: str, duration_days: int = None) -> Dict[str, Any]:
+    def _generate_license_payload(
+        self, license_type: str, duration_days: int = None
+    ) -> Dict[str, Any]:
         """Generate compact license payload data"""
         # Use compact field names and minimal data
         # Don't include machine fingerprint in generation - will be added during activation
         payload = {
             "t": license_type,  # type
             "i": datetime.now().timestamp(),  # issued timestamp (shorter than ISO)
-            "v": 2  # version (integer instead of string)
+            "v": 2,  # version (integer instead of string)
         }
-        
+
         if license_type == "evaluation" and duration_days:
-            payload["x"] = (datetime.now() + timedelta(days=duration_days)).timestamp()  # expiry timestamp
+            payload["x"] = (
+                datetime.now() + timedelta(days=duration_days)
+            ).timestamp()  # expiry timestamp
             payload["d"] = duration_days  # days
-        
+
         return payload
-    
+
     def _sign_license_payload(self, payload: Dict[str, Any]) -> str:
         """Create compact HMAC signature for license payload"""
         # Create canonical string from payload (excluding signature)
-        canonical_data = json.dumps(payload, sort_keys=True, separators=(',', ':'))
-        
+        canonical_data = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+
         # Generate HMAC signature and truncate to 16 chars (64 bits security)
         signature = hmac.new(
-            self._signing_secret.encode('utf-8'),
-            canonical_data.encode('utf-8'),
-            hashlib.sha256
-        ).hexdigest()[:16]  # Truncate for shorter keys
-        
+            self._signing_secret.encode("utf-8"), canonical_data.encode("utf-8"), hashlib.sha256
+        ).hexdigest()[
+            :16
+        ]  # Truncate for shorter keys
+
         return signature
-    
+
     def _encode_license_key(self, payload: Dict[str, Any], signature: str) -> str:
         """Encode license payload and signature into compact opaque license key"""
         # Combine payload and signature with compact structure
-        license_data = {
-            "p": payload,  # payload -> p
-            "s": signature # signature -> s
-        }
-        
+        license_data = {"p": payload, "s": signature}  # payload -> p  # signature -> s
+
         # Convert to compact JSON and base64 encode for opacity
-        json_data = json.dumps(license_data, separators=(',', ':'))
-        encoded_data = base64.b64encode(json_data.encode('utf-8')).decode('ascii')
-        
+        json_data = json.dumps(license_data, separators=(",", ":"))
+        encoded_data = base64.b64encode(json_data.encode("utf-8")).decode("ascii")
+
         # Create final license key with prefix
         license_key = f"TEKMERA-{encoded_data}"
-        
+
         return license_key
-    
+
     def _decode_license_key(self, license_key: str) -> Tuple[bool, str, Dict[str, Any]]:
         """Decode and validate license key"""
         try:
             # Check prefix
             if not license_key.startswith("TEKMERA-"):
                 return False, "Invalid license key format", {}
-            
+
             # Extract encoded data
             encoded_data = license_key[8:]  # Remove "TEKMERA-" prefix
-            
+
             # Base64 decode
             try:
-                json_data = base64.b64decode(encoded_data.encode('ascii')).decode('utf-8')
+                json_data = base64.b64decode(encoded_data.encode("ascii")).decode("utf-8")
                 license_data = json.loads(json_data)
             except (ValueError, json.JSONDecodeError) as e:
                 return False, f"Invalid license key encoding: {str(e)}", {}
-            
+
             # Extract payload and signature (handle both compact and legacy formats)
             payload = license_data.get("p", license_data.get("payload", {}))
             provided_signature = license_data.get("s", license_data.get("signature", ""))
-            
+
             # Verify signature
             expected_signature = self._sign_license_payload(payload)
-            
+
             if not hmac.compare_digest(provided_signature, expected_signature):
                 return False, "License signature verification failed", {}
-            
+
             # Check license format version (handle both compact and legacy)
             version = payload.get("v", payload.get("version", "1.0"))
             if str(version) not in ["2.0", "2"]:
                 return False, f"Unsupported license format version: {version}", {}
-            
+
             # Machine fingerprint verification is now done during activation, not here
             # This allows licenses to be generated without being tied to a specific machine
-            
+
             return True, "License key is valid", payload
-            
+
         except Exception as e:
             return False, f"License validation error: {str(e)}", {}
 
@@ -179,10 +180,10 @@ class SimpleLicenseManager:
         """Validate a cryptographically signed license key"""
         # Use the new cryptographic validation
         success, message, payload = self._decode_license_key(license_key)
-        
+
         if not success:
             return False, message, {}
-        
+
         # Convert compact payload to expected license_data format
         license_type = payload.get("t", payload.get("license_type", "premium"))
         license_data = {
@@ -190,13 +191,17 @@ class SimpleLicenseManager:
             "status": "active",
             "issued_at": self._convert_timestamp_to_iso(payload.get("i", payload.get("issued_at"))),
             "machine_fingerprint": payload.get("m", payload.get("machine_fingerprint", "")),
-            "expiry": self._convert_timestamp_to_iso(payload.get("x")) if payload.get("x") else payload.get("expiry"),
+            "expiry": (
+                self._convert_timestamp_to_iso(payload.get("x"))
+                if payload.get("x")
+                else payload.get("expiry")
+            ),
             "evaluation_days": payload.get("d", payload.get("evaluation_days")),
             "is_evaluation": license_type == "evaluation",
             "license_id": payload.get("lid", payload.get("license_id")),
-            "version": str(payload.get("v", payload.get("version", "2.0")))
+            "version": str(payload.get("v", payload.get("version", "2.0"))),
         }
-        
+
         return True, message, license_data
 
     def activate_license_key(self, license_key: str) -> tuple[bool, str]:
@@ -219,7 +224,9 @@ class SimpleLicenseManager:
 
             self.license_file.write_text(json.dumps(license_data, indent=2))
 
-            license_type = "Paid" if license_data['license_type'] in ["evaluation", "premium"] else "Free"
+            license_type = (
+                "Paid" if license_data["license_type"] in ["evaluation", "premium"] else "Free"
+            )
             return (
                 True,
                 f"License activated successfully!\n\nType: {license_type}\nInstance ID: {license_data['instance_id']}",
@@ -331,13 +338,13 @@ class SimpleLicenseManager:
         """Generate a cryptographically signed evaluation license key"""
         if days <= 0 or days > 365:
             raise ValueError("Evaluation period must be between 1 and 365 days")
-        
+
         # Generate license payload
         payload = self._generate_license_payload("evaluation", duration_days=days)
-        
+
         # Sign the payload
         signature = self._sign_license_payload(payload)
-        
+
         # Encode into opaque license key
         return self._encode_license_key(payload, signature)
 
@@ -345,10 +352,10 @@ class SimpleLicenseManager:
         """Generate a cryptographically signed permanent premium license key"""
         # Generate license payload
         payload = self._generate_license_payload("premium")
-        
+
         # Sign the payload
         signature = self._sign_license_payload(payload)
-        
+
         # Encode into opaque license key
         return self._encode_license_key(payload, signature)
 
@@ -371,7 +378,11 @@ class LicenseManager:
             if info.get("is_evaluation", False):
                 self.license_type = LicenseType.EVALUATION
             elif info["license_type"] in ["premium", "evaluation"]:
-                self.license_type = LicenseType.PREMIUM if info["license_type"] == "premium" else LicenseType.EVALUATION
+                self.license_type = (
+                    LicenseType.PREMIUM
+                    if info["license_type"] == "premium"
+                    else LicenseType.EVALUATION
+                )
             else:
                 self.license_type = LicenseType.FREE
         else:
@@ -442,11 +453,17 @@ class LicenseManager:
                     )
 
         # Show evaluation warnings based on days remaining
-        if info["status"] == "active" and info.get("is_evaluation") and info.get("days_remaining") is not None:
+        if (
+            info["status"] == "active"
+            and info.get("is_evaluation")
+            and info.get("days_remaining") is not None
+        ):
             if console := getattr(self, "console", None):
                 days = info["days_remaining"]
                 if days <= 3:
-                    console.print(f"⚠️  [red]Evaluation license expires in {days} day{'s' if days != 1 else ''}![/red]")
+                    console.print(
+                        f"⚠️  [red]Evaluation license expires in {days} day{'s' if days != 1 else ''}![/red]"
+                    )
                 elif days <= 7:
                     console.print(f"⚠️  [yellow]Evaluation license expires in {days} days[/yellow]")
 

@@ -20,7 +20,7 @@ class LicenseUI:
 
         console.print(f"\n[yellow]🔒 Paid Feature Required[/yellow]")
         console.print(f"[bold]{feature_name}[/bold] requires a paid Tekmera license.")
-        console.print("Upgrade to unlock advanced governance intelligence and AI features.")
+        console.print("Upgrade to unlock AI features and advanced analysis capabilities.")
         console.print("\n[dim]Press Enter to continue...[/dim]")
 
         # Guard for TTY and handle EOFError gracefully
@@ -41,7 +41,9 @@ class LicenseUI:
         console.print("📄 [bold blue]Tekmera License Status[/bold blue]\n")
 
         if license_info["status"] == "active":
-            license_type = "Paid" if license_info.get('license_type') in ["evaluation", "premium"] else "Free"
+            license_type = (
+                "Paid" if license_info.get("license_type") in ["evaluation", "premium"] else "Free"
+            )
             console.print(f"Status: [green]✅ Active ({license_type})[/green]")
             console.print(f"License Key: {license_info['license_key']}")
             console.print(f"Issued To: {license_info['issued_to']}")
@@ -99,7 +101,11 @@ class LicenseUI:
 
             if license_info:
                 console.print(f"\n📋 [bold]License Details:[/bold]")
-                license_type = "Paid" if license_info.get('license_type') in ["evaluation", "premium"] else "Free"
+                license_type = (
+                    "Paid"
+                    if license_info.get("license_type") in ["evaluation", "premium"]
+                    else "Free"
+                )
                 console.print(f"  Type: {license_type}")
                 console.print(f"  License Key: {license_info['license_key']}")
                 console.print(f"  Issued To: {license_info['issued_to']}")
@@ -166,6 +172,4 @@ class LicenseUI:
             )
             console.print("Consider renewing to avoid interruption of paid features.")
         elif days_remaining <= 30:
-            console.print(
-                f"[dim]ℹ️  Your Tekmera license expires in {days_remaining} days.[/dim]"
-            )
+            console.print(f"[dim]ℹ️  Your Tekmera license expires in {days_remaining} days.[/dim]")

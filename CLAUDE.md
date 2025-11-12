@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Tekmera Fusion Explorer is a professional command-line tool for analyzing exported Workfront Fusion blueprint JSON files. It provides comprehensive diagnostic capabilities including interactive exploration, governance auditing, AI-powered insights, and cross-blueprint analysis with a freemium licensing model.
+Tekmera Fusion Explorer is a professional command-line tool for analyzing exported Workfront Fusion blueprint JSON files. It provides comprehensive diagnostic capabilities including interactive exploration, AI-powered insights, and cross-blueprint analysis with a freemium licensing model.
 
 ## Development Commands
 
@@ -74,10 +74,6 @@ pyinstaller --onefile --name tekmera-test-local src/tekmera/__main__.py
   - `flow_tracer.py`: Execution flow tracing
   - `flow_walker.py`: Live scenario walkthrough engine
 
-- **`src/tekmera/governance/`**: Governance auditing system
-  - `checker.py`: Rule engine that processes governance rules
-  - `models.py`: Data models for governance results
-  - `rules/`: Individual governance rule implementations (11 total: 5 free, 6 premium)
 
 - **`src/tekmera/comparison/`**: Blueprint comparison tools
   - `diff_engine.py`: Main diff interface
@@ -98,7 +94,6 @@ pyinstaller --onefile --name tekmera-test-local src/tekmera/__main__.py
 2. **Interactive Menus**: InquirerPy-based menu system with rich formatting
 3. **Feature Gating**: Premium features automatically enabled based on license status
 4. **Recursive Parsing**: Blueprint parser handles nested flows, routes, and error handlers
-5. **Plugin Architecture**: Governance rules are modular and can be extended
 
 ### Blueprint Data Structure
 

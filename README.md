@@ -1,16 +1,15 @@
 # Tekmera Fusion Explorer
 
-A command-line tool for auditing and analyzing Workfront Fusion scenarios.
+A command-line tool for analyzing Workfront Fusion scenarios.
 
-Tekmera processes exported Fusion blueprint JSON files to provide governance auditing, cross-scenario analysis, and AI-powered insights for integration teams managing complex automation portfolios.
+Tekmera processes exported Fusion blueprint JSON files to provide cross-scenario analysis and AI-powered insights for integration teams managing complex automation portfolios.
 
 ## Core Capabilities
 
 **Exploration** - Interactive navigation of scenarios with module-level inspection and search  
-**Governance** - 11 automated rules covering naming conventions, structural integrity, and complexity analysis  
 **AI Insight** - Natural language analysis of business processes, scenario chat, and cross-blueprint impact assessment
 
-Designed for integration developers and Workfront administrators who need systematic approaches to scenario maintenance, change impact analysis, and automation governance at scale.
+Designed for integration developers and Workfront administrators who need systematic approaches to scenario maintenance and change impact analysis at scale.
 
 ## Quick Start
 
@@ -80,41 +79,22 @@ tekmera analyze ./blueprints
 **Cross-Blueprint Search** - Find patterns, fields, and module types across scenario collections  
 **Diff Analysis** - Side-by-side blueprint comparison with change detection
 
-### Governance
-**Free Rules (5)** - Naming conventions, structural validation, connection environment checking  
-**Premium Rules (6)** - Algorithmic complexity analysis, router density metrics, field mapping complexity  
-**Rule Categories** - Naming, Structure, Connection, Size, Complexity, and Field standards
 
 ### AI Insight
 **Business Process Description** - Natural language explanation of scenario functionality  
 **Interactive Scenario Chat** - Persistent conversations with automated search capabilities  
 **Cross-Blueprint Analysis** - Impact assessment and dependency mapping across collections
 
-All AI features require OpenAI API key and Pro license. Premium governance rules require Pro license.
+All AI features require OpenAI API key and Pro license.
 
-## Governance Rules
-
-| Rule ID | Category | Tier | Description |
-|---------|----------|------|-------------|
-| GOV-NAME-001 | Naming | Free | Scenario naming prefix enforcement |
-| GOV-NAME-002 | Naming | Free | Default module label detection |
-| GOV-STRUC-001 | Structure | Free | Router default branch validation |
-| GOV-STRUC-002 | Structure | Free | Orphan module detection |
-| GOV-CONN-001 | Connection | Free | Dev connection in production |
-| GOV-COMP-001 | Complexity | Pro | Flow complexity index |
-| GOV-SIZE-001 | Size | Pro | Functional density analysis |
-| GOV-COMP-002 | Complexity | Pro | Router density metrics |
-| GOV-COMP-003 | Complexity | Pro | Route fan-out analysis |
-| GOV-COMP-004 | Complexity | Pro | Flow depth estimation |
-| GOV-FIELD-003 | Field | Pro | Field mapping complexity |
 
 ## Licensing
 
 **Free**  
-Exploration, basic governance (5 rules), blueprint comparison
+Exploration, blueprint comparison
 
 **Paid** (Evaluation or Permanent)  
-AI features, advanced governance (6 additional rules), live walkthrough
+AI features, live walkthrough
 
 ```bash
 # License activation (evaluation or permanent)
@@ -197,12 +177,6 @@ tekmera analyze ./blueprints
 # Select "Explore Scenario" → Choose scenario → "Explore modules"
 ```
 
-### Governance Auditing  
-```bash
-# Run governance checks
-tekmera analyze ./blueprints
-# Select "Governance Audit" → Choose scenario → Select rule
-```
 
 ### License Activation
 ```bash
@@ -261,7 +235,6 @@ tekmera analyze ./blueprints
 
 - **Features Overview**: See `docs/FEATURES.md` for detailed feature documentation
 - **Licensing Guide**: See `docs/LICENSING.md` for comprehensive licensing documentation
-- **Governance Rules**: Built-in rule descriptions available in governance audit mode
 - **API Reference**: Explore the `src/tekmera/` package structure for API details
 - **Terms of Service**: See `docs/TERMS_OF_SERVICE.md` for user terms
 - **Privacy Policy**: See `docs/PRIVACY_POLICY.md` for data handling information
@@ -270,10 +243,9 @@ tekmera analyze ./blueprints
 
 To extend functionality:
 
-1. **Add governance rules**: Extend `src/tekmera/governance/rules/`
-2. **Enhance analysis**: Modify `src/tekmera/analysis/` modules
-3. **Improve UI**: Update `src/tekmera/interfaces/cli/` interfaces
-4. **Add features**: Integrate with `src/tekmera/config/menu_system.py`
+1. **Enhance analysis**: Modify `src/tekmera/analysis/` modules
+2. **Improve UI**: Update `src/tekmera/interfaces/cli/` interfaces
+3. **Add features**: Integrate with `src/tekmera/config/menu_system.py`
 
 ## Dependencies
 

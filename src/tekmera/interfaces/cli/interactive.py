@@ -15,7 +15,6 @@ from rich.text import Text
 from ...config.menu_system import ExecResult, menu_system
 from ...core.analyzer import BlueprintAnalyzer
 from ...core.parser import BlueprintParser
-from ...governance import GovernanceChecker
 from ...infra.license import license_manager
 from ...reporting.reporter import Reporter
 from .explorer import BlueprintExplorer
@@ -36,10 +35,6 @@ class InteractiveCLI:
         # License is automatically detected from ~/.tekmera/license.json on startup
         # No manual override needed - users activate licenses with 'tekmera license activate'
         self.context = license_manager.get_context()
-
-        # Initialize governance checks in menu system
-        governance_checker = GovernanceChecker()
-        menu_system.add_governance_checks(governance_checker)
 
     def start(self, directory: Path):
         """Start the interactive CLI session."""
@@ -89,7 +84,7 @@ class InteractiveCLI:
                     days = license_info["days_remaining"]
                     license_text += f" - {days} day{'s' if days != 1 else ''} remaining"
             else:
-                license_text = f"Pro ({license_info['edition']})"
+                license_text = "Paid"
         elif license_info["status"] == "expired":
             if license_info.get("is_evaluation", False):
                 license_text = "Free (evaluation expired)"
@@ -178,11 +173,6 @@ class InteractiveCLI:
         self._handle_analyze_all_mode()
         return ExecResult.OK
 
-    def handle_governance_mode(self, ctx: dict, item) -> ExecResult:
-        """Handle governance checking mode."""
-        self._handle_governance_mode()
-        return ExecResult.OK
-
     def handle_diff_mode(self, ctx: dict, item) -> ExecResult:
         """Handle blueprint comparison mode."""
         self._handle_diff_mode()
@@ -241,37 +231,6 @@ class InteractiveCLI:
     def handle_ai_query_mode(self, ctx: dict, item) -> ExecResult:
         """Handle AI landscape analysis mode."""
         self._handle_ai_query_mode()
-        return ExecResult.OK
-
-    def run_governance_check(self, ctx: dict, item) -> ExecResult:
-        """Run a specific governance check using stored scenario context."""
-        check_id = item.metadata.get("check_id")
-        item.metadata.get("check_name")
-
-        # Use stored scenario context instead of re-selecting
-        scenario_key = getattr(self, "_current_governance_scenario", None)
-        if not scenario_key:
-            # Fallback to selection if no stored context
-            scenario_key = self._select_scenario_for_governance()
-            if not scenario_key:
-                return ExecResult.NOOP
-
-        blueprint = self.blueprints[scenario_key]
-        scenario_name = blueprint["scenario_name"]
-        blueprint_data = blueprint["data"]
-
-        # Initialize governance checker and run the specific check
-        governance_checker = GovernanceChecker()
-        try:
-            violations = governance_checker.run_check(check_id, blueprint_data, scenario_name)
-            self._display_governance_results(violations)
-
-            return ExecResult.OK
-
-        except Exception as e:
-            self.console.print(f"[red]Error running governance check: {e}[/red]")
-            input("\nPress Enter to continue...")
-
         return ExecResult.OK
 
     def _handle_explore_mode(self):
@@ -714,22 +673,44 @@ Ensures all customer orders are validated and approved before fulfillment.
 
 Your Output: A concise business-process description for a non-technical business owner."""
 
-                # Get the blueprint JSON data
+                # Get the blueprint JSON data and summarize it for AI
                 blueprint_json = blueprint["data"]
 
-                # Format user prompt
-                user_prompt = f"Your Input: {json.dumps(blueprint_json, indent=2)}"
+                # Use existing summarization method to stay under token limits
+                self.console.print("🔍 [blue]Summarizing scenario data for AI analysis...[/blue]")
+                scenario_summary = self._summarize_scenario_for_ai(blueprint_json, scenario_name)
 
-                # Call OpenAI API
-                response = client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt},
-                    ],
-                    max_tokens=1500,
-                    temperature=0.7,
-                )
+                # Format user prompt with summarized data
+                user_prompt = f"Your Input: {scenario_summary}"
+
+                # Call OpenAI API with retry logic for rate limits
+                self.console.print("🤖 [blue]Generating business process description...[/blue]")
+                max_retries = 3
+                retry_delay = 1
+
+                for attempt in range(max_retries):
+                    try:
+                        response = client.chat.completions.create(
+                            model="gpt-4o-mini",
+                            messages=[
+                                {"role": "system", "content": system_prompt},
+                                {"role": "user", "content": user_prompt},
+                            ],
+                            max_tokens=1500,
+                            temperature=0.7,
+                        )
+                        break  # Success, exit retry loop
+                    except Exception as api_error:
+                        if "rate_limit_exceeded" in str(api_error) and attempt < max_retries - 1:
+                            self.console.print(
+                                f"[yellow]⏳ Rate limit hit, retrying in {retry_delay}s... (attempt {attempt + 1}/{max_retries})[/yellow]"
+                            )
+                            import time
+
+                            time.sleep(retry_delay)
+                            retry_delay *= 2  # Exponential backoff
+                        else:
+                            raise api_error  # Re-raise if not rate limit or final attempt
 
                 # Display the response
                 business_description = response.choices[0].message.content
@@ -749,7 +730,17 @@ Your Output: A concise business-process description for a non-technical business
                 self.console.print(panel)
 
         except Exception as e:
-            self.console.print(f"[red]❌ Error analyzing business process: {str(e)}[/red]")
+            error_msg = str(e)
+            if "rate_limit_exceeded" in error_msg:
+                self.console.print(
+                    f"[red]❌ OpenAI rate limit exceeded. Please try again in a few minutes.[/red]"
+                )
+                if "tokens" in error_msg:
+                    self.console.print(
+                        f"[yellow]💡 The scenario was summarized to reduce token usage, but may still be large.[/yellow]"
+                    )
+            else:
+                self.console.print(f"[red]❌ Error analyzing business process: {error_msg}[/red]")
 
         input("\nPress Enter to continue...")
 
@@ -1413,8 +1404,17 @@ User Question: {question}"""
 
             summary = {"scenario_name": scenario_name, "total_modules": len(modules), "modules": []}
 
-            # Process each module with MORE detail, especially filters
-            for i, module in enumerate(modules[:50]):  # Cap at 50 modules
+            # Adaptive module limit based on scenario size to manage token usage
+            total_modules = len(modules)
+            if total_modules > 100:
+                module_limit = 20  # Very large scenarios: show fewer modules
+            elif total_modules > 50:
+                module_limit = 30  # Large scenarios: moderate detail
+            else:
+                module_limit = 50  # Normal scenarios: full detail
+
+            # Process each module with appropriate detail level
+            for i, module in enumerate(modules[:module_limit]):
                 module_summary = {
                     "id": module.get("id", "unknown"),
                     "type": module.get("module", "unknown"),
@@ -1505,10 +1505,6 @@ User Question: {question}"""
 
                 summary["modules"].append(module_summary)
 
-            # Add truncation notice if needed
-            if len(modules) > 50:
-                summary["note"] = f"Showing first 50 of {len(modules)} modules"
-
             # Add scenario-level metadata
             if "metadata" in blueprint_data:
                 metadata = blueprint_data["metadata"]
@@ -1516,6 +1512,12 @@ User Question: {question}"""
                     orphan_count = len(metadata["designer"]["orphans"])
                     if orphan_count > 0:
                         summary["orphaned_modules"] = orphan_count
+
+            # Add truncation notice for large scenarios
+            if total_modules > module_limit:
+                summary["note"] = (
+                    f"Showing first {module_limit} of {total_modules} modules for token efficiency"
+                )
 
             return json.dumps(summary, indent=2)
 
@@ -1527,163 +1529,12 @@ User Question: {question}"""
     "raw_data_available": true
 }}"""
 
-    def _handle_governance_mode(self):
-        """Handle governance checking mode."""
-        while True:
-            try:
-                # Step 1: List all scenarios
-                scenario_key = self._select_scenario_for_governance()
-                if not scenario_key:
-                    break
-
-                # Step 2: Run governance checks for selected scenario
-                continue_with_scenario = True
-                while continue_with_scenario:
-                    action = self._run_governance_checks(scenario_key)
-                    if action == "different_scenario":
-                        continue_with_scenario = False
-                    elif action == "main_menu":
-                        return
-                    # If action == "another_check", continue the loop
-
-            except KeyboardInterrupt:
-                break
-
-    def _select_scenario_for_governance(self) -> Optional[str]:
-        """Select a scenario for governance checking."""
-        self.console.print("\n⚖️ [bold blue]Governance Check[/bold blue]")
-        self.console.print("Select a scenario to audit for compliance with governance rules.\n")
-
-        if len(self.blueprints) == 1:
-            # Only one scenario, auto-select it
-            return list(self.blueprints.keys())[0]
-
-        return self._navigate_scenario_folders("governance checking")
-
-    def _run_governance_checks(self, scenario_key: str) -> str:
-        """Run governance checks on a scenario using standardized menu system."""
-        blueprint = self.blueprints[scenario_key]
-        scenario_name = blueprint["scenario_name"]
-
-        # Store scenario context for the handlers
-        self._current_governance_scenario = scenario_key
-
-        while True:
-            # Step 2: List available governance checks using menu system
-            self.console.print(f"\n⚖️ [bold]Governance Checks for: {scenario_name}[/bold]\n")
-
-            governance_item = menu_system.get_item("main.governance")
-            if not governance_item or not governance_item.children:
-                self.console.print("[red]No governance checks available[/red]")
-                return "main_menu"
-
-            has_premium = license_manager.has_premium()
-            governance_children = sorted(governance_item.children, key=lambda x: x.order)
-            choices = menu_system.to_inquirer_choices(governance_children, has_premium)
-
-            # Add navigation options
-            choices.extend(
-                [
-                    Separator(),
-                    {"name": "← Select different scenario", "value": {"id": "different_scenario"}},
-                    {"name": "← Return to main menu", "value": {"id": "main_menu"}},
-                ]
-            )
-
-            selection = inquirer.select(
-                message="Which check would you like to run?", choices=choices
-            ).execute()
-
-            if selection.get("id") in ["different_scenario", "main_menu"]:
-                return selection["id"]
-
-            # Use menu system for standardized execution and enforcement
-            try:
-                result = menu_system.resolve_and_execute(selection, self.context, self)
-                if result == ExecResult.PREMIUM_REQUIRED:
-                    continue  # Premium prompt shown, go back to selection
-
-                # After running check, ask for next action
-                next_action = self._get_governance_next_action()
-                if next_action == "another_check":
-                    continue
-                elif next_action == "different_scenario":
-                    return "different_scenario"
-                elif next_action == "main_menu":
-                    return "main_menu"
-
-            except Exception as e:
-                self.console.print(f"[red]Error running governance check: {e}[/red]")
-                input("\nPress Enter to continue...")
-
-    def _display_governance_results(self, violations: List):
-        """Display governance check results."""
-        self.console.print()
-
-        if not violations:
-            self.console.print("✅ [bold green]No results returned![/bold green]")
-            self.console.print("[green]This check did not return any results.[/green]")
-        else:
-            # Separate violations from informational results
-            actual_violations = [v for v in violations if getattr(v, "is_violation", True)]
-            informational_results = [v for v in violations if not getattr(v, "is_violation", True)]
-
-            # Display informational results first
-            for result in informational_results:
-                self.console.print(f"[bold]Rule ID:[/bold] {result.rule_id}")
-                self.console.print(f"[bold]Rule Title:[/bold] {result.rule_title}")
-                if hasattr(result, "rule_description") and result.rule_description:
-                    self.console.print(f"[bold]How it works:[/bold] {result.rule_description}")
-                    self.console.print()  # Add line break
-                self.console.print(f"[bold]Result:[/bold] {result.message}")
-                self.console.print(f"[bold]Status:[/bold] {result.suggested_fix}")
-                if hasattr(result, "module_id") and result.module_id:
-                    self.console.print(f"[dim]Module ID: {result.module_id}[/dim]")
-                self.console.print()
-
-            # Display violations
-            if actual_violations:
-                if informational_results:
-                    self.console.print(
-                        f"❌ [bold red]{len(actual_violations)} violation(s) also found:[/bold red]\n"
-                    )
-                else:
-                    self.console.print(
-                        f"❌ [bold red]{len(actual_violations)} violation(s) found:[/bold red]\n"
-                    )
-
-                for violation in actual_violations:
-                    self.console.print(f"[bold]Rule ID:[/bold] {violation.rule_id}")
-                    self.console.print(f"[bold]Rule Title:[/bold] {violation.rule_title}")
-                    if hasattr(violation, "rule_description") and violation.rule_description:
-                        self.console.print(
-                            f"[bold]How it works:[/bold] {violation.rule_description}"
-                        )
-                        self.console.print()  # Add line break
-                    self.console.print(f"[bold]Result:[/bold] {violation.message}")
-                    self.console.print(f"[bold]Suggested fix:[/bold] {violation.suggested_fix}")
-                    if hasattr(violation, "module_id") and violation.module_id:
-                        self.console.print(f"[dim]Module ID: {violation.module_id}[/dim]")
-                    self.console.print()
-
-        input("Press Enter to continue...")
-
     def _handle_diff_mode(self):
         """Handle blueprint comparison mode."""
         from ...comparison.diff_engine import FusionDiff
 
         diff_tool = FusionDiff()
         diff_tool.run(self.directory_path)
-
-    def _get_governance_next_action(self) -> str:
-        """Get next action after showing governance results."""
-        choices = [
-            {"name": "1. Run another check on this scenario", "value": "another_check"},
-            {"name": "2. Select a different scenario", "value": "different_scenario"},
-            {"name": "3. Return to the main menu", "value": "main_menu"},
-        ]
-
-        return inquirer.select(message="Would you like to:", choices=choices).execute()
 
     def _handle_ai_query_mode(self):
         """Handle AI landscape analysis for cross-blueprint business queries."""

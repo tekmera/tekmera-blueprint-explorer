@@ -13,7 +13,7 @@ These scripts allow you to quickly test Tekmera with different license types dur
 - Clears any existing license
 - Runs in FREE mode with basic features only
 - Tests free-tier functionality and upgrade prompts
-- Features: Basic exploration, 5 governance rules, blueprint comparison
+- Features: Basic exploration, blueprint comparison
 
 ### ⏰ Evaluation Mode
 ```bash

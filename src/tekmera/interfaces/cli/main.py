@@ -21,44 +21,38 @@ def cli(ctx):
     Tekmera Fusion Explorer - Professional CLI for Workfront Fusion blueprint analysis
 
     Analyze exported Fusion blueprint JSON files with comprehensive diagnostic capabilities:
-    
+
     \b
     🔍 SCENARIO EXPLORATION
     • Interactive module exploration and search within scenarios
     • Live scenario walkthrough with step-by-step execution flow (Pro)
     • AI-powered business process descriptions (Pro)
-    
+
     \b
-    📊 BLUEPRINT ANALYSIS  
+    📊 BLUEPRINT ANALYSIS
     • Static analysis reports with module counts and field analysis
     • Cross-blueprint search and pattern detection (Pro)
     • Cross-blueprint AI queries for organizational insights (Pro)
-    
-    \b
-    ⚖️ GOVERNANCE AUDITING
-    • 5 essential governance checks (naming, structure, connections) - FREE
-    • 6 advanced complexity and density analysis checks - PRO
-    • Compliance reporting for operational standards
-    
+
     \b
     🔄 BLUEPRINT COMPARISON
     • Side-by-side scenario comparison
     • Functional difference identification
     • Change impact analysis
-    
+
     \b
     💼 LICENSING MODEL
-    • FREE EDITION: Core exploration, basic governance, scenario comparison
-    • PRO EDITION: AI features, cross-blueprint analysis, advanced governance
-    • Activate Pro: 'tekmera license activate <key>' 
+    • FREE EDITION: Core exploration, scenario comparison
+    • PRO EDITION: AI features, cross-blueprint analysis
+    • Activate Pro: 'tekmera license activate <key>'
     • Check status: 'tekmera license status'
-    
+
     \b
     EXAMPLES:
       tekmera analyze ./blueprints          # Launch interactive analysis
-      tekmera license status               # Check current license  
+      tekmera license status               # Check current license
       tekmera license activate ABC-123     # Activate Pro license
-    
+
     Visit https://tekmera.com for Pro licenses and documentation.
     """
     ctx.ensure_object(dict)
@@ -72,21 +66,20 @@ def analyze(directory: str):
 
     Recursively discovers and analyzes all .json blueprint files in DIRECTORY
     and its subdirectories. Launches an interactive menu system providing:
-    
+
     \b
     • Scenario exploration and module-level inspection
     • Cross-blueprint search and analysis (Pro)
-    • Governance auditing with 11 available checks (5 free + 6 Pro)
     • Blueprint comparison and diff analysis
     • AI-powered insights and business process descriptions (Pro)
-    
+
     The interactive interface automatically detects your license status
     and enables appropriate features.
-    
+
     \b
     DIRECTORY: Path to directory containing exported Fusion blueprint JSON files
                Supports nested folder structures (e.g., client/environment/scenario)
-    
+
     \b
     EXAMPLES:
       tekmera analyze ./fusion-blueprints     # Analyze all blueprints
@@ -104,22 +97,21 @@ def analyze(directory: str):
 def license():
     """
     Manage Tekmera Pro licenses and subscription status
-    
+
     \b
     PRO FEATURES UNLOCKED:
     • Cross-blueprint search and organizational analysis
     • AI-powered business process descriptions (requires OpenAI API key)
     • Live scenario walkthrough with step-by-step execution
-    • Advanced governance checks (6 complexity/density metrics)
     • Cross-blueprint AI queries for strategic insights
-    
+
     \b
     LICENSE MANAGEMENT:
       tekmera license status          # Check current license status
       tekmera license activate <key>  # Activate Pro license with key
-      tekmera license deactivate      # Revert to Free edition
+      tekmera license deactivate      # Revert to Free
       tekmera license local           # Enable local development mode
-    
+
     Visit https://tekmera.com to purchase Pro licenses.
     """
 
@@ -129,11 +121,11 @@ def license():
 def activate(license_key: str):
     """
     Activate Tekmera Pro license with your license key
-    
+
     LICENSE_KEY: Your Pro license key (format: ABC-DEF-123)
-    
-    Unlocks all Pro features including cross-blueprint analysis,
-    AI insights, and advanced governance checks.
+
+    Unlocks all Pro features including cross-blueprint analysis
+    and AI insights.
     """
     console = Console()
 
@@ -153,7 +145,7 @@ def activate(license_key: str):
 def local():
     """
     Show instructions for enabling local Pro mode
-    
+
     Local Pro mode bypasses license validation for development
     and testing purposes. Set TEKMERA_LOCAL_PRO=true environment
     variable to enable.
@@ -178,8 +170,8 @@ def local():
 @license.command()
 def deactivate():
     """
-    Deactivate Pro license and revert to Free edition
-    
+    Deactivate Pro license and revert to Free
+
     Removes stored license information and reverts to Free tier.
     You can reactivate anytime with 'tekmera license activate <key>'.
     """
@@ -201,7 +193,7 @@ def deactivate():
 def status():
     """
     Display current license status and feature availability
-    
+
     Shows active license type (Free/Pro), expiration date,
     and which features are currently available.
     """

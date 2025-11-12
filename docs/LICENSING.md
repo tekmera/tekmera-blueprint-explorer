@@ -28,8 +28,8 @@ Enable Tekmera to distribute and manage **paid licenses** for the Fusion Explore
 
 Tekmera Fusion Explorer uses a simple two-tier licensing model:
 
-- **Free:** Basic exploration, governance rules (5), and blueprint comparison
-- **Paid:** Permanent or evaluation license with all features including AI analysis and advanced governance
+- **Free:** Basic exploration and blueprint comparison
+- **Paid:** Permanent or evaluation license with all features including AI analysis and cross-blueprint search
 
 ### Core Principles
 
@@ -46,7 +46,7 @@ Tekmera Fusion Explorer uses a simple two-tier licensing model:
 
 ### Free License
 - Always available, no key required
-- Includes basic exploration, governance rules (5), and blueprint comparison
+- Includes basic exploration and blueprint comparison
 - Perfect for evaluation and basic use cases
 
 ### Evaluation License
@@ -267,7 +267,7 @@ from tekmera.infra.license import LicenseType
 
 # Check if user can access paid features
 if license_manager.can_access_feature(LicenseType.PREMIUM):
-    # Enable AI features, advanced governance, etc.
+    # Enable AI features, cross-blueprint search, etc.
     pass
 ```
 
