@@ -1,113 +1,117 @@
 # Tekmera Fusion Explorer
 
-A command-line tool for analyzing Workfront Fusion scenarios.
+**Tekmera Fusion Explorer** is a command-line intelligence tool for **Workfront Fusion** blueprints.  
+It gives integration teams deep visibility into complex automation portfolios — enabling rapid exploration, search, and analysis without opening Fusion.
 
-Tekmera processes exported Fusion blueprint JSON files to provide cross-scenario analysis and AI-powered insights for integration teams managing complex automation portfolios.
+Built for architects, developers, and administrators managing dozens or hundreds of scenarios, Tekmera turns exported blueprints into a **structured, queryable knowledge base** that reveals how your automation system actually behaves.
 
-## Core Capabilities
+## Core Focus
 
-**Exploration** - Interactive navigation of scenarios with module-level inspection and search  
-**AI Insight** - Natural language analysis of business processes, scenario chat, and cross-blueprint impact assessment
+**Exploration** — Step through scenarios module-by-module, trace execution paths, and inspect parameters in context.
 
-Designed for integration developers and Workfront administrators who need systematic approaches to scenario maintenance and change impact analysis at scale.
+**Search and Analytics** — Search fields, modules, or text across all blueprints, identify usage patterns, and surface architectural statistics.
+
+**AI Insight** — Ask natural-language questions about scenarios, generate process summaries, and run cross-blueprint reasoning for impact or dependency analysis.
+
+Tekmera replaces manual inspection with structured, high-speed insight into how your automation landscape behaves.
 
 ## Quick Start
 
 ```bash
-# Setup
+# 1. Setup (one-time)
 ./scripts/setup-dev.sh
 source venv/bin/activate
 
-# Analyze blueprints
+# 2. Analyze your blueprints
 tekmera analyze ./blueprints
+
+# 3. Start exploring!
+# → Select "Explore Scenario" for detailed analysis
+# → Select "Analyze All Blueprints" for cross-scenario insights
 ```
 
 ## Installation
 
+### Automated Setup (Recommended)
 ```bash
-# Automated setup
-./scripts/setup-dev.sh
+./scripts/setup-dev.sh  # Handles everything automatically
+```
 
-# Manual installation
+### Manual Installation
+```bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 pip install -e .
 ```
 
-## Usage
+## Usage Patterns
 
 ```bash
-# Analyze blueprint directory
+# Interactive analysis of blueprint directory
 tekmera analyze /path/to/blueprints/
-```
 
-## License Installation
-
-Tekmera uses simple license key activation for premium features:
-
-### Check Current License
-```bash
+# Check license status and activate Pro features
 tekmera license status
+tekmera license activate YOUR-LICENSE-KEY
 ```
 
-### Install Evaluation License (30-day trial)
-```bash
-tekmera license activate TEKMERA-eyJwYXlsb2FkIjp7ImxpY2Vuc2VfdHlwZSI6ImV2YWx1YXRpb24iLCJlZGl0aW9uIjoicHJvIiwiZXhwaXJ5IjoiMjAyNC0wMi0xNVQxMDozMDowMC4wMDAwMDAiLCJldmFsdWF0aW9uX2RheXMiOjMwLCJpc19ldmFsdWF0aW9uIjp0cnVlLCJpc3N1ZWRfYXQiOiIyMDI0LTAxLTE2VDEwOjMwOjAwLjAwMDAwMCIsIm1hY2hpbmVfZmluZ2VycHJpbnQiOiJhMWIyYzNkNGU1ZjZnN2g4IiwibGljZW5zZV9pZCI6ImFiY2RlZjEyLTM0NTYtNzg5MC1hYmNkLWVmMTIzNDU2Nzg5MCIsInZlcnNpb24iOiIyLjAifSwic2lnbmF0dXJlIjoiYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MCJ9
-```
+## Core Features
 
-### Install Premium License (permanent)
-```bash
-tekmera license activate TEKMERA-eyJwYXlsb2FkIjp7ImxpY2Vuc2VfdHlwZSI6InByZW1pdW0iLCJlZGl0aW9uIjoicHJvIiwiZXhwaXJ5IjpudWxsLCJpc19ldmFsdWF0aW9uIjpmYWxzZSwiaXNzdWVkX2F0IjoiMjAyNC0wMS0xNlQxMDozMDowMC4wMDAwMDAiLCJtYWNoaW5lX2ZpbmdlcnByaW50IjoiYTFiMmMzZDRlNWY2ZzdoOCIsImxpY2Vuc2VfaWQiOiJhYmNkZWYxMi0zNDU2LTc4OTAtYWJjZC1lZjEyMzQ1Njc4OTAiLCJ2ZXJzaW9uIjoiMi4wIn0sInNpZ25hdHVyZSI6IjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTAifQ==
-```
+### 🔍 Interactive Exploration
+- **Module Inspector** - Navigate scenarios module-by-module with rich parameter viewing
+- **Smart Search** - Find fields, module types, and text patterns across all blueprints
+- **Blueprint Comparison** - Side-by-side diff analysis with change detection
 
-### Remove License
+### 🤖 AI-Powered Analysis *(Pro)*
+- **Business Process Descriptions** - Transform technical flows into readable business narratives
+- **Interactive Scenario Chat** - Ask questions about specific scenarios with persistent conversation history
+- **Cross-Blueprint Intelligence** - Analyze patterns and dependencies across entire blueprint collections
+
+### 📊 Portfolio Insights *(Pro)*
+- **Impact Assessment** - Understand downstream effects of proposed changes
+- **Field Usage Analytics** - Track custom field adoption and identify optimization opportunities
+- **Connection Analysis** - Map integration touchpoints and environment configurations
+
+## Licensing & Pro Features
+
+### Free Edition
+✅ Interactive scenario exploration and module inspection  
+✅ Blueprint comparison and diff analysis  
+✅ Basic search across all blueprints
+
+### Pro Edition
+🚀 **AI-Powered Business Process Analysis** - Natural language explanations of technical workflows  
+🚀 **Interactive Scenario Chat** - Ask detailed questions with persistent conversation history  
+🚀 **Cross-Blueprint AI Intelligence** - Strategic insights across entire blueprint collections  
+🚀 **Live Scenario Walkthrough** - Step-by-step execution flow visualization
+
+**Requirements for AI Features**: OpenAI API key + Pro license
+
+### License Management
+
 ```bash
+# Check current status
+tekmera license status
+
+# Activate 30-day trial
+tekmera license activate YOUR-TRIAL-KEY
+
+# Activate permanent Pro license
+tekmera license activate YOUR-PRO-LICENSE-KEY
+
+# Deactivate (revert to Free)
 tekmera license deactivate
 ```
 
-### Development Mode (all features enabled)
+### AI Setup (Pro License Required)
 ```bash
-export TEKMERA_LOCAL_PRO=true
-tekmera analyze ./blueprints
+# Set OpenAI API key for AI features
+export OPENAI_API_KEY="your-openai-api-key"
+
+# For persistent setup, add to your shell profile:
+echo 'export OPENAI_API_KEY="your-key"' >> ~/.bashrc
 ```
-
-## Features
-
-### Exploration
-**Scenario Navigation** - Module-by-module inspection with parameter viewing and JSON export  
-**Cross-Blueprint Search** - Find patterns, fields, and module types across scenario collections  
-**Diff Analysis** - Side-by-side blueprint comparison with change detection
-
-
-### AI Insight
-**Business Process Description** - Natural language explanation of scenario functionality  
-**Interactive Scenario Chat** - Persistent conversations with automated search capabilities  
-**Cross-Blueprint Analysis** - Impact assessment and dependency mapping across collections
-
-All AI features require OpenAI API key and Pro license.
-
-
-## Licensing
-
-**Free**  
-Exploration, blueprint comparison
-
-**Paid** (Evaluation or Permanent)  
-AI features, live walkthrough
-
-```bash
-# License activation (evaluation or permanent)
-tekmera license status
-tekmera license activate TEKMERA-eyJwYXlsb2FkIjp7ImxpY2Vuc2VfdHlwZSI6ImV2YWx1YXRpb24iLCJlZGl0aW9uIjoicHJvIiwiZXhwaXJ5IjoiMjAyNC0wMi0xNVQxMDozMDowMC4wMDAwMDAiLCJldmFsdWF0aW9uX2RheXMiOjMwfQ  # 30-day trial
-tekmera license activate TEKMERA-eyJwYXlsb2FkIjp7ImxpY2Vuc2VfdHlwZSI6InByZW1pdW0iLCJlZGl0aW9uIjoicHJvIiwiZXhwaXJ5IjpudWxsfQ  # Permanent paid license
-
-# Development mode (all features enabled)
-export TEKMERA_LOCAL_PRO=true
-```
-
-**AI Requirements**  
-Set `OPENAI_API_KEY` environment variable for AI features (paid license required)
 
 ## Blueprint Structure
 
@@ -158,111 +162,66 @@ Also supports diff blueprint format:
 ### Analytics
 - Field usage rankings
 - Module type distribution
-- Inconsistent naming detection
 - Connection environment analysis
 
-## Getting Started Examples
+## Common Use Cases
 
-### Quick Analysis
+### 📋 Documentation & Audit
 ```bash
-# Generate a static report for all blueprints
 tekmera analyze ./blueprints
-# Select "Analyze All Blueprints" → "Generate static analysis report"
+# → "Analyze All Blueprints" → "Generate static analysis report"
+# Creates comprehensive module counts, field usage, and connection summaries
 ```
 
-### Interactive Exploration
+### 🔍 Troubleshooting & Investigation  
 ```bash
-# Explore a specific scenario in detail
 tekmera analyze ./blueprints
-# Select "Explore Scenario" → Choose scenario → "Explore modules"
+# → "Explore Scenario" → Choose problematic scenario → "Explore modules"
+# Navigate module-by-module to inspect parameters and mappings
 ```
 
-
-### License Activation
+### 🤖 Business Process Documentation *(Pro)*
 ```bash
-# Activate evaluation license (30-day trial) 
-tekmera license activate TEKMERA-eyJwYXlsb2FkIjp7ImxpY2Vuc2VfdHlwZSI6ImV2YWx1YXRpb24iLCJlZGl0aW9uIjoicHJvIiwiZXhwaXJ5IjoiMjAyNC0wMi0xNVQxMDozMDowMC4wMDAwMDAiLCJldmFsdWF0aW9uX2RheXMiOjMwfQ
-
-# Activate permanent paid license
-tekmera license activate TEKMERA-eyJwYXlsb2FkIjp7ImxpY2Vuc2VfdHlwZSI6InByZW1pdW0iLCJlZGl0aW9uIjoicHJvIiwiZXhwaXJ5IjpudWxsfQ
-
-# Check activation status
-tekmera license status
-
-# Paid features now work automatically
+export OPENAI_API_KEY="your-key"
 tekmera analyze ./blueprints
+# → "Explore Scenario" → Choose scenario → "Describe Business Process"
+# AI generates business-friendly explanations of technical workflows
 ```
 
-### Paid AI Analysis
+### 💬 Deep Scenario Analysis *(Pro)*
 ```bash
-# Set up OpenAI API key for AI features
-export OPENAI_API_KEY="your-key-here"
 tekmera analyze ./blueprints
-
-# AI-powered business process description
-# Select "Explore Scenario" → Choose scenario → "Describe Business Process"
-
-# Interactive AI chat about scenarios  
-# Select "Explore Scenario" → Choose scenario → "Ask AI Question"
-
-# Cross-blueprint AI analysis
-# Select "Analyze All Blueprints" → "Cross-Blueprint AI Query"
+# → "Explore Scenario" → Choose scenario → "Ask AI Question"
+# Interactive chat with persistent history: "How does this handle approvals?"
 ```
 
-### AI Features Overview
+### 🌐 Cross-Blueprint Intelligence *(Pro)*
 ```bash
-# The AI features provide different levels of analysis:
-
-# 1. Business Process Description (One-time analysis)
-#    - Generates comprehensive business process overview
-#    - Explains what the scenario does in business terms
-#    - Perfect for documentation and stakeholder communication
-
-# 2. AI Scenario Chat (Interactive conversation)
-#    - Persistent chat history with conversation management
-#    - AI actively searches scenario for specific details
-#    - Ask follow-up questions and dive deeper
-#    - Perfect for detailed investigation and troubleshooting
-
-# 3. Cross-Blueprint AI Analysis (Collection-wide insights)
-#    - Analyzes patterns across all scenarios in the folder
-#    - Quantifies business impact and identifies dependencies
-#    - AI searches across entire blueprint collection
-#    - Perfect for change impact analysis and governance
+tekmera analyze ./blueprints
+# → "Analyze All Blueprints" → "Cross-Blueprint AI Query"  
+# Ask: "Which scenarios would break if I change the 'status' field?"
 ```
 
-## Documentation
+## System Requirements
 
-- **Features Overview**: See `docs/FEATURES.md` for detailed feature documentation
-- **Licensing Guide**: See `docs/LICENSING.md` for comprehensive licensing documentation
-- **API Reference**: Explore the `src/tekmera/` package structure for API details
-- **Terms of Service**: See `docs/TERMS_OF_SERVICE.md` for user terms
-- **Privacy Policy**: See `docs/PRIVACY_POLICY.md` for data handling information
+- **Python**: 3.8+ with virtual environment support
+- **Platform**: macOS, Linux, Windows (WSL recommended)  
+- **Blueprints**: Workfront Fusion JSON exports from any environment
+- **AI Features**: OpenAI API key (GPT-4 recommended for best results)
 
-## Contributing
+## Technical Details
 
-To extend functionality:
+**Built With**: Python, Click, Rich, InquirerPy  
+**Architecture**: Modular CLI with plugin-based analysis engines  
+**Performance**: Handles 100+ scenarios efficiently with smart caching  
+**Security**: Cryptographically signed licenses with machine binding
 
-1. **Enhance analysis**: Modify `src/tekmera/analysis/` modules
-2. **Improve UI**: Update `src/tekmera/interfaces/cli/` interfaces
-3. **Add features**: Integrate with `src/tekmera/config/menu_system.py`
+## Documentation & Support
 
-## Dependencies
+📚 **Comprehensive Docs**: `docs/FEATURES.md` • `docs/LICENSING.md`  
+🛡️ **Legal**: `docs/TERMS_OF_SERVICE.md` • `docs/PRIVACY_POLICY.md`  
+🔧 **Development**: See `src/tekmera/` for API reference
 
-- **click**: Command-line interface framework
-- **InquirerPy**: Interactive terminal prompts and menus
-- **rich**: Rich text formatting and syntax highlighting  
-- **openai**: AI-powered business process analysis (premium features)
+---
 
-## Requirements
-
-- Python 3.8+
-- Virtual environment (recommended)
-- Workfront Fusion blueprint JSON exports
-- OpenAI API key (optional, for premium AI features)
-
-## Version
-
-Current version: 0.1.0
-
-Install the package and use `tekmera --version` to check your installed version.
+**Version 0.1.0** • [Get Pro License](https://tekmera.com) • [Report Issues](https://github.com/tekmera/issues)
