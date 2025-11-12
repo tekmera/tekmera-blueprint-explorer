@@ -178,6 +178,17 @@ class MenuSystem:
             action="handle_search_mode",
             license_required=LicenseType.PREMIUM,
             order=2,
+        )
+
+        analyze_ai_query = MenuItem(
+            id="analyze.ai_query",
+            label="Cross-Blueprint AI Query",
+            display_label="🤖 Cross-Blueprint AI Query",
+            description="Ask AI questions about patterns across all blueprints in this folder",
+            action="handle_ai_query_mode",
+            license_required=LicenseType.PREMIUM,
+            enabled_if=openai_api_available,
+            order=3,
             separator_after=True,
         )
 
@@ -188,6 +199,7 @@ class MenuSystem:
 
         main_analyze.add_child(analyze_report)
         main_analyze.add_child(analyze_search)
+        main_analyze.add_child(analyze_ai_query)
 
         # 1.3 Governance Audit Submenu - Static governance checks
         # Basic/Free governance checks

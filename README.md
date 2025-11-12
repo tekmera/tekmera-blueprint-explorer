@@ -41,12 +41,15 @@ The `tekmera` command provides a centralized menu system with feature gating:
 tekmera analyze /path/to/blueprints/
 tekmera /path/to/blueprints/              # Backward compatibility
 
-# Premium features automatically enabled with active license
-
 # License management
-tekmera license status                    # Check current license
-tekmera license activate --file license.json
-tekmera license deactivate
+tekmera license status                    # Check current license status
+tekmera license activate TEKMERA-PRO-STANDARD-ABC123  # Activate license key
+tekmera license deactivate               # Deactivate current license
+tekmera license local                    # Info about local pro mode
+
+# Local development - enable pro features without license
+export TEKMERA_LOCAL_PRO=true
+tekmera ./blueprints                     # Pro features now enabled
 
 # General commands
 tekmera --version                         # Show version info
@@ -194,31 +197,59 @@ export OPENAI_API_KEY="your-key-here"
 tekmera analyze ./blueprints
 ```
 
+## 🔐 Licensing & Premium Features
+
+Tekmera Fusion Explorer includes both free and premium features with a simple licensing system.
+
+### Free Features
+- Basic scenario exploration and module analysis
+- Static analysis reports  
+- 5 basic governance rules
+- Blueprint comparison
+
+### Premium Features
+- Live scenario walkthrough with AI insights
+- Cross-blueprint search capabilities  
+- 6 advanced governance rules (complexity analysis, etc.)
+- AI-powered business process descriptions
+- **Cross-Blueprint AI Query**: Ask business questions across all scenarios
+
+#### Example AI Business Queries
+```
+• "Which scenarios use Workfront Proof and how do they use it?"
+• "What would be the impact of changing the 'status' field name?"
+• "Which integrations connect Salesforce to other systems?"  
+• "How many scenarios would be affected by disabling Slack notifications?"
+• "Find all scenarios that process customer data and identify data flows"
+```
+
 ### License Management
 ```bash
 # Check current license status
 tekmera license status
 
-# Activate a Pro license (after purchase)
-tekmera license activate --file /path/to/license.json
+# Activate a Pro license key
+tekmera license activate TEKMERA-PRO-STANDARD-ABC123DEF456
 
 # Deactivate current license (revert to free)
 tekmera license deactivate
 
-# With active Pro license, premium features are automatically enabled
-tekmera analyze ./blueprints  # Automatically uses Pro features if licensed
+# Get info about local development mode
+tekmera license local
 ```
 
-### License Generation (Development/Testing)
+### Local Development Mode
+For development and testing, you can enable all pro features locally:
+
 ```bash
-# Generate a test license (30 days)
-python3 scripts/generate_license.py generate --issued-to "Test User" --days 30
+# Enable local pro mode
+export TEKMERA_LOCAL_PRO=true
 
-# Generate a trial license for customers
-python3 scripts/generate_license.py trial --name "Customer" --email "user@company.com" --trial-days 30
+# Add to shell profile to persist
+echo "export TEKMERA_LOCAL_PRO=true" >> ~/.zshrc  # or ~/.bashrc
 
-# Generate permanent license
-python3 scripts/generate_license.py generate --issued-to "Permanent User" --days 0
+# Now all pro features are available
+tekmera analyze ./blueprints
 ```
 
 ### Governance Auditing

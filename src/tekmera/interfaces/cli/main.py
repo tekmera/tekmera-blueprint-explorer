@@ -65,6 +65,26 @@ def activate(license_key: str):
 
 
 @license.command()
+def local():
+    """Enable local pro mode for development/testing"""
+    console = Console()
+
+    console.print("🛠️  [bold blue]Local Pro Mode[/bold blue]\n")
+    console.print("To enable local pro mode, set the environment variable:")
+    console.print("\n[bold green]export TEKMERA_LOCAL_PRO=true[/bold green]\n")
+    console.print("This bypasses license validation for local development.")
+    console.print("Add to your shell profile (.bashrc, .zshrc) to persist.")
+
+    # Show current status
+    import os
+
+    if os.getenv("TEKMERA_LOCAL_PRO", "").lower() in ["true", "1", "yes", "on"]:
+        console.print("\n✅ [green]Local pro mode is currently [bold]ENABLED[/bold][/green]")
+    else:
+        console.print("\n❌ [yellow]Local pro mode is currently [bold]DISABLED[/bold][/yellow]")
+
+
+@license.command()
 def deactivate():
     """Deactivate current license (revert to free edition)"""
     console = Console()

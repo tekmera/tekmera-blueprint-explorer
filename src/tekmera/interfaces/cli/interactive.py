@@ -221,6 +221,11 @@ class InteractiveCLI:
         self._handle_search_mode()
         return ExecResult.OK
 
+    def handle_ai_query_mode(self, ctx: dict, item) -> ExecResult:
+        """Handle AI landscape analysis mode."""
+        self._handle_ai_query_mode()
+        return ExecResult.OK
+
     def run_governance_check(self, ctx: dict, item) -> ExecResult:
         """Run a specific governance check using stored scenario context."""
         check_id = item.metadata.get("check_id")
@@ -315,7 +320,11 @@ class InteractiveCLI:
     def _execute_analysis_action(self, action: str) -> bool:
         """Execute analysis action with centralized license enforcement."""
         # Map actions to menu item IDs
-        action_to_menu_id = {"static_report": "analyze.report", "cross_search": "analyze.search"}
+        action_to_menu_id = {
+            "static_report": "analyze.report", 
+            "cross_search": "analyze.search",
+            "ai_query": "analyze.ai_query"
+        }
 
         menu_id = action_to_menu_id.get(action)
         if not menu_id:
@@ -534,7 +543,11 @@ class InteractiveCLI:
         analyze_children = menu_system.get_children("main.analyze")
 
         # Map menu items to action values
-        action_map = {"analyze.report": "static_report", "analyze.search": "cross_search"}
+        action_map = {
+            "analyze.report": "static_report", 
+            "analyze.search": "cross_search",
+            "analyze.ai_query": "ai_query"
+        }
 
         choices = []
         for item in sorted(analyze_children, key=lambda x: x.order):
@@ -878,3 +891,94 @@ Your Output: A concise business-process description for a non-technical business
         ]
 
         return inquirer.select(message="Would you like to:", choices=choices).execute()
+
+    def _handle_ai_query_mode(self):
+        """Handle AI landscape analysis for cross-blueprint business queries."""
+        self.console.print("\n🤖 [bold blue]Cross-Blueprint AI Analysis[/bold blue]")
+        self.console.print(
+            "Ask AI about patterns, usage, and business impact across all scenarios in this folder.\n"
+        )
+
+        # Show some example questions
+        self.console.print("[dim]Example questions:[/dim]")
+        self.console.print(
+            "[dim]• Which scenarios use Workfront Proof and how do they use it?[/dim]"
+        )
+        self.console.print(
+            "[dim]• What would be the impact of changing the 'status' field name?[/dim]"
+        )
+        self.console.print("[dim]• Which integrations connect Salesforce to other systems?[/dim]")
+        self.console.print(
+            "[dim]• How many scenarios would be affected by disabling Slack notifications?[/dim]"
+        )
+
+        while True:
+            self.console.print()
+
+            # Get user question
+            question = inquirer.text(
+                message="Enter your question about this blueprint collection:",
+                instruction="(or 'exit' to return to main menu)",
+            ).execute()
+
+            if not question or question.lower().strip() in ["exit", "quit", "back"]:
+                break
+
+            try:
+                # Ask user for detail level to ensure completeness
+                detail_choice = inquirer.select(
+                    message="How much detail should I include in the analysis?",
+                    choices=[
+                        {"name": "🔍 Detailed - Maximum context (slower, more thorough)", "value": "detailed"},
+                        {"name": "⚖️ Balanced - Good detail/speed balance (recommended)", "value": "balanced"}, 
+                        {"name": "⚡ Minimal - Fast analysis for large datasets", "value": "minimal"},
+                    ],
+                    default="balanced"
+                ).execute()
+                
+                # Ask for AI model preference
+                model_choice = inquirer.select(
+                    message="Which AI reasoning approach should I use?",
+                    choices=[
+                        {"name": "🤖 Auto-Select - Let me choose the best model (recommended)", "value": "auto"},
+                        {"name": "🚀 Fast - Quick responses for simple questions (GPT-4o-mini)", "value": "fast"},
+                        {"name": "⚖️ Standard - Balanced reasoning (GPT-4o)", "value": "standard"},
+                        {"name": "🧠 Deep Thinking - Complex multi-step analysis (GPT-4)", "value": "thinking"},
+                    ],
+                    default="auto"
+                ).execute()
+                
+                # Import and use the landscape analyzer with chosen settings
+                from ...analysis.ai_landscape import AILandscapeAnalyzer
+
+                analyzer = AILandscapeAnalyzer(self.blueprints, detail_level=detail_choice, model_type=model_choice)
+                response = analyzer.analyze_with_ai(question, self.console)
+
+                # Display the response in a nice panel
+                from rich.markdown import Markdown
+                from rich.panel import Panel
+
+                markdown_content = Markdown(response)
+                panel = Panel(
+                    markdown_content,
+                    title=f"🤖 AI Analysis Results",
+                    subtitle=f"Question: {question[:60]}{'...' if len(question) > 60 else ''}",
+                    expand=False,
+                    border_style="blue",
+                )
+
+                self.console.print(panel)
+
+            except ValueError as ve:
+                self.console.print(f"[red]❌ {str(ve)}[/red]")
+            except Exception as e:
+                self.console.print(f"[red]❌ Error during AI analysis: {str(e)}[/red]")
+
+            # Ask if they want to ask another question
+            self.console.print()
+            continue_choice = inquirer.confirm(
+                message="Ask another question?", default=True
+            ).execute()
+
+            if not continue_choice:
+                break

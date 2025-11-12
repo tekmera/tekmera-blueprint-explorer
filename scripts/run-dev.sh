@@ -30,6 +30,14 @@ fi
 
 echo -e "${GREEN}✅ Environment ready!${NC}"
 
+# Set development environment variables
+export TEKMERA_LOCAL_PRO=true
+if [[ -n "$OPENAI_API_KEY" ]]; then
+    echo -e "${GREEN}🤖 OpenAI API key detected - AI features enabled${NC}"
+else
+    echo -e "${BLUE}ℹ️  Set OPENAI_API_KEY for AI features${NC}"
+fi
+
 # Check if arguments were provided
 if [[ $# -eq 0 ]]; then
     echo -e "${BLUE}📋 No arguments provided. Available commands:${NC}"

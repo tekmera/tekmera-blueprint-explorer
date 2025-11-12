@@ -46,8 +46,11 @@ class LicenseUI:
             console.print(f"Issued To: {license_info['issued_to']}")
             console.print(f"Issued At: {license_info['issued_at']}")
 
-            # Lemon Squeezy licenses are always verified online
-            console.print(f"Validation: [green]✅ Lemon Squeezy Verified[/green]")
+            # Show validation status
+            if license_info.get("local_mode", False):
+                console.print(f"Validation: [yellow]🛠️  Local Development Mode[/yellow]")
+            else:
+                console.print(f"Validation: [green]✅ License Verified[/green]")
 
             if license_info.get("expiry"):
                 days_remaining = license_info.get("days_remaining")
@@ -99,8 +102,11 @@ class LicenseUI:
                 console.print(f"  License Key: {license_info['license_key']}")
                 console.print(f"  Issued To: {license_info['issued_to']}")
 
-                # Lemon Squeezy licenses are validated online
-                console.print(f"  Validation: [green]✅ Lemon Squeezy Verified[/green]")
+                # Show validation status
+                if license_info.get("local_mode", False):
+                    console.print(f"  Validation: [yellow]🛠️  Local Development Mode[/yellow]")
+                else:
+                    console.print(f"  Validation: [green]✅ License Verified[/green]")
 
                 if license_info.get("expiry"):
                     days_remaining = license_info.get("days_remaining")

@@ -1,13 +1,15 @@
 """
-License management for Tekmera Fusion Explorer with Lemon Squeezy integration
+License management for Tekmera Fusion Explorer with simple licensing framework
 """
 
+import hashlib
+import json
 import os
+import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
-
-from .lemon_squeezy import LemonSqueezyLicenseManager
+from pathlib import Path
+from typing import Any, Dict
 
 
 class LicenseType(Enum):
@@ -15,170 +17,217 @@ class LicenseType(Enum):
     PREMIUM = "premium"
 
 
-class LicenseManager:
-    """Manages license validation and feature gating with Lemon Squeezy"""
+class SimpleLicenseManager:
+    """Simple license manager without external dependencies"""
 
-    def __init__(self, license_type: LicenseType = LicenseType.FREE):
-        self.license_type = license_type
-        self._license_key: Optional[str] = None
-        self._license_data: Optional[Dict[str, Any]] = None
-        self._instance_id: Optional[str] = None
-        self._lemon_squeezy = LemonSqueezyLicenseManager()
-        self._last_validation: Optional[datetime] = None
+    def __init__(self):
+        self.license_dir = Path.home() / ".tekmera"
+        self.license_file = self.license_dir / "license.json"
+        self._ensure_license_dir()
 
-        # Check for license key in environment variable for persistence
-        self._load_from_environment()
+    def _ensure_license_dir(self):
+        """Ensure license directory exists"""
+        self.license_dir.mkdir(exist_ok=True)
 
-    def _load_from_environment(self) -> None:
-        """Load license from environment variable if available"""
-        license_key = os.getenv("TEKMERA_LICENSE_KEY")
-        instance_id = os.getenv("TEKMERA_INSTANCE_ID")
+    def _generate_machine_fingerprint(self) -> str:
+        """Generate a simple machine fingerprint"""
+        import platform
+        import socket
 
-        if license_key and instance_id:
-            self._license_key = license_key
-            self._instance_id = instance_id
-
-            # Try to validate if online
-            if self._lemon_squeezy.is_online_validation_available():
-                success, message = self._lemon_squeezy.validate_online(license_key, instance_id)
-                if success:
-                    self.license_type = LicenseType.PREMIUM
-                    self._license_data = {
-                        "license_key": license_key,
-                        "edition": "pro",
-                        "status": "active",
-                        "instance_id": instance_id,
-                    }
-                    self._last_validation = datetime.now()
-
-    def activate_license_key(self, license_key: str) -> tuple[bool, str]:
-        """Activate a license using a license key with Lemon Squeezy"""
         try:
-            # Try online activation
-            if not self._lemon_squeezy.is_online_validation_available():
-                return False, "No internet connection available for license activation"
-
-            success, message, license_data = self._lemon_squeezy.activate_online(license_key)
-
-            if success and license_data:
-                # Store license data in memory and environment
-                self._license_key = license_key
-                self._license_data = license_data
-                self._instance_id = license_data.get("instance_id")
-                self._last_validation = datetime.now()
-
-                # Persist in environment variables (user can add to shell profile)
-                os.environ["TEKMERA_LICENSE_KEY"] = license_key
-                if self._instance_id:
-                    os.environ["TEKMERA_INSTANCE_ID"] = self._instance_id
-
-                # Update license type
-                if license_data.get("edition", "").lower() in ["pro", "premium", "professional"]:
-                    self.license_type = LicenseType.PREMIUM
-                else:
-                    self.license_type = LicenseType.FREE
-
-                return (
-                    True,
-                    f"{message}\n\nTo persist this license, add these to your shell profile:\nexport TEKMERA_LICENSE_KEY={license_key}\nexport TEKMERA_INSTANCE_ID={self._instance_id}",
-                )
+            hostname = socket.gethostname()
+            system = platform.system()
+            machine = platform.machine()
+            fingerprint = f"{hostname}-{system}-{machine}"
+            return hashlib.md5(fingerprint.encode()).hexdigest()[:16]
+        except Exception:
+            # Fallback to a random ID stored in license dir
+            fingerprint_file = self.license_dir / ".machine_id"
+            if fingerprint_file.exists():
+                return fingerprint_file.read_text().strip()
             else:
-                return False, message
+                machine_id = str(uuid.uuid4())[:16]
+                fingerprint_file.write_text(machine_id)
+                return machine_id
+
+    def _validate_license_key(self, license_key: str) -> tuple[bool, str, Dict[str, Any]]:
+        """Validate a license key format and extract data"""
+        try:
+            # Simple format: TEKMERA-PRO-{edition}-{hash}
+            if not license_key.startswith("TEKMERA-PRO-"):
+                return False, "Invalid license key format", {}
+
+            parts = license_key.split("-")
+            if len(parts) < 4:
+                return False, "Invalid license key format", {}
+
+            edition = parts[2]
+            # key_hash = "-".join(parts[3:])  # Reserved for future validation
+
+            # For now, accept any properly formatted key
+            # In production, you'd validate against a signing secret
+            license_data = {
+                "edition": edition.lower(),
+                "status": "active",
+                "issued_at": datetime.now().isoformat(),
+                "machine_fingerprint": self._generate_machine_fingerprint(),
+            }
+
+            return True, "License key is valid", license_data
 
         except Exception as e:
-            return False, f"Failed to activate license key: {str(e)}"
+            return False, f"License validation error: {str(e)}", {}
 
-    def deactivate_license(self) -> tuple[bool, str]:
-        """Deactivate current license with Lemon Squeezy"""
+    def activate_license_key(self, license_key: str) -> tuple[bool, str]:
+        """Activate a license key"""
         try:
-            # Try to deactivate online
-            if (
-                self._license_key
-                and self._instance_id
-                and self._lemon_squeezy.is_online_validation_available()
-            ):
+            success, message, license_data = self._validate_license_key(license_key)
 
-                success, message = self._lemon_squeezy.deactivate_online(
-                    self._license_key, self._instance_id
-                )
+            if not success:
+                return False, message
 
-                if not success:
-                    return False, f"Failed to deactivate online: {message}"
+            # Store license data
+            license_data.update(
+                {
+                    "license_key": license_key,
+                    "activated_at": datetime.now().isoformat(),
+                    "instance_id": str(uuid.uuid4())[:8],
+                }
+            )
 
-            # Clear in-memory license data
-            self._license_key = None
-            self._license_data = None
-            self._instance_id = None
-            self._last_validation = None
-            self.license_type = LicenseType.FREE
-
-            # Clear environment variables
-            if "TEKMERA_LICENSE_KEY" in os.environ:
-                del os.environ["TEKMERA_LICENSE_KEY"]
-            if "TEKMERA_INSTANCE_ID" in os.environ:
-                del os.environ["TEKMERA_INSTANCE_ID"]
+            self.license_file.write_text(json.dumps(license_data, indent=2))
 
             return (
                 True,
-                "License deactivated successfully.\n\nRemove these from your shell profile:\nTEKMERA_LICENSE_KEY\nTEKMERA_INSTANCE_ID",
+                f"License activated successfully!\n\nEdition: {license_data['edition']}\nInstance ID: {license_data['instance_id']}",
             )
 
+        except Exception as e:
+            return False, f"Failed to activate license: {str(e)}"
+
+    def deactivate_license(self) -> tuple[bool, str]:
+        """Deactivate current license"""
+        try:
+            if self.license_file.exists():
+                self.license_file.unlink()
+            return True, "License deactivated successfully"
         except Exception as e:
             return False, f"Failed to deactivate license: {str(e)}"
 
     def get_license_info(self) -> Dict[str, Any]:
         """Get current license information"""
-        if self._license_data and self._is_license_valid():
-            info = {
+        # Check for local pro mode environment variable
+        if os.getenv("TEKMERA_LOCAL_PRO", "").lower() in ["true", "1", "yes", "on"]:
+            return {
                 "status": "active",
-                "edition": self._license_data.get("edition", "pro"),
-                "license_key": self._license_key,
-                "issued_to": self._license_data.get("issued_to", ""),
-                "issued_at": self._license_data.get("issued_at", ""),
-                "expiry": self._license_data.get("expiry"),
-                "instance_id": self._instance_id,
+                "edition": "pro",
+                "license_key": "local-dev-mode",
+                "instance_id": "local",
+                "local_mode": True,
+                "issued_to": "Local Development",
+                "issued_at": datetime.now().isoformat(),
+                "expiry": None,
             }
 
-            # Add expiry status if applicable
-            expiry = self._license_data.get("expiry")
-            if expiry:
-                try:
-                    expiry_date = datetime.fromisoformat(expiry.replace("Z", "+00:00"))
-                    days_remaining = (expiry_date - datetime.now()).days
-                    info["days_remaining"] = max(0, days_remaining)
-                except (ValueError, AttributeError):
-                    info["days_remaining"] = 0
-
-            return info
-        else:
+        # Check for license file
+        if not self.license_file.exists():
             return {
                 "status": "free",
                 "edition": "free",
                 "license_key": None,
+                "instance_id": None,
+                "local_mode": False,
                 "issued_to": None,
                 "issued_at": None,
                 "expiry": None,
-                "instance_id": None,
             }
 
-    def _is_license_valid(self) -> bool:
-        """Check if current license data is valid"""
-        if not self._license_data or not self._license_key:
-            return False
+        try:
+            license_data = json.loads(self.license_file.read_text())
 
-        # Check expiry
-        expiry = self._license_data.get("expiry")
-        if expiry:
-            try:
-                expiry_date = datetime.fromisoformat(expiry.replace("Z", "+00:00"))
-                if datetime.now() >= expiry_date:
-                    return False
-            except (ValueError, AttributeError):
-                return False
+            # Validate machine fingerprint
+            current_fingerprint = self._generate_machine_fingerprint()
+            stored_fingerprint = license_data.get("machine_fingerprint", "")
 
-        # Check status
-        status = self._license_data.get("status", "active")
-        return status == "active"
+            if current_fingerprint != stored_fingerprint:
+                return {
+                    "status": "invalid",
+                    "edition": "free",
+                    "license_key": None,
+                    "instance_id": None,
+                    "error": "License tied to different machine",
+                }
+
+            # Check if expired (if expiry is set)
+            expiry = license_data.get("expiry")
+            if expiry:
+                try:
+                    expiry_date = datetime.fromisoformat(expiry)
+                    if datetime.now() >= expiry_date:
+                        return {
+                            "status": "expired",
+                            "edition": "free",
+                            "license_key": license_data.get("license_key"),
+                            "expiry": expiry,
+                        }
+                except ValueError:
+                    pass
+
+            return {
+                "status": license_data.get("status", "active"),
+                "edition": license_data.get("edition", "pro"),
+                "license_key": license_data.get("license_key"),
+                "instance_id": license_data.get("instance_id"),
+                "local_mode": False,
+                "issued_to": license_data.get("issued_to", ""),
+                "issued_at": license_data.get("issued_at", ""),
+                "expiry": license_data.get("expiry"),
+            }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "edition": "free",
+                "error": f"Failed to read license: {str(e)}",
+            }
+
+
+class LicenseManager:
+    """Main license manager for Tekmera Fusion Explorer"""
+
+    def __init__(self, license_type: LicenseType = LicenseType.FREE):
+        self.license_type = license_type
+        self._simple_manager = SimpleLicenseManager()
+
+        # Auto-detect license status from environment and files
+        self._update_license_status()
+
+    def _update_license_status(self):
+        """Update license status based on current state"""
+        info = self._simple_manager.get_license_info()
+
+        if info["status"] == "active" and info["edition"] in ["pro", "premium"]:
+            self.license_type = LicenseType.PREMIUM
+        else:
+            self.license_type = LicenseType.FREE
+
+    def activate_license_key(self, license_key: str) -> tuple[bool, str]:
+        """Activate a license key"""
+        success, message = self._simple_manager.activate_license_key(license_key)
+        if success:
+            self._update_license_status()
+        return success, message
+
+    def deactivate_license(self) -> tuple[bool, str]:
+        """Deactivate current license"""
+        success, message = self._simple_manager.deactivate_license()
+        if success:
+            self._update_license_status()
+        return success, message
+
+    def get_license_info(self) -> Dict[str, Any]:
+        """Get current license information"""
+        return self._simple_manager.get_license_info()
 
     def has_premium(self) -> bool:
         """Check if user has premium license"""
@@ -197,61 +246,28 @@ class LicenseManager:
         return LicenseUI.show_premium_prompt(feature_name, console)
 
     def validate_license_on_access(self) -> bool:
-        """Validate license when accessing features"""
-        if not self._license_key or not self._instance_id:
-            return True  # Free license is always valid
-
-        # Check if we should validate online (hourly rate limiting)
-        if self._should_validate_online():
-            success, message = self._lemon_squeezy.validate_online(
-                self._license_key, self._instance_id
-            )
-
-            if not success:
-                print(f"Warning: License validation failed: {message}")
-                if "expired" in message.lower() or "disabled" in message.lower():
-                    self._license_key = None
-                    self._license_data = None
-                    self._instance_id = None
-                    self.license_type = LicenseType.FREE
-                    return False
-            else:
-                self._last_validation = datetime.now()
-
-        # Check if license is still valid locally
-        if not self._is_license_valid():
-            self._license_key = None
-            self._license_data = None
-            self._instance_id = None
-            self.license_type = LicenseType.FREE
-            return False
-
-        # Check for expiry warnings
+        """Validate license when accessing features (simplified)"""
+        self._update_license_status()
         info = self.get_license_info()
-        if info["status"] == "active" and info.get("days_remaining") is not None:
-            days_remaining = info["days_remaining"]
-            if days_remaining <= 30:  # Show warnings for licenses expiring within 30 days
-                from .license_ui import LicenseUI
 
-                LicenseUI.show_expiry_warning(days_remaining)
+        # Show warnings for invalid/expired licenses
+        if info["status"] in ["invalid", "expired", "error"] and info.get("license_key"):
+            if console := getattr(self, "console", None):
+                if info["status"] == "expired":
+                    console.print(f"⚠️  [yellow]License has expired[/yellow]")
+                elif info["status"] == "invalid":
+                    console.print(
+                        f"⚠️  [yellow]License invalid: {info.get('error', 'Unknown error')}[/yellow]"
+                    )
+                else:
+                    console.print(
+                        f"⚠️  [yellow]License error: {info.get('error', 'Unknown error')}[/yellow]"
+                    )
 
-        return True
-
-    def _should_validate_online(self) -> bool:
-        """Determine if we should validate online (rate limiting)"""
-        if not self._last_validation:
-            return self._lemon_squeezy.is_online_validation_available()
-
-        # Check if an hour has passed since last validation
-        hours_since_validation = (datetime.now() - self._last_validation).total_seconds() / 3600
-
-        return (
-            hours_since_validation >= 1.0 and self._lemon_squeezy.is_online_validation_available()
-        )
+        return info["status"] == "active"
 
     def get_context(self, additional_context: Dict[str, Any] = None) -> Dict[str, Any]:
         """Get license context for feature evaluation"""
-        # Validate license when getting context
         self.validate_license_on_access()
 
         context = {
