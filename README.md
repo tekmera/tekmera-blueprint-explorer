@@ -1,267 +1,113 @@
 # Tekmera Fusion Explorer
 
-A professional command-line tool for analyzing exported Workfront Fusion blueprint JSON files. Provides comprehensive diagnostic capabilities including interactive exploration, governance auditing, AI-powered insights, and cross-blueprint analysis.
+A command-line tool for auditing and analyzing Workfront Fusion scenarios.
 
-## 🚀 Quick Start
+Tekmera processes exported Fusion blueprint JSON files to provide governance auditing, cross-scenario analysis, and AI-powered insights for integration teams managing complex automation portfolios.
+
+## Core Capabilities
+
+**Exploration** - Interactive navigation of scenarios with module-level inspection and search  
+**Governance** - 11 automated rules covering naming conventions, structural integrity, and complexity analysis  
+**AI Insight** - Natural language analysis of business processes, scenario chat, and cross-blueprint impact assessment
+
+Designed for integration developers and Workfront administrators who need systematic approaches to scenario maintenance, change impact analysis, and automation governance at scale.
+
+## Quick Start
 
 ```bash
-# Setup (run once)
-chmod +x init.sh
-./init.sh
-
-# Daily usage
+# Setup
+./scripts/setup-dev.sh
 source venv/bin/activate
-tekmera ./blueprints
+
+# Analyze blueprints
+tekmera analyze ./blueprints
 ```
 
-## 📦 Installation
+## Installation
 
-### Option 1: Quick Setup Script
 ```bash
-./init.sh
-```
+# Automated setup
+./scripts/setup-dev.sh
 
-### Option 2: Manual Installation
-```bash
-# Create virtual environment
+# Manual installation
 python3 -m venv venv
 source venv/bin/activate
-
-# Install dependencies and package
 pip install -r requirements.txt
 pip install -e .
 ```
 
-## 🎯 Usage
-
-The `tekmera` command provides a centralized menu system with feature gating:
+## Usage
 
 ```bash
-# Basic usage 
+# Analyze blueprint directory
 tekmera analyze /path/to/blueprints/
-tekmera /path/to/blueprints/              # Backward compatibility
 
 # License management
-tekmera license status                    # Check current license status
-tekmera license activate TEKMERA-PRO-STANDARD-ABC123  # Activate license key
-tekmera license deactivate               # Deactivate current license
-tekmera license local                    # Info about local pro mode
-
-# Local development - enable pro features without license
-export TEKMERA_LOCAL_PRO=true
-tekmera ./blueprints                     # Pro features now enabled
-
-# General commands
-tekmera --version                         # Show version info
-tekmera --help                           # Show usage help
-```
-
-## ✨ Features
-
-### 🔍 **Explore Scenario** (Free)
-Interactive module-by-module exploration:
-- Navigate scenarios like a structured map
-- Drill down into individual modules
-- View parameters, inputs, and Workfront fields
-- Inspect raw JSON data with syntax highlighting
-- Built-in search capabilities within scenarios
-
-### 📊 **Analyze All Blueprints** (Free)
-Cross-blueprint analysis and reporting:
-- **Static Reports**: Comprehensive summaries and module counts
-- **Cross-Blueprint Search**: Find patterns, fields, and modules across all scenarios
-- **Field Rankings**: Most/least used Workfront fields
-- **Module Usage**: Module type distribution analysis
-- **Naming Analysis**: Detect inconsistent field naming patterns
-- **Connection Analysis**: Review connection usage across scenarios
-
-### ⚖️ **Governance Audit** (Mixed: 5 Free + 6 Pro)
-Built-in governance checking with 11 comprehensive rules:
-- **Basic Rules (Free)**: Naming conventions, structure validation, connection checking
-- **Advanced Rules (Pro)**: Flow complexity analysis, functional density metrics, cognitive load assessment
-- **Categories**: Naming, Structure, Field, Size, Connection, and Complexity rules
-- **Pro Features**: Algorithmic complexity analysis, router density metrics, field mapping complexity
-
-### 🔄 **Compare Scenarios** (Free)
-Advanced scenario comparison:
-- Side-by-side blueprint diff analysis
-- Module-level change detection
-- Parameter and mapping comparisons
-- Export differences for documentation
-
-### 🎯 **Premium Features** (Pro License Required)
-- **🎥 Live Scenario Walkthrough**: Interactive step-by-step execution flow
-- **📝 AI Business Process Description**: OpenAI-powered business process analysis (requires API key)
-- **🔎 Advanced Cross-Blueprint Search**: Enhanced search capabilities across all scenarios
-- **⚖️ Advanced Governance Rules**: 6 algorithmic complexity and density analysis rules
-
-## 🏗️ Package Structure
-
-```
-src/tekmera/
-├── core/                    # Core functionality
-│   ├── parser.py           # Blueprint parsing and loading
-│   └── analyzer.py         # Module analysis and field extraction
-├── interfaces/cli/          # Command-line interfaces
-│   ├── main.py            # Main CLI entry point
-│   ├── interactive.py     # Interactive menu system
-│   ├── explorer.py        # Scenario exploration interface
-│   ├── search.py          # Cross-blueprint search interface
-│   └── trace.py           # Live walkthrough interface
-├── analysis/               # Analysis engines
-│   ├── corpus_analyzer.py # Cross-blueprint analysis
-│   ├── connections.py     # Connection analysis
-│   ├── flow_tracer.py     # Execution flow tracing
-│   └── flow_walker.py     # Live scenario walkthrough
-├── governance/             # Governance rules and checking
-│   ├── checker.py         # Governance rule engine
-│   ├── models.py          # Governance data models
-│   └── rules/             # Individual governance rules
-├── comparison/             # Blueprint comparison tools
-│   ├── diff_engine.py     # Main diff interface
-│   ├── detailed_diff.py   # Detailed difference analysis
-│   └── simple_diff.py     # Simple diff utilities
-├── reporting/              # Report generation
-│   └── reporter.py        # Static analysis reporting
-├── config/                 # Configuration
-│   ├── menu_system.py     # Centralized menu configuration
-│   └── premium_features.py # Premium feature definitions
-├── infra/                  # Infrastructure
-│   ├── license.py         # Core license management
-│   ├── license_ui.py      # License user interface
-│   └── licensing_utils.py # License enforcement utilities
-└── utils/                  # Shared utilities
-```
-
-## 📋 Menu System
-
-The tool uses a hierarchical menu system with feature gating:
-
-```
-🔍 Tekmera Fusion Explorer
-├── 📊 Explore Scenario
-│   ├── 🔍 Explore modules & search within scenario
-│   ├── 🎥 Live Scenario Walkthrough [Pro]
-│   └── 📝 Describe Business Process [Pro]
-├── 📊 Analyze All Blueprints  
-│   ├── 📋 Generate static analysis report
-│   └── 🔎 Search across all blueprints [Pro]
-├── ⚖️ Governance Audit
-│   ├── GOV-NAME-001: Scenario Naming Prefix
-│   ├── GOV-NAME-002: Default Module Labels
-│   ├── GOV-STRUC-001: Router Without Default Branch
-│   ├── GOV-STRUC-002: Orphan Module
-│   ├── GOV-CONN-001: Dev Connection in Prod
-│   ├── GOV-COMP-001: Flow Complexity Index [Pro]
-│   ├── GOV-SIZE-001: Functional Density Index [Pro]
-│   ├── GOV-COMP-002: Router Density Analysis [Pro]
-│   ├── GOV-COMP-003: Route Fan-Out Profile [Pro]
-│   ├── GOV-COMP-004: Flow Depth Estimate [Pro]
-│   └── GOV-FIELD-003: Field Mapping Complexity [Pro]
-└── 🔄 Compare Scenarios
-```
-
-## 🛡️ Governance Rules
-
-Built-in governance checking with **5 Free** and **6 Premium** rules:
-
-### Free Governance Rules
-- **GOV-NAME-001**: Scenario Naming Prefix - Enforces standardized naming conventions
-- **GOV-NAME-002**: Default Module Labels - Identifies generic default labels
-- **GOV-STRUC-001**: Router Without Default Branch - Ensures fallback branches exist
-- **GOV-STRUC-002**: Orphan Module - Identifies disconnected modules
-- **GOV-CONN-001**: Dev Connection in Prod - Prevents dev connections in production
-
-### Premium Governance Rules (Pro License Required)
-- **GOV-COMP-001**: Flow Complexity Index - Algorithmic complexity analysis
-- **GOV-SIZE-001**: Functional Density Index - Module clustering analysis
-- **GOV-COMP-002**: Router Density Analysis - Branching logic patterns
-- **GOV-COMP-003**: Route Fan-Out Profile - Complex router detection
-- **GOV-COMP-004**: Flow Depth Estimate - Execution path depth analysis
-- **GOV-FIELD-003**: Field Mapping Complexity - Deep field reference analysis
-
-## 🔧 Advanced Usage
-
-### Environment Variables
-```bash
-export OPENAI_API_KEY="your-key-here"  # For AI business process descriptions
-```
-
-### Premium Features
-```bash
-# Premium features are automatically enabled with an active license
-tekmera analyze ./blueprints
-
-# Use AI business process description (requires OpenAI API key)
-export OPENAI_API_KEY="your-key-here"
-tekmera analyze ./blueprints
-```
-
-## 🔐 Licensing & Premium Features
-
-Tekmera Fusion Explorer includes both free and premium features with a simple licensing system.
-
-### Free Features
-- Basic scenario exploration and module analysis
-- Static analysis reports  
-- 5 basic governance rules
-- Blueprint comparison
-
-### Premium Features
-- Live scenario walkthrough with AI insights
-- Cross-blueprint search capabilities  
-- 6 advanced governance rules (complexity analysis, etc.)
-- AI-powered business process descriptions
-- **Cross-Blueprint AI Query**: Ask business questions across all scenarios
-
-#### Example AI Business Queries
-```
-• "Which scenarios use Workfront Proof and how do they use it?"
-• "What would be the impact of changing the 'status' field name?"
-• "Which integrations connect Salesforce to other systems?"  
-• "How many scenarios would be affected by disabling Slack notifications?"
-• "Find all scenarios that process customer data and identify data flows"
-```
-
-### License Management
-```bash
-# Check current license status
 tekmera license status
-
-# Activate a Pro license key
-tekmera license activate TEKMERA-PRO-STANDARD-ABC123DEF456
-
-# Deactivate current license (revert to free)
+tekmera license activate YOUR-LICENSE-KEY-HERE  # Example placeholder
 tekmera license deactivate
 
-# Get info about local development mode
-tekmera license local
-```
-
-### Local Development Mode
-For development and testing, you can enable all pro features locally:
-
-```bash
-# Enable local pro mode
+# Development mode (enables all features)
 export TEKMERA_LOCAL_PRO=true
-
-# Add to shell profile to persist
-echo "export TEKMERA_LOCAL_PRO=true" >> ~/.zshrc  # or ~/.bashrc
-
-# Now all pro features are available
 tekmera analyze ./blueprints
 ```
 
-### Governance Auditing
+## Features
+
+### Exploration
+**Scenario Navigation** - Module-by-module inspection with parameter viewing and JSON export  
+**Cross-Blueprint Search** - Find patterns, fields, and module types across scenario collections  
+**Diff Analysis** - Side-by-side blueprint comparison with change detection
+
+### Governance
+**Free Rules (5)** - Naming conventions, structural validation, connection environment checking  
+**Premium Rules (6)** - Algorithmic complexity analysis, router density metrics, field mapping complexity  
+**Rule Categories** - Naming, Structure, Connection, Size, Complexity, and Field standards
+
+### AI Insight
+**Business Process Description** - Natural language explanation of scenario functionality  
+**Interactive Scenario Chat** - Persistent conversations with automated search capabilities  
+**Cross-Blueprint Analysis** - Impact assessment and dependency mapping across collections
+
+All AI features require OpenAI API key and Pro license. Premium governance rules require Pro license.
+
+## Governance Rules
+
+| Rule ID | Category | Tier | Description |
+|---------|----------|------|-------------|
+| GOV-NAME-001 | Naming | Free | Scenario naming prefix enforcement |
+| GOV-NAME-002 | Naming | Free | Default module label detection |
+| GOV-STRUC-001 | Structure | Free | Router default branch validation |
+| GOV-STRUC-002 | Structure | Free | Orphan module detection |
+| GOV-CONN-001 | Connection | Free | Dev connection in production |
+| GOV-COMP-001 | Complexity | Pro | Flow complexity index |
+| GOV-SIZE-001 | Size | Pro | Functional density analysis |
+| GOV-COMP-002 | Complexity | Pro | Router density metrics |
+| GOV-COMP-003 | Complexity | Pro | Route fan-out analysis |
+| GOV-COMP-004 | Complexity | Pro | Flow depth estimation |
+| GOV-FIELD-003 | Field | Pro | Field mapping complexity |
+
+## Licensing
+
+**Free Tier**  
+Exploration, basic governance (5 rules), blueprint comparison
+
+**Pro Tier**  
+AI features, advanced governance (6 additional rules), live walkthrough
+
 ```bash
-# Interactive governance checking
-tekmera analyze ./blueprints
-# Select "Governance Audit" → Choose scenario → Select rule
+# License activation
+tekmera license status
+tekmera license activate YOUR-LICENSE-KEY-HERE
 
-# Premium governance rules require Pro license (automatically detected)
+# Development mode (all features enabled)
+export TEKMERA_LOCAL_PRO=true
 ```
 
-## 📁 Blueprint Structure
+**AI Requirements**  
+Set `OPENAI_API_KEY` environment variable for AI features
+
+## Blueprint Structure
 
 The tool supports standard Workfront Fusion blueprint exports:
 
@@ -290,7 +136,7 @@ Also supports diff blueprint format:
 }
 ```
 
-## 🔍 Search Capabilities
+## Search Capabilities
 
 ### Field Search
 - Find all uses of Workfront fields (DE:)
@@ -313,7 +159,7 @@ Also supports diff blueprint format:
 - Inconsistent naming detection
 - Connection environment analysis
 
-## 🚀 Getting Started Examples
+## Getting Started Examples
 
 ### Quick Analysis
 ```bash
@@ -351,13 +197,43 @@ tekmera analyze ./blueprints
 
 ### Premium AI Analysis
 ```bash
-# Get AI-powered business process description (requires Pro license)
+# Set up OpenAI API key for AI features
 export OPENAI_API_KEY="your-key-here"
 tekmera analyze ./blueprints
+
+# AI-powered business process description
 # Select "Explore Scenario" → Choose scenario → "Describe Business Process"
+
+# Interactive AI chat about scenarios  
+# Select "Explore Scenario" → Choose scenario → "Ask AI Question"
+
+# Cross-blueprint AI analysis
+# Select "Analyze All Blueprints" → "Cross-Blueprint AI Query"
 ```
 
-## 📚 Documentation
+### AI Features Overview
+```bash
+# The AI features provide different levels of analysis:
+
+# 1. Business Process Description (One-time analysis)
+#    - Generates comprehensive business process overview
+#    - Explains what the scenario does in business terms
+#    - Perfect for documentation and stakeholder communication
+
+# 2. AI Scenario Chat (Interactive conversation)
+#    - Persistent chat history with conversation management
+#    - AI actively searches scenario for specific details
+#    - Ask follow-up questions and dive deeper
+#    - Perfect for detailed investigation and troubleshooting
+
+# 3. Cross-Blueprint AI Analysis (Collection-wide insights)
+#    - Analyzes patterns across all scenarios in the folder
+#    - Quantifies business impact and identifies dependencies
+#    - AI searches across entire blueprint collection
+#    - Perfect for change impact analysis and governance
+```
+
+## Documentation
 
 - **Features Overview**: See `docs/FEATURES.md` for detailed feature documentation
 - **License Generation**: See `docs/LICENSE_GENERATION.md` for creating and managing license files
@@ -367,7 +243,7 @@ tekmera analyze ./blueprints
 - **Terms of Service**: See `docs/TERMS_OF_SERVICE.md` for Pro user terms
 - **Privacy Policy**: See `docs/PRIVACY_POLICY.md` for data handling information
 
-## 🤝 Contributing
+## Contributing
 
 To extend functionality:
 
@@ -376,21 +252,21 @@ To extend functionality:
 3. **Improve UI**: Update `src/tekmera/interfaces/cli/` interfaces
 4. **Add features**: Integrate with `src/tekmera/config/menu_system.py`
 
-## 📄 Dependencies
+## Dependencies
 
 - **click**: Command-line interface framework
 - **InquirerPy**: Interactive terminal prompts and menus
 - **rich**: Rich text formatting and syntax highlighting  
 - **openai**: AI-powered business process analysis (premium features)
 
-## 📋 Requirements
+## Requirements
 
 - Python 3.8+
 - Virtual environment (recommended)
 - Workfront Fusion blueprint JSON exports
 - OpenAI API key (optional, for premium AI features)
 
-## 🏷️ Version
+## Version
 
 Current version: 0.1.0
 

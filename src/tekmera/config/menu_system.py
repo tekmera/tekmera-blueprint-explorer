@@ -157,6 +157,17 @@ class MenuSystem:
             license_required=LicenseType.PREMIUM,
             enabled_if=openai_api_available,
             order=3,
+        )
+
+        explore_ai_question = MenuItem(
+            id="explore.ai_question",
+            label="Ask AI Question",
+            display_label="❓ Ask AI Question",
+            description="Ask custom questions about this specific scenario",
+            action="ask_scenario_ai_question",
+            license_required=LicenseType.PREMIUM,
+            enabled_if=openai_api_available,
+            order=4,
             separator_after=True,
         )
 
@@ -196,6 +207,7 @@ class MenuSystem:
         main_explore.add_child(explore_modules)
         main_explore.add_child(explore_walkthrough)
         main_explore.add_child(explore_ai_process)
+        main_explore.add_child(explore_ai_question)
 
         main_analyze.add_child(analyze_report)
         main_analyze.add_child(analyze_search)
