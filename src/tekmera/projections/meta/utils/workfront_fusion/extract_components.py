@@ -1,18 +1,27 @@
 """Component extraction for Workfront Fusion blueprints."""
 
-from typing import Any, Dict, List
+from typing import Dict, List
 
-from ...types import Blueprint
+from ...types import (
+    Blueprint,
+    Component,
+    ErrorHandlerComponent,
+    FilterComponent,
+    ModuleComponent,
+    Platform,
+    RouterComponent,
+)
 
 
 def extract_all_components(
     blueprint: Blueprint, include_orphans: bool = True
-) -> Dict[str, List[Dict[str, Any]]]:
+) -> Dict[str, List[Component]]:
     """
     Extract all components from Workfront Fusion blueprint, categorized by type.
 
     Returns:
         Dict with keys: 'modules', 'routers', 'filters', 'error_handlers'
+        Each containing typed Component objects
     """
     components = {"modules": [], "routers": [], "filters": [], "error_handlers": []}
 
@@ -26,17 +35,26 @@ def extract_all_components(
 
             # 1. Check if it's a module (has 'module' field)
             if "module" in item:
-                components["modules"].append(item_with_context)
+                module_component = ModuleComponent(
+                    id=str(item.get("id", "unknown")),
+                    platform=Platform.WORKFRONT_FUSION,
+                    extraction_context=parent_context,
+                    raw_data=item_with_context,
+                    module_type=item.get("module", "unknown"),
+                )
+                components["modules"].append(module_component)
 
             # 2. Check if it's a router (has 'routes' field)
             if "routes" in item:
-                router_info = {
-                    "type": "router",
-                    "routes_count": len(item["routes"]),
-                    "item": item_with_context,
-                    "_extraction_context": parent_context,
-                }
-                components["routers"].append(router_info)
+                router_component = RouterComponent(
+                    id=str(item.get("id", "unknown")),
+                    platform=Platform.WORKFRONT_FUSION,
+                    extraction_context=parent_context,
+                    raw_data=item_with_context,
+                    routes_count=len(item["routes"]),
+                    has_filter="filter" in item,
+                )
+                components["routers"].append(router_component)
 
                 # Recursively process routes
                 for route_idx, route in enumerate(item["routes"]):
@@ -48,24 +66,30 @@ def extract_all_components(
 
             # 3. Check if it has a filter
             if "filter" in item:
-                filter_info = {
-                    "type": "filter",
-                    "filter_name": item["filter"].get("name", "Unnamed Filter"),
-                    "conditions_count": len(item["filter"].get("conditions", [])),
-                    "item": item_with_context,
-                    "_extraction_context": parent_context,
-                }
-                components["filters"].append(filter_info)
+                filter_component = FilterComponent(
+                    id=str(item.get("id", "unknown")),
+                    platform=Platform.WORKFRONT_FUSION,
+                    extraction_context=parent_context,
+                    raw_data=item_with_context,
+                    filter_name=item["filter"].get("name", "Unnamed Filter"),
+                    conditions_count=len(item["filter"].get("conditions", [])),
+                )
+                components["filters"].append(filter_component)
 
             # 4. Check if it has error handlers
             if "onerror" in item:
-                error_handler_info = {
-                    "type": "error_handler",
-                    "handlers_count": len(item["onerror"]),
-                    "item": item_with_context,
-                    "_extraction_context": parent_context,
-                }
-                components["error_handlers"].append(error_handler_info)
+                handler_types = [
+                    h.get("module", "unknown") for h in item["onerror"] if isinstance(h, dict)
+                ]
+                error_handler_component = ErrorHandlerComponent(
+                    id=str(item.get("id", "unknown")),
+                    platform=Platform.WORKFRONT_FUSION,
+                    extraction_context=parent_context,
+                    raw_data=item_with_context,
+                    handlers_count=len(item["onerror"]),
+                    handler_types=handler_types,
+                )
+                components["error_handlers"].append(error_handler_component)
 
                 # Recursively process error handlers
                 extract_components_recursive(item["onerror"], f"{parent_context}.onerror")
@@ -85,27 +109,27 @@ def extract_all_components(
 
 def extract_modules_only(
     blueprint: Blueprint, include_orphans: bool = True
-) -> List[Dict[str, Any]]:
-    """Extract only modules (backward compatibility with current extract_modules)."""
+) -> List[ModuleComponent]:
+    """Extract only modules (typed components)."""
     components = extract_all_components(blueprint, include_orphans)
     return components["modules"]
 
 
-def extract_routers(blueprint: Blueprint, include_orphans: bool = True) -> List[Dict[str, Any]]:
-    """Extract only routers from blueprint."""
+def extract_routers(blueprint: Blueprint, include_orphans: bool = True) -> List[RouterComponent]:
+    """Extract only routers from blueprint (typed components)."""
     components = extract_all_components(blueprint, include_orphans)
     return components["routers"]
 
 
-def extract_filters(blueprint: Blueprint, include_orphans: bool = True) -> List[Dict[str, Any]]:
-    """Extract only filters from blueprint."""
+def extract_filters(blueprint: Blueprint, include_orphans: bool = True) -> List[FilterComponent]:
+    """Extract only filters from blueprint (typed components)."""
     components = extract_all_components(blueprint, include_orphans)
     return components["filters"]
 
 
 def extract_error_handlers(
     blueprint: Blueprint, include_orphans: bool = True
-) -> List[Dict[str, Any]]:
-    """Extract only error handlers from blueprint."""
+) -> List[ErrorHandlerComponent]:
+    """Extract only error handlers from blueprint (typed components)."""
     components = extract_all_components(blueprint, include_orphans)
     return components["error_handlers"]

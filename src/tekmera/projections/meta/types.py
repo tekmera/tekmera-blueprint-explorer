@@ -86,7 +86,7 @@ def create_result(
     function_name: str,
     data: Any,
     version: str = "1.0.0",
-    blueprint_name: str = None,
+    blueprint_name: str | None = None,
 ) -> ProjectionResult:
     """Create a standardized projection result."""
     import hashlib
@@ -150,3 +150,101 @@ def create_module_result(
         data=data,
         metadata=metadata,
     )
+
+
+# Component Type Definitions
+# ==========================
+
+
+class ComponentBase:
+    """Base class for all component types."""
+
+    def __init__(
+        self,
+        id: str,
+        component_type: str,
+        platform: Platform,
+        extraction_context: str,
+        raw_data: Dict[str, Any],
+        metadata: Dict[str, Any] | None = None,
+    ):
+        self.id = id
+        self.component_type = component_type
+        self.platform = platform
+        self.extraction_context = extraction_context
+        self.raw_data = raw_data
+        self.metadata = metadata if metadata is not None else {}
+
+
+class RouterComponent(ComponentBase):
+    """Router component with multiple route flows."""
+
+    def __init__(
+        self,
+        id: str,
+        platform: Platform,
+        extraction_context: str,
+        raw_data: Dict[str, Any],
+        routes_count: int,
+        has_filter: bool = False,
+        metadata: Dict[str, Any] | None = None,
+    ):
+        super().__init__(id, "router", platform, extraction_context, raw_data, metadata)
+        self.routes_count = routes_count
+        self.has_filter = has_filter
+
+
+class FilterComponent(ComponentBase):
+    """Filter component with conditional logic."""
+
+    def __init__(
+        self,
+        id: str,
+        platform: Platform,
+        extraction_context: str,
+        raw_data: Dict[str, Any],
+        filter_name: str,
+        conditions_count: int,
+        metadata: Dict[str, Any] | None = None,
+    ):
+        super().__init__(id, "filter", platform, extraction_context, raw_data, metadata)
+        self.filter_name = filter_name
+        self.conditions_count = conditions_count
+
+
+class ErrorHandlerComponent(ComponentBase):
+    """Error handler component with retry/handling logic."""
+
+    def __init__(
+        self,
+        id: str,
+        platform: Platform,
+        extraction_context: str,
+        raw_data: Dict[str, Any],
+        handlers_count: int,
+        handler_types: List[str] | None = None,
+        metadata: Dict[str, Any] | None = None,
+    ):
+        super().__init__(id, "error_handler", platform, extraction_context, raw_data, metadata)
+        self.handlers_count = handlers_count
+        self.handler_types = handler_types if handler_types is not None else []
+
+
+class ModuleComponent(ComponentBase):
+    """Module component with specific functionality."""
+
+    def __init__(
+        self,
+        id: str,
+        platform: Platform,
+        extraction_context: str,
+        raw_data: Dict[str, Any],
+        module_type: str,
+        metadata: Dict[str, Any] | None = None,
+    ):
+        super().__init__(id, "module", platform, extraction_context, raw_data, metadata)
+        self.module_type = module_type
+
+
+# Union type for all components
+Component = Union[RouterComponent, FilterComponent, ErrorHandlerComponent, ModuleComponent]

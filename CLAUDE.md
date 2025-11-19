@@ -120,9 +120,15 @@ pyinstaller --onefile --name tekmera-test-local src/tekmera/__main__.py
 3. **Feature Gating**: Premium features automatically enabled based on license status
 4. **Recursive Parsing**: Blueprint parser handles nested flows, routes, and error handlers
 
-### Blueprint Data Structure
+### Blueprint Data Structure and Examples
 
-Automation platform blueprints are JSON files. Workfront Fusion blueprints use this structure:
+Automation platform blueprints are JSON files located in the `blueprints/` directory:
+
+- **`blueprints/*.json`** - Workfront Fusion blueprint examples
+- **`blueprints/make/*.blueprint.json`** - Make.com blueprint examples  
+- **`blueprints/CLIENTS/`** - Real client blueprint examples (organized by client)
+
+#### Workfront Fusion Structure
 ```json
 {
   "name": "Scenario Name",
@@ -141,6 +147,30 @@ Automation platform blueprints are JSON files. Workfront Fusion blueprints use t
   }
 }
 ```
+
+#### Make.com Structure
+```json
+{
+  "name": "Scenario Name", 
+  "flow": [
+    {
+      "id": 1,
+      "module": "builtin:BasicRouter",
+      "routes": [{"flow": [...]}],  // Similar to Fusion
+      "filter": {                   // Filters on individual modules
+        "name": "Filter Name",
+        "conditions": [[...]]
+      }
+    }
+  ]
+}
+```
+
+#### Key Differences
+- **Workfront Fusion**: Uses `workfront-service:action` module naming
+- **Make.com**: Uses `service:action` or `builtin:action` module naming  
+- **Make.com Routers**: Specifically `builtin:BasicRouter` modules
+- **Make.com Filters**: Attached to individual modules, not separate components
 
 ### License Integration
 

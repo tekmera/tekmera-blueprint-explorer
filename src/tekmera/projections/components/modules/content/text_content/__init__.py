@@ -9,7 +9,7 @@ Extracts all textual content from a module for search and analysis purposes.
 This allows for text searching across all module parameters and configuration.
 """
 
-from .....meta.types import Module, ModuleResult, Platform
+from .....meta.types import ModuleComponent, ModuleResult, Platform
 from . import make_com, workfront_fusion
 
 IMPLEMENTATIONS = {
@@ -18,18 +18,18 @@ IMPLEMENTATIONS = {
 }
 
 
-def text_content(module: Module, platform: Platform) -> ModuleResult[str]:
+def text_content(module_component: ModuleComponent, platform: Platform) -> ModuleResult[str]:
     """
-    Extract text content from module.
+    Extract text content from module component.
 
     Args:
-        module: Module JSON object
+        module_component: Typed ModuleComponent object
         platform: Platform (required - no auto-detection at module level)
 
     Returns:
         ModuleResult containing the module's text content
     """
     if platform in IMPLEMENTATIONS:
-        return IMPLEMENTATIONS[platform](module)
+        return IMPLEMENTATIONS[platform](module_component, platform)
 
     raise ValueError(f"Platform {platform.value} not supported for text content extraction")

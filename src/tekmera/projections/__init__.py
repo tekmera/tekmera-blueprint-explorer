@@ -7,9 +7,8 @@ Main entry point for projection function access.
 
 from typing import Any, Dict, List, Optional, Union
 
-from .meta.platform_detection import detect_platform
 from .meta.registry import ProjectionRegistry
-from .meta.types import BlueprintInput, ModuleResult, Platform, ProjectionResult
+from .meta.types import ModuleResult, Platform, ProjectionResult
 
 
 def project(
@@ -50,6 +49,7 @@ def project(
         # Blueprint functions auto-detect platform and handle flexible input
         # Import the main function directly (not platform-specific implementation)
         import importlib
+
         module_path = f"tekmera.projections.{category}.{subcategory}.{function}"
         module = importlib.import_module(module_path)
         func = getattr(module, function)

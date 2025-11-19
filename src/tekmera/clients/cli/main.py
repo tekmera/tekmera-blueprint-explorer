@@ -11,7 +11,7 @@ import click
 
 from ..._version import get_version_string
 from ...projections import project
-from ...projections.meta.types import Platform, UnsupportedPlatformError
+from ...projections.meta.types import UnsupportedPlatformError
 from .formatters.table import format_result
 
 
@@ -31,45 +31,45 @@ def load_blueprint(file_path: str) -> Dict[str, Any]:
 def load_blueprints_from_paths(paths: List[str], max_depth: int = 3) -> List[Dict[str, Any]]:
     """Load blueprints from files and/or directories (up to 3 levels deep)."""
     blueprints = []
-    
+
     for path_str in paths:
         path = Path(path_str)
-        
+
         if path.is_file():
             # Single file
-            if path.suffix.lower() == '.json':
+            if path.suffix.lower() == ".json":
                 blueprints.append(load_blueprint(str(path)))
             else:
                 print(f"Warning: Skipping non-JSON file '{path}'")
-                
+
         elif path.is_dir():
             # Directory - scan for JSON files with depth limit
             # Build pattern with depth limit
             patterns = ["*.json"]  # Current directory
             for depth in range(1, max_depth + 1):
                 patterns.append("*/" * depth + "*.json")
-            
+
             json_files = []
             for pattern in patterns:
                 json_files.extend(path.glob(pattern))
             # Remove duplicates and sort
             json_files = sorted(set(json_files))
-            
+
             if not json_files:
                 print(f"Warning: No JSON files found in directory '{path}'")
                 continue
-                
+
             for json_file in sorted(json_files):
                 blueprints.append(load_blueprint(str(json_file)))
-                
+
         else:
             print(f"Error: Path '{path}' not found")
             sys.exit(1)
-    
+
     if not blueprints:
         print("Error: No valid blueprint files found")
         sys.exit(1)
-        
+
     return blueprints
 
 
@@ -81,13 +81,13 @@ def cli():
     \b
     Commands:
       name PATHS... [--format=FORMAT]
-      count PATHS... [--format=FORMAT]
       module-count PATHS... [--format=FORMAT]
+      search QUERY PATHS... [--case-sensitive] [--format=FORMAT]
       interactive DIRECTORY
 
     \b
     PATHS can be files or directories. Directories scanned 3 levels deep.
-    Platform auto-detected. Formats: table (default), json
+    Platform auto-detected. Available formats: table (default), json
     """
 
 
@@ -108,12 +108,13 @@ def name(paths, format):
         sys.exit(1)
 
 
-@cli.command()
+
+@cli.command(name="module-count")
 @click.argument("paths", nargs=-1, required=True, type=click.Path(exists=True))
 @click.option(
     "--format", type=click.Choice(["table", "json"]), default="table", help="Output format"
 )
-def count(paths, format):
+def module_count(paths, format):
     """Count modules in blueprint(s) from files or directories"""
     blueprints = load_blueprints_from_paths(list(paths))
 
@@ -125,17 +126,26 @@ def count(paths, format):
         sys.exit(1)
 
 
-@cli.command(name="module-count")
+@cli.command()
+@click.argument("query", type=str)
 @click.argument("paths", nargs=-1, required=True, type=click.Path(exists=True))
+@click.option("--case-sensitive", "-c", is_flag=True, help="Case sensitive search")
 @click.option(
     "--format", type=click.Choice(["table", "json"]), default="table", help="Output format"
 )
-def module_count(paths, format):
-    """Count modules in blueprint(s) from files or directories (alias for count)"""
+def search(query, paths, case_sensitive, format):
+    """Search for text content across blueprint components"""
     blueprints = load_blueprints_from_paths(list(paths))
 
     try:
-        result = project("blueprints", "basic", "module_count", blueprints)
+        result = project(
+            "blueprints",
+            "search",
+            "text_content",
+            blueprints,
+            query=query,
+            case_sensitive=case_sensitive,
+        )
         format_result(result, format)
     except UnsupportedPlatformError as e:
         click.echo(f"Error: {e}", err=True)
@@ -170,8 +180,7 @@ TEKMERA EXPLORER - CURRENT CAPABILITIES
 
 === BLUEPRINT ANALYSIS COMMANDS ===
 name           Extract blueprint name from JSON file
-count          Count modules in blueprint  
-module-count   Count modules (alias for count)
+module-count   Count modules in blueprint
 interactive    Launch full-featured legacy interface
 
 === PLATFORM SUPPORT ===

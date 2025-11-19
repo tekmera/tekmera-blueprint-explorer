@@ -29,7 +29,7 @@ def format_result(result, format_type="table"):
         print(f"Blueprint: {result.blueprint_name}")
         print(f"Platform:  {result.platform.value}")
         print(f"Function:  {result.metadata.function}")
-        
+
         # Format result data based on type
         if isinstance(result.data, list):
             print(f"Results:   ({len(result.data)} items)")
@@ -37,7 +37,7 @@ def format_result(result, format_type="table"):
                 print(f"  {i:2d}. {item}")
         else:
             print(f"Result:    {result.data}")
-            
+
         print(f"Hash:      {result.metadata.input_hash}")
 
 
