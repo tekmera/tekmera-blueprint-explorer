@@ -57,7 +57,8 @@ unset TEKMERA_LICENSE_KEY 2>/dev/null || true
 echo "🎫 Generating $EVAL_DAYS-day evaluation license..."
 cd "$PROJECT_DIR"
 
-# Generate the license using our script
+# Generate the license using our script with virtual env
+source "$PROJECT_DIR/venv/bin/activate"
 EVAL_LICENSE=$(python "$SCRIPT_DIR/generate-eval-license.py" "$EVAL_DAYS" 2>/dev/null)
 
 if [[ -z "$EVAL_LICENSE" ]]; then

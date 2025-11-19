@@ -17,6 +17,7 @@ from ...core.analyzer import BlueprintAnalyzer
 from ...core.parser import BlueprintParser
 from ...infra.license import license_manager
 from ...reporting.reporter import Reporter
+from ...services.openai_service import get_openai_service
 from .explorer import BlueprintExplorer
 from .search import SearchInterface
 from .trace import TraceInterface
@@ -614,64 +615,18 @@ class InteractiveCLI:
         self.console.print(f"\n📝 [bold]Business Process Description for:[/bold] {scenario_name}\n")
 
         try:
-            # Get OpenAI API key
-            import os
+            # Get OpenAI service
+            openai_service = get_openai_service()
 
-            api_key = os.getenv("OPENAI_API_KEY")
-
-            if not api_key:
+            if not openai_service.is_available():
                 self.console.print(
-                    "[red]❌ OpenAI API key not found. Please set OPENAI_API_KEY environment variable.[/red]"
-                )
-                input("\nPress Enter to continue...")
-                return
-
-            # Import OpenAI client
-            try:
-                from openai import OpenAI
-            except ImportError:
-                self.console.print(
-                    "[red]❌ OpenAI library not installed. Run: pip install openai[/red]"
+                    "[red]❌ OpenAI API key not found. Please run 'tekmera init' to configure your API key.[/red]"
                 )
                 input("\nPress Enter to continue...")
                 return
 
             # Show loading message
             with self.console.status("[bold green]Analyzing business process with AI..."):
-                client = OpenAI(api_key=api_key)
-
-                # Prepare the prompt
-                system_prompt = """You are a business process analyst.
-You receive a JSON blueprint exported from Workfront Fusion or Make.com.
-Your task is to interpret the automation as a business process, not a technical flow.
-
-Guidelines:
-
-Ignore IDs, variable names, connection names, module UIDs, and field mappings.
-
-Focus only on what happens in business terms: who or what triggers it, what decisions occur, what data or documents move, and what outcomes are produced.
-
-Use plain business language (no API or platform references).
-
-Abstract automation steps into actions, decisions, and outcomes.
-
-If loops or routers exist, express them as business branching logic ("If an order is pending approval, route to manager").
-
-Present output as a structured narrative or numbered steps describing the process as a human workflow.
-
-Example Output Format:
-
-Business Process Summary:
-1. The process starts when a new customer order is received.
-2. The system checks whether the order exceeds the customer's credit limit.
-3. If it does, an approval request is sent to Finance.
-4. Approved orders are confirmed with the customer and passed to fulfillment.
-5. Rejected orders are logged and a notification is sent.
-
-Key Business Outcome:
-Ensures all customer orders are validated and approved before fulfillment.
-
-Your Output: A concise business-process description for a non-technical business owner."""
 
                 # Get the blueprint JSON data and summarize it for AI
                 blueprint_json = blueprint["data"]
@@ -680,40 +635,18 @@ Your Output: A concise business-process description for a non-technical business
                 self.console.print("🔍 [blue]Summarizing scenario data for AI analysis...[/blue]")
                 scenario_summary = self._summarize_scenario_for_ai(blueprint_json, scenario_name)
 
-                # Format user prompt with summarized data
-                user_prompt = f"Your Input: {scenario_summary}"
-
-                # Call OpenAI API with retry logic for rate limits
+                # Call OpenAI service for business analysis
                 self.console.print("🤖 [blue]Generating business process description...[/blue]")
-                max_retries = 3
-                retry_delay = 1
+                business_description = openai_service.create_business_analysis(
+                    scenario_summary, scenario_name
+                )
 
-                for attempt in range(max_retries):
-                    try:
-                        response = client.chat.completions.create(
-                            model="gpt-4o-mini",
-                            messages=[
-                                {"role": "system", "content": system_prompt},
-                                {"role": "user", "content": user_prompt},
-                            ],
-                            max_tokens=1500,
-                            temperature=0.7,
-                        )
-                        break  # Success, exit retry loop
-                    except Exception as api_error:
-                        if "rate_limit_exceeded" in str(api_error) and attempt < max_retries - 1:
-                            self.console.print(
-                                f"[yellow]⏳ Rate limit hit, retrying in {retry_delay}s... (attempt {attempt + 1}/{max_retries})[/yellow]"
-                            )
-                            import time
-
-                            time.sleep(retry_delay)
-                            retry_delay *= 2  # Exponential backoff
-                        else:
-                            raise api_error  # Re-raise if not rate limit or final attempt
-
-                # Display the response
-                business_description = response.choices[0].message.content
+                if not business_description:
+                    self.console.print(
+                        "[red]❌ Failed to generate business description. Please try again.[/red]"
+                    )
+                    input("\nPress Enter to continue...")
+                    return
 
                 from rich.markdown import Markdown
                 from rich.panel import Panel
@@ -1136,25 +1069,16 @@ User Question: {question}"""
 
     def _get_ai_response(self, conversation_history: List[Dict], scenario_key: str) -> str:
         """Get AI response with tool support"""
-        # Get OpenAI API key
-        import os
+        # Get OpenAI service
+        openai_service = get_openai_service()
 
-        api_key = os.getenv("OPENAI_API_KEY")
-
-        if not api_key:
+        if not openai_service.is_available():
             raise ValueError(
-                "OpenAI API key not found. Please set OPENAI_API_KEY environment variable."
+                "OpenAI API key not found. Please run 'tekmera init' to configure your API key."
             )
-
-        # Import OpenAI client
-        try:
-            from openai import OpenAI
-        except ImportError:
-            raise ValueError("OpenAI library not installed. Run: pip install openai")
 
         # Show loading message
         with self.console.status("[bold green]AI thinking..."):
-            client = OpenAI(api_key=api_key)
 
             # Define search tools for AI to use
             tools = [
@@ -1247,9 +1171,9 @@ User Question: {question}"""
             needs_search = any(trigger in question_lower for trigger in search_triggers)
 
             # Call OpenAI API with tool support - FORCE tool use if needed
-            response = client.chat.completions.create(
-                model="gpt-4o",
+            response = openai_service.create_completion(
                 messages=conversation_history,
+                task_type="analysis",
                 tools=tools,
                 tool_choice="required" if needs_search else "auto",  # Force tool use
                 max_tokens=400,
@@ -1301,9 +1225,9 @@ User Question: {question}"""
                     )
 
                 # Get AI's final response using search results
-                final_response = client.chat.completions.create(
-                    model="gpt-4o",
+                final_response = openai_service.create_completion(
                     messages=conversation_history,
+                    task_type="analysis",
                     max_tokens=400,
                     temperature=0.2,
                 )

@@ -4,11 +4,11 @@ Production-ready version with improved token management, error handling, and con
 """
 
 import json
-import os
-import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+from ..services.openai_service import get_openai_service
 
 
 @dataclass
@@ -37,6 +37,7 @@ class AILandscapeAnalyzer:
         self.max_retries = 2  # Faster failure
         self.retry_delay = 0.5
         self.deterministic = True  # Default to consistent results
+        self.openai_service = get_openai_service()
 
     def _get_token_limit(self) -> int:
         """Adjust token limits based on detail level"""
@@ -155,80 +156,10 @@ class AILandscapeAnalyzer:
 
         return parameters
 
-    def _select_model(self, user_question: str, chunk_count: int) -> str:
-        """Intelligently select GPT-4 model based on query complexity and data size"""
-        if self.model_type != "auto":
-            # Manual model selection
-            model_map = {"fast": "gpt-4o-mini", "standard": "gpt-4o", "thinking": "gpt-4"}
-            return model_map.get(self.model_type, "gpt-4o")
-
-        # Auto-selection based on query characteristics
-        question_lower = user_question.lower()
-
-        # Complex analysis indicators
-        complex_keywords = [
-            "impact",
-            "relationship",
-            "dependency",
-            "workflow",
-            "process",
-            "business",
-            "strategy",
-            "integration",
-            "ecosystem",
-            "architecture",
-        ]
-
-        # Simple lookup indicators
-        simple_keywords = ["list", "count", "how many", "which scenarios", "find", "show me"]
-
-        # Multi-step reasoning indicators
-        reasoning_keywords = [
-            "if we change",
-            "what would happen",
-            "cascade",
-            "downstream",
-            "effect",
-            "consequence",
-            "risk",
-            "compare",
-            "analyze differences",
-        ]
-
-        has_complex = any(keyword in question_lower for keyword in complex_keywords)
-        has_simple = any(keyword in question_lower for keyword in simple_keywords)
-        has_reasoning = any(keyword in question_lower for keyword in reasoning_keywords)
-
-        # Decision logic
-        if chunk_count > 3 or has_reasoning or (has_complex and len(user_question) > 100):
-            # Complex multi-step analysis with large datasets
-            return "gpt-4"
-        elif has_simple and not has_complex and chunk_count == 1:
-            # Simple lookups with small datasets
-            return "gpt-4o-mini"
-        elif chunk_count > 1:
-            # Multi-chunk synthesis requires standard reasoning
-            return "gpt-4o"
-        else:
-            # Default balanced option
-            return "gpt-4o"
-
-    def _estimate_token_count(self, text: str) -> int:
-        """More conservative token estimation"""
-        # Use tiktoken if available, otherwise conservative heuristic
-        try:
-            import tiktoken
-
-            encoder = tiktoken.encoding_for_model("gpt-4o")
-            return len(encoder.encode(text))
-        except ImportError:
-            # More conservative divisor for multilingual content and nested JSON
-            return int(len(text) / self.token_divisor)
-
     def _chunk_data_adaptively(self, context_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Adaptive chunking with progressive module detail reduction"""
         context_json = json.dumps(context_data, indent=2)
-        estimated_tokens = self._estimate_token_count(context_json)
+        estimated_tokens = self.openai_service.estimate_tokens(context_json)
 
         if estimated_tokens <= self.max_context_tokens:
             return [context_data]
@@ -305,74 +236,37 @@ ANALYSIS PRINCIPLES:
 Always include specific scenario names, module counts, and risk-based prioritization."""
 
     def _call_ai_with_retry(
-        self, client, messages: List[Dict], max_tokens: int = 1500, model: str = "gpt-4o"
+        self, messages: List[Dict], max_tokens: int = 1500, model: str = None
     ) -> Optional[str]:
-        """Call OpenAI API with retry logic and error aggregation"""
-        for attempt in range(self.max_retries):
-            try:
-                # Handle different model capabilities
-                call_params = {"model": model, "messages": messages}
+        """Call OpenAI API using centralized service with retry logic"""
+        temperature = 0.1 if self.deterministic else 0.3
 
-                # Configure parameters for GPT-4 models
-                if self.deterministic:
-                    call_params["temperature"] = 0.1
-                    call_params["seed"] = 42
-                else:
-                    call_params["temperature"] = 0.3
+        response = self.openai_service.create_completion(
+            messages=messages,
+            model=model,
+            task_type="analysis",
+            temperature=temperature,
+            max_tokens=max_tokens,
+            timeout=60,
+        )
 
-                call_params["max_tokens"] = max_tokens
+        if response and response.choices:
+            return response.choices[0].message.content
+        else:
+            return "⚠️ Analysis failed - please check your OpenAI API key and try again"
 
-                # Adjust timeout based on model type
-                timeout = 30.0  # Standard timeout
-                if "mini" in model:
-                    timeout = 20.0  # Mini models are faster
-                elif "gpt-4" == model:
-                    timeout = 60.0  # GPT-4 needs more time
-
-                call_params["timeout"] = timeout
-
-                response = client.chat.completions.create(**call_params)
-                return response.choices[0].message.content
-
-            except Exception as e:
-                error_msg = str(e)
-
-                # Fail faster on certain errors (don't retry)
-                if any(
-                    fast_fail in error_msg.lower()
-                    for fast_fail in [
-                        "invalid_request_error",
-                        "authentication_failed",
-                        "insufficient_quota",
-                        "model_not_found",
-                        "permission_denied",
-                        "invalid api key",
-                    ]
-                ):
-                    return f"⚠️ Analysis failed (no retry): {error_msg[:100]}..."
-
-                if attempt == self.max_retries - 1:
-                    # Last attempt failed, return partial error info
-                    return (
-                        f"⚠️ Analysis failed after {self.max_retries} attempts: {error_msg[:100]}..."
-                    )
-
-                # Wait before retry with shorter delays
-                time.sleep(0.5 * (2**attempt))  # Faster retry
-
-        return None
-
-    def _call_ai_with_tools(self, client, messages, tools, model, needs_search, console):
+    def _call_ai_with_tools(self, messages, tools, model, needs_search, console):
         """Call AI with tool support and handle tool execution"""
         try:
-            # Call OpenAI API with tool support
-            response = client.chat.completions.create(
-                model=model,
+            # Call OpenAI API with tool support using centralized service
+            response = self.openai_service.create_completion(
                 messages=messages,
+                model=model,
+                task_type="analysis",
+                temperature=0.2,
+                max_tokens=1500,
                 tools=tools,
                 tool_choice="required" if needs_search else "auto",
-                max_tokens=1500,
-                temperature=0.2,
             )
 
             message = response.choices[0].message
@@ -419,9 +313,10 @@ Always include specific scenario names, module counts, and risk-based prioritiza
                     )
 
                 # Get AI's final response using search results
-                final_response = client.chat.completions.create(
-                    model=model,
+                final_response = self.openai_service.create_completion(
                     messages=messages,
+                    model=model,
+                    task_type="analysis",
                     max_tokens=1500,
                     temperature=0.2,
                 )
@@ -515,27 +410,24 @@ Always include specific scenario names, module counts, and risk-based prioritiza
     def analyze_with_ai(self, user_question: str, console) -> str:
         """Production-ready AI analysis with error resilience"""
         try:
-            # Get OpenAI API key
-            api_key = os.getenv("OPENAI_API_KEY")
-            if not api_key:
+            # Check if OpenAI service is available
+            if not self.openai_service.is_available():
                 raise ValueError(
-                    "OpenAI API key not found. Please set OPENAI_API_KEY environment variable."
+                    "OpenAI API key not found. Please run 'tekmera init' to configure your API key."
                 )
-
-            # Import OpenAI client
-            try:
-                from openai import OpenAI
-            except ImportError:
-                raise ValueError("OpenAI library not installed. Run: pip install openai")
-
-            client = OpenAI(api_key=api_key)
 
             # Prepare context data with adaptive chunking
             context_data = self._prepare_context_data()
             data_chunks = self._chunk_data_adaptively(context_data)
 
-            # Select optimal OpenAI model
-            selected_model = self._select_model(user_question, len(data_chunks))
+            # Select optimal model based on task complexity
+            task_type = "analysis" if len(data_chunks) > 1 else "simple_question"
+            query_length = len(user_question) + sum(len(chunk) for chunk in data_chunks)
+            complexity = "complex" if len(data_chunks) > 3 else "medium"
+
+            selected_model = self.openai_service.select_model_for_task(
+                task_type, query_length, complexity
+            )
 
             if len(data_chunks) > 1:
                 console.print(
@@ -696,7 +588,7 @@ Blueprint Collection Data: {json.dumps(chunk, indent=2)}{chunk_info}"""
 
                     # Call with retry logic using selected model and search tools
                     response = self._call_ai_with_tools(
-                        client, messages, tools, selected_model, needs_search, console
+                        messages, tools, selected_model, needs_search, console
                     )
 
                     if response and not response.startswith("⚠️"):
@@ -729,9 +621,11 @@ Provide a unified comprehensive report that combines all insights."""
 
                 with console.status("[bold green]Synthesizing results..."):
                     # Use reasoning model for complex synthesis
-                    synthesis_model = "gpt-4" if len(successful_responses) > 2 else selected_model
+                    synthesis_model = (
+                        "gpt-5.1-codex" if len(successful_responses) > 2 else selected_model
+                    )
                     final_response = self._call_ai_with_retry(
-                        client, messages, max_tokens=2000, model=synthesis_model
+                        messages, max_tokens=2000, model=synthesis_model
                     )
 
             # Append failure warnings if any chunks failed

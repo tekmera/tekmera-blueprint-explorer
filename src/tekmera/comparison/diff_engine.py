@@ -12,6 +12,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from ..analysis.connections import ConnectionAnalyzer
 from ..core.analyzer import BlueprintAnalyzer
 from ..core.parser import BlueprintParser
 
@@ -23,6 +24,7 @@ class FusionDiff:
         self.console = Console()
         self.parser = BlueprintParser()
         self.analyzer = BlueprintAnalyzer()
+        self.connection_analyzer = ConnectionAnalyzer()
         self.blueprints = {}
 
     def run(self, directory: Path):
@@ -169,6 +171,11 @@ class FusionDiff:
         # Show module type differences
         self._show_module_type_differences(
             modules1, modules2, blueprint1["filename"], blueprint2["filename"]
+        )
+
+        # Show connection differences specifically
+        self._show_connection_differences(
+            blueprint1["data"], blueprint2["data"], blueprint1["filename"], blueprint2["filename"]
         )
 
         # Show detailed module differences
@@ -398,6 +405,11 @@ class FusionDiff:
         norm1 = self._normalize_module_for_comparison(mod1)
         norm2 = self._normalize_module_for_comparison(mod2)
 
+        # Special handling for connection changes (high priority)
+        connection_changes = self._analyze_connection_changes(mod1, mod2)
+        if connection_changes:
+            changes.extend(connection_changes)
+
         # Special handling for router modules
         if (
             mod1.get("module") == "builtin:BasicRouter"
@@ -441,6 +453,190 @@ class FusionDiff:
             changes.extend(detailed_changes)
 
         return changes
+
+    def _analyze_connection_changes(self, mod1: Dict, mod2: Dict) -> List[str]:
+        """Analyze connection changes between two modules using existing ConnectionAnalyzer."""
+        changes = []
+
+        # Extract connection data for both modules
+        conn1_data = self._extract_module_connection_info(mod1)
+        conn2_data = self._extract_module_connection_info(mod2)
+
+        if not conn1_data and not conn2_data:
+            return changes
+
+        # Compare connection IDs
+        conn1_id = conn1_data.get("id") if conn1_data else None
+        conn2_id = conn2_data.get("id") if conn2_data else None
+
+        if conn1_id != conn2_id:
+            conn1_label = (
+                conn1_data.get("label", f"Connection {conn1_id}") if conn1_data else "None"
+            )
+            conn2_label = (
+                conn2_data.get("label", f"Connection {conn2_id}") if conn2_data else "None"
+            )
+
+            if conn1_id is None:
+                changes.append(f"🔌 Connection added: {conn2_label} (ID: {conn2_id})")
+            elif conn2_id is None:
+                changes.append(f"🔌 Connection removed: {conn1_label} (ID: {conn1_id})")
+            else:
+                # Check if it's an environment change
+                env1 = self._classify_environment(conn1_label)
+                env2 = self._classify_environment(conn2_label)
+
+                env_note = ""
+                if env1 != env2:
+                    env_note = f" [{env1} → {env2}]"
+
+                changes.append(
+                    f"🔌 Connection swapped: {conn1_label} (ID: {conn1_id}) → {conn2_label} (ID: {conn2_id}){env_note}"
+                )
+
+        return changes
+
+    def _extract_module_connection_info(self, module: Dict) -> Dict:
+        """Extract connection information from a module."""
+        connection_info = {}
+
+        # Look for connection ID in parameters
+        params = module.get("parameters", {})
+        connection_fields = ["__IMTCONN__", "account", "connection"]
+
+        for field in connection_fields:
+            if field in params:
+                connection_id = params[field]
+                if connection_id:
+                    connection_info["id"] = connection_id
+                    break
+
+        # Get connection label from metadata if available
+        if connection_info.get("id"):
+            metadata = module.get("metadata", {})
+            restore = metadata.get("restore", {})
+
+            for field in connection_fields:
+                if field in restore and isinstance(restore[field], dict):
+                    label = restore[field].get("label", "")
+                    if label:
+                        connection_info["label"] = label
+                        break
+
+        return connection_info
+
+    def _classify_environment(self, connection_label: str) -> str:
+        """Classify connection environment based on label patterns."""
+        if not connection_label:
+            return "UNKNOWN"
+
+        label_lower = connection_label.lower()
+
+        # DEV environment indicators
+        dev_keywords = [
+            "dev",
+            "test",
+            "testing",
+            "sandbox",
+            "stage",
+            "staging",
+            "demo",
+            "preview",
+            "sb01",
+            "sb02",
+            "sb03",
+            "sb04",
+            "sb05",
+        ]
+
+        if any(keyword in label_lower for keyword in dev_keywords):
+            return "DEV"
+
+        # PROD environment indicators (for Workfront specifically)
+        if "my." in label_lower or label_lower.startswith("my"):
+            return "PROD"
+
+        # Default to UNKNOWN if can't determine
+        return "UNKNOWN"
+
+    def _show_connection_differences(self, data1: Dict, data2: Dict, name1: str, name2: str):
+        """Show connection differences between two blueprints."""
+        # Extract all connections from both blueprints
+        connections1 = self.connection_analyzer.find_connections_in_json(data1)
+        connections2 = self.connection_analyzer.find_connections_in_json(data2)
+
+        # Get connection labels
+        labels1 = self.connection_analyzer.extract_connection_labels(data1)
+        labels2 = self.connection_analyzer.extract_connection_labels(data2)
+
+        # Get unique connection IDs
+        conn_ids1 = set([conn[0] for conn in connections1])
+        conn_ids2 = set([conn[0] for conn in connections2])
+
+        if conn_ids1 == conn_ids2 and len(conn_ids1) <= 1:
+            return  # No significant connection changes to show
+
+        self.console.print("[bold]🔌 Connection Analysis[/bold]\n")
+
+        # Show connection swap summary
+        if conn_ids1 != conn_ids2:
+            removed_conns = conn_ids1 - conn_ids2
+            added_conns = conn_ids2 - conn_ids1
+
+            if removed_conns or added_conns:
+                table = Table(title="Connection Changes")
+                table.add_column("Change Type", style="cyan")
+                table.add_column("Connection", style="yellow")
+                table.add_column("Environment", style="green")
+
+                for conn_id in removed_conns:
+                    label = labels1.get(conn_id, f"Connection {conn_id}")
+                    env = self._classify_environment(label)
+                    table.add_row("❌ Removed", label, env)
+
+                for conn_id in added_conns:
+                    label = labels2.get(conn_id, f"Connection {conn_id}")
+                    env = self._classify_environment(label)
+                    table.add_row("✅ Added", label, env)
+
+                self.console.print(table)
+
+                # Show usage counts
+                count1 = len(connections1)
+                count2 = len(connections2)
+                if count1 != count2:
+                    self.console.print(
+                        f"\n[bold]Usage Count Change:[/bold] {count1} → {count2} references"
+                    )
+
+                # Show environment change warning
+                if removed_conns and added_conns:
+                    old_env = None
+                    new_env = None
+                    if removed_conns:
+                        old_conn = list(removed_conns)[0]
+                        old_label = labels1.get(old_conn, "")
+                        old_env = self._classify_environment(old_label)
+                    if added_conns:
+                        new_conn = list(added_conns)[0]
+                        new_label = labels2.get(new_conn, "")
+                        new_env = self._classify_environment(new_label)
+
+                    if old_env and new_env and old_env != new_env:
+                        env_color = (
+                            "red"
+                            if new_env == "DEV"
+                            else "green" if new_env == "PROD" else "yellow"
+                        )
+                        panel = Panel(
+                            f"Environment change detected: {old_env} → [{env_color}]{new_env}[/{env_color}]",
+                            title="🚨 Environment Change Warning",
+                            border_style="red" if new_env == "DEV" else "yellow",
+                            expand=False,
+                        )
+                        self.console.print(panel)
+
+                self.console.print()
 
     def _analyze_router_changes(self, mod1: Dict, mod2: Dict) -> List[str]:
         """Analyze changes in router modules, focusing on filter conditions."""
@@ -637,12 +833,63 @@ class FusionDiff:
 
         return text
 
+    def _detect_global_connection_changes(self, modified_modules: List) -> str:
+        """Detect if the changes represent a global connection swap scenario."""
+        connection_changes = []
+
+        # Extract all connection changes from modified modules
+        for mod1, mod2 in modified_modules:
+            changes = self._identify_functional_changes(mod1, mod2)
+            for change in changes:
+                if (
+                    "Connection swapped:" in change
+                    or "Connection added:" in change
+                    or "Connection removed:" in change
+                ):
+                    connection_changes.append(change)
+
+        if not connection_changes:
+            return ""
+
+        # Analyze if this looks like a global connection swap
+        if len(connection_changes) >= 3:  # Multiple modules with connection changes
+            # Extract connection swap pattern
+            swap_pattern = None
+            for change in connection_changes:
+                if "Connection swapped:" in change:
+                    swap_pattern = change
+                    break
+
+            if swap_pattern:
+                # Count how many modules are affected
+                total_affected = len(modified_modules)
+                connection_affected = len(connection_changes)
+
+                # If most/all changes are connection-related, it's likely a global swap
+                if (
+                    connection_affected >= total_affected * 0.7
+                ):  # 70% or more are connection changes
+                    return (
+                        f"🔄 [bold yellow]Global Connection Swap Detected[/bold yellow]\n"
+                        f"   📊 {connection_affected} modules affected by connection change\n"
+                        f"   {swap_pattern.replace('🔌 Connection swapped:', '   🔌 Change:')}\n"
+                        f"   💡 This appears to be a systematic connection swap across the scenario"
+                    )
+
+        return ""
+
     def _show_change_summary(self, modified_modules: List, name1: str, name2: str):
         """Show a comprehensive summary of all changes found."""
         if not modified_modules:
             return
 
         self.console.print("[bold]📋 Change Summary[/bold]\n")
+
+        # First, detect global connection changes
+        connection_swap_summary = self._detect_global_connection_changes(modified_modules)
+        if connection_swap_summary:
+            self.console.print(connection_swap_summary)
+            self.console.print()
 
         # Analyze the types of changes
         router_changes = []
@@ -732,17 +979,35 @@ class FusionDiff:
             router = grouped["router"]
             module = grouped["module"]
 
-            self.console.print(f"[yellow]{i}. Router-Module Change:[/yellow]")
-            self.console.print(f"   📍 Router: {router['name']} (ID: {router['id']})")
-            self.console.print(
-                f"   📍 Affected Module: {module['name']} ({module['type']}, ID: {module['id']})"
+            # Check if this is primarily a connection change
+            is_connection_change = any(
+                "Connection swapped:" in change for change in module["changes"]
             )
-            self.console.print(f"   🔄 Nature of Change:")
 
-            # Show the most relevant changes (prefer router-specific for filter changes)
-            relevant_changes = router["changes"] if router["changes"] else module["changes"]
-            for change in relevant_changes:
-                self.console.print(f"      • {change}")
+            if is_connection_change:
+                self.console.print(f"[yellow]{i}. Connection Change in Router Flow:[/yellow]")
+                self.console.print(f"   📍 Router: {router['name']} (ID: {router['id']})")
+                self.console.print(
+                    f"   📍 Affected Module: {module['name']} ({module['type']}, ID: {module['id']})"
+                )
+
+                # Show only connection changes
+                for change in module["changes"]:
+                    if "Connection swapped:" in change:
+                        self.console.print(f"   {change}")
+                        break
+            else:
+                self.console.print(f"[yellow]{i}. Router-Module Change:[/yellow]")
+                self.console.print(f"   📍 Router: {router['name']} (ID: {router['id']})")
+                self.console.print(
+                    f"   📍 Affected Module: {module['name']} ({module['type']}, ID: {module['id']})"
+                )
+                self.console.print(f"   🔄 Nature of Change:")
+
+                # Show the most relevant changes (prefer router-specific for filter changes)
+                relevant_changes = router["changes"] if router["changes"] else module["changes"]
+                for change in relevant_changes:
+                    self.console.print(f"      • {change}")
             self.console.print()
 
         # Show standalone changes

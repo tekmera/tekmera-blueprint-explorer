@@ -8,6 +8,7 @@ import click
 from rich.console import Console
 
 from ..._version import get_version_string
+from ...config.config_manager import config_manager
 from ...infra.license import license_manager
 from ...infra.license_ui import LicenseUI
 from .interactive import InteractiveCLI
@@ -49,6 +50,7 @@ def cli(ctx):
 
     \b
     EXAMPLES:
+      tekmera init                         # Setup license and OpenAI credentials
       tekmera analyze ./blueprints          # Launch interactive analysis
       tekmera license status               # Check current license
       tekmera license activate ABC-123     # Activate Pro license
@@ -56,6 +58,38 @@ def cli(ctx):
     Visit https://tekmera.com for Pro licenses and documentation.
     """
     ctx.ensure_object(dict)
+
+
+@cli.command()
+def init():
+    """
+    Initialize Tekmera Fusion Explorer with license and OpenAI credentials
+
+    Interactive setup wizard that guides you through configuring:
+
+    \b
+    • Pro license key for advanced features
+    • OpenAI API key for AI-powered analysis
+
+    Credentials are securely stored in ~/.tekmera/config.json and will be
+    automatically used by all Tekmera commands. This eliminates the need
+    to set environment variables or pass credentials manually.
+
+    \b
+    WHAT YOU'LL NEED:
+    • Tekmera Pro license key (format: TEKMERA-PRO-{edition}-{hash})
+    • OpenAI API key from https://platform.openai.com/api-keys (starts with 'sk-')
+
+    Both are optional - you can skip either one during setup.
+
+    \b
+    EXAMPLES:
+      tekmera init                    # Run interactive setup wizard
+      tekmera init && tekmera analyze ./blueprints  # Setup then analyze
+
+    Run this command again anytime to update your stored credentials.
+    """
+    config_manager.interactive_setup()
 
 
 @cli.command()

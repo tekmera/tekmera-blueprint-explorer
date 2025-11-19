@@ -36,8 +36,9 @@ unset TEKMERA_LICENSE_KEY 2>/dev/null || true
 echo "🎫 Generating permanent Pro license..."
 cd "$PROJECT_DIR"
 
-# Generate the license using our script
-PRO_LICENSE=$(python "$SCRIPT_DIR/generate-pro-license.py" pro 2>/dev/null)
+# Generate the license using our script with virtual env
+source "$PROJECT_DIR/venv/bin/activate"
+PRO_LICENSE=$(python "$SCRIPT_DIR/generate-pro-license.py" 2>/dev/null)
 
 if [[ -z "$PRO_LICENSE" ]]; then
     echo "❌ Failed to generate premium license"

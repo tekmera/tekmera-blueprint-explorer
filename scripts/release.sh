@@ -33,7 +33,7 @@ do_release() {
         exit 1
     fi
 
-    for tool in python git; do
+    for tool in python3 git; do
         if ! command -v "$tool" > /dev/null 2>&1; then
             echo -e "${RED}❌ Required tool not found: $tool${NC}"
             exit 1
@@ -113,6 +113,33 @@ print(str(new))
     if git rev-parse "$TAG_NAME" > /dev/null 2>&1; then
         echo -e "${RED}❌ Tag $TAG_NAME already exists${NC}"
         exit 1
+    fi
+
+    # Update pyproject.toml with new version
+    echo -e "\n${BLUE}📝 Updating pyproject.toml version to $NEW_VERSION...${NC}"
+    if ! is_dry "$DRY_RUN"; then
+        if command -v sed > /dev/null 2>&1; then
+            # Use sed to update version in pyproject.toml
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                # macOS sed requires backup extension
+                sed -i '' "s/^version = \".*\"/version = \"$NEW_VERSION\"/" pyproject.toml
+            else
+                # Linux sed
+                sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" pyproject.toml
+            fi
+            echo -e "${GREEN}✅ Updated pyproject.toml version${NC}"
+            
+            # Commit the version bump
+            git add pyproject.toml
+            git commit -m "chore: bump version to $NEW_VERSION"
+            echo -e "${GREEN}✅ Committed version bump${NC}"
+        else
+            echo -e "${RED}❌ sed command not found${NC}"
+            exit 1
+        fi
+    else
+        echo -e "${YELLOW}📝 Would update pyproject.toml version to $NEW_VERSION${NC}"
+        echo -e "${YELLOW}📝 Would commit version bump${NC}"
     fi
 
     # Create and push tag

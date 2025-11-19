@@ -15,6 +15,7 @@ Tekmera Fusion Explorer is a professional command-line tool for analyzing export
 
 # Daily development workflow 
 source venv/bin/activate
+tekmera init  # Setup credentials if not done
 ./scripts/run-dev.sh analyze ./blueprints
 ```
 
@@ -125,6 +126,14 @@ Fusion blueprints are JSON files with this structure:
 - License data stored in `~/.tekmera/license.json` with machine fingerprinting
 - Local pro mode: Set `TEKMERA_LOCAL_PRO=true` for development/testing
 - License key format: `TEKMERA-PRO-{edition}-{hash}`
+
+### Configuration Management
+
+- **New `init` command**: Interactive setup wizard for credentials
+- **Secure storage**: Credentials stored in `~/.tekmera/config.json` (mode 600)
+- **Automatic detection**: License and OpenAI keys read from config or environment
+- **Fallback support**: Environment variables still work if config not available
+- **Config manager**: `src/tekmera/config/config_manager.py` handles all credential management
 
 ### Development Workflow
 

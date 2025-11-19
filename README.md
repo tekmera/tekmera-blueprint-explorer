@@ -104,12 +104,23 @@ tekmera license activate YOUR-PRO-LICENSE-KEY
 tekmera license deactivate
 ```
 
-### AI Setup (Pro License Required)
+### Quick Setup (Recommended)
 ```bash
-# Set OpenAI API key for AI features
+# Interactive setup wizard for license and OpenAI credentials
+tekmera init
+```
+
+The `init` command provides an interactive setup wizard that securely stores your credentials in `~/.tekmera/config.json`. This eliminates the need to set environment variables.
+
+### Manual Setup (Alternative)
+```bash
+# Activate Pro license
+tekmera license activate YOUR-PRO-LICENSE-KEY
+
+# Set OpenAI API key for AI features (environment variable)
 export OPENAI_API_KEY="your-openai-api-key"
 
-# For persistent setup, add to your shell profile:
+# For persistent environment setup, add to your shell profile:
 echo 'export OPENAI_API_KEY="your-key"' >> ~/.bashrc
 ```
 

@@ -259,6 +259,21 @@ class SimpleLicenseManager:
                 "expiry": None,
             }
 
+        # Check for stored license key in config manager
+        try:
+            from ..config.config_manager import config_manager
+
+            stored_license_key = config_manager.get_license_key()
+            if stored_license_key:
+                # Validate and activate the stored license key
+                success, message, license_data = self._validate_license_key(stored_license_key)
+                if success:
+                    license_data["license_key"] = stored_license_key
+                    return license_data
+        except ImportError:
+            # If config manager is not available, continue with normal flow
+            pass
+
         # Check for license file
         if not self.license_file.exists():
             return {
@@ -481,9 +496,18 @@ class LicenseManager:
         """Get license context for feature evaluation"""
         self.validate_license_on_access()
 
+        # Check for OpenAI API key in config manager or environment
+        openai_api_available = False
+        try:
+            from ..config.config_manager import config_manager
+
+            openai_api_available = bool(config_manager.get_openai_api_key())
+        except ImportError:
+            openai_api_available = bool(os.getenv("OPENAI_API_KEY"))
+
         context = {
             "license": self.license_type.value,
-            "openai_api_available": bool(os.getenv("OPENAI_API_KEY")),
+            "openai_api_available": openai_api_available,
         }
 
         if additional_context:

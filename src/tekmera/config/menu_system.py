@@ -141,7 +141,7 @@ class MenuSystem:
         explore_ai_process = MenuItem(
             id="explore.ai_process",
             label="Describe Business Process",
-            display_label="📝 Describe Business Process",
+            display_label="🤖 Describe Business Process",
             description="AI-powered business process description of the scenario",
             action="describe_business_process",
             license_required=LicenseType.PREMIUM,
@@ -152,7 +152,7 @@ class MenuSystem:
         explore_ai_question = MenuItem(
             id="explore.ai_question",
             label="Ask AI Question",
-            display_label="❓ Ask AI Question",
+            display_label="🤖 Ask AI Question",
             description="Ask custom questions about this specific scenario",
             action="ask_scenario_ai_question",
             license_required=LicenseType.PREMIUM,
