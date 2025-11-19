@@ -1,0 +1,3 @@
+"""
+Basic blueprint information projections.
+"""

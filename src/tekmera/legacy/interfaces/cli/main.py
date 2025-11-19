@@ -7,7 +7,7 @@ from pathlib import Path
 import click
 from rich.console import Console
 
-from ..._version import get_version_string
+from ...._version import get_version_string
 from ...config.config_manager import config_manager
 from ...infra.license import license_manager
 from ...infra.license_ui import LicenseUI

@@ -41,12 +41,12 @@ src/tekmera/
 ├── clients/                       # Client implementations (UI/UX)
 │   ├── cli/                       # Command-line interface client
 │   │   ├── single_use/            # Direct command execution
-│   │   ├── interactive/           # Interactive exploration
 │   │   ├── formatters/            # Output formatting
 │   │   └── main.py                # CLI entry point
-│   ├── api/                       # REST API client (future)
-│   ├── web/                       # Web interface client (future)
-│   └── batch/                     # Batch processing client
+│   └── interactive/               # Interactive exploration client
+│       ├── menus/                 # Menu system
+│       ├── explorers/             # Interactive explorers
+│       └── main.py                # Interactive entry point
 └── legacy/                        # Existing code (during migration)
     └── ...
 ```
@@ -92,6 +92,42 @@ interface ProjectionResult<T> {
 ### Secondary Classification: Functional Domains
 - **Single**: `basic/` (name, count), `modules/` (analysis), `flow/` (paths), `connections/` (data flow)
 - **Multiple**: `corpus/` (aggregate), `comparison/` (diffs), `patterns/` (similarity)
+
+## Baseline Function Contract
+
+All projection functions MUST inherit and implement this baseline contract:
+
+### Universal Input Requirements
+- **blueprint**: `Dict[str, Any]` - Valid JSON object representing automation platform blueprint
+- **platform**: `Optional[Platform]` - Platform override (auto-detected if None)
+
+### Universal Output Contract
+Returns `ProjectionResult[T]` where T is function-specific data type:
+- **data**: Function-specific extracted/computed data
+- **platform**: Auto-detected or explicitly specified platform
+- **blueprint_id**: Deterministic hash-based blueprint identifier
+- **blueprint_name**: Extracted blueprint name (using name projection if needed)
+- **metadata**: Standard execution metadata (function, version, timestamp, input_hash, supported_platforms)
+
+### Universal Error Handling
+#### Automatic Platform Detection Errors
+- **UnsupportedPlatformError**: Blueprint structure doesn't match any supported platform
+#### Function-Specific Errors  
+- **ValueError**: Specified platform not supported for this specific function
+- **KeyError**: Required blueprint field missing (function-specific)
+
+### Universal Behavioral Guarantees
+1. **Immutability**: Input blueprint is NEVER modified
+2. **Determinism**: Identical input always produces identical output
+3. **No Side Effects**: No I/O, logging, external dependencies, or state changes
+4. **Platform Independence**: Function behavior is identical across all supported platforms
+5. **Graceful Degradation**: Missing optional fields default to sensible values
+
+### Function Documentation Rules
+1. **Baseline Inheritance**: All functions inherit the above contract automatically
+2. **Function-Specific Documentation**: Only document what differs from baseline
+3. **Required Sections**: Purpose, platform-specific input structures, function-specific error handling
+4. **Optional Sections**: Complex examples, performance notes, algorithm details
 
 ## Function Package Structure
 
@@ -153,14 +189,18 @@ The `detect_platform()` function enables seamless multi-platform support:
 # meta/platform_detection.py
 def detect_platform(blueprint: Dict[str, Any]) -> Platform:
     """Auto-detect platform from blueprint JSON structure."""
-    if "flow" in blueprint and "metadata" in blueprint:
+    # Check metadata.zone first (most reliable)
+    metadata = blueprint.get("metadata", {})
+    if isinstance(metadata, dict):
+        zone = metadata.get("zone", "")
+        if "workfrontfusion.com" in zone:
+            return Platform.WORKFRONT_FUSION
+        elif "make.com" in zone or "make.celonis.com" in zone:
+            return Platform.MAKE_COM
+    
+    # Fallback to structure-based detection
+    if "flow" in blueprint:
         return Platform.WORKFRONT_FUSION
-    elif "scenario" in blueprint and "modules" in blueprint.get("scenario", {}):
-        return Platform.MAKE_COM
-    elif "nodes" in blueprint and "connections" in blueprint:
-        return Platform.N8N
-    elif "steps" in blueprint and "trigger" in blueprint:
-        return Platform.ZAPIER
     else:
         raise UnsupportedPlatformError("Unable to detect platform")
 ```
@@ -325,6 +365,44 @@ Auto-discovery through package introspection and metadata registration.
 - **Unit Testing**: Each projection function tested in isolation with deterministic verification
 - **Integration Testing**: End-to-end projection pipelines and cross-platform compatibility
 - **Property-Based Testing**: Random blueprint variations to catch edge cases
+
+### Test Package Structure Rules
+Test packages MUST mirror production code structure exactly with platform separation enforced:
+
+```
+tests/
+├── projections/                    # Mirrors src/tekmera/projections/
+│   ├── meta/                       # Meta component tests
+│   │   ├── test_platform_detection.py
+│   │   ├── test_registry.py
+│   │   └── test_types.py
+│   ├── single/                     # Single blueprint tests
+│   │   └── basic/                  # Basic projection tests
+│   │       └── name/               # Name function tests
+│   │           ├── test_workfront_fusion.py  # Platform-specific tests
+│   │           ├── test_make_com.py          # Platform-specific tests
+│   │           └── test_name.py              # Integration tests
+│   └── multiple/                   # Multi-blueprint tests
+│       └── ...
+```
+
+**Platform Separation Rules**:
+1. **Platform-Specific Test Files**: Each platform implementation gets its own test file (e.g., `test_workfront_fusion.py`, `test_make_com.py`)
+2. **Integration Test Files**: Cross-platform integration tests in separate files (e.g., `test_name.py`)
+3. **No Shared Test Code**: No shared test utilities or fixtures between platforms
+4. **Mirror Production Structure**: Test directory structure must exactly match `src/tekmera/projections/` hierarchy
+5. **Platform Test Isolation**: Platform-specific tests must not import or reference other platform implementations
+
+**Required Test Patterns**:
+Each platform-specific test file MUST include these three test categories:
+1. **Blue Sky Example**: Happy path test with valid, typical input data
+2. **Complex Example**: Edge case test with complex/unusual but valid input data  
+3. **Error Handling**: Test error scenarios with invalid input and proper exception handling
+
+**Test Method Naming Convention**:
+- Blue sky: `test_<function>_blue_sky()`
+- Complex: `test_<function>_complex_case()`
+- Error handling: `test_<function>_error_<specific_error>()`
 
 ### Performance Optimizations
 - **Caching**: Input hash-based result caching with platform-specific keys

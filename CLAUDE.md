@@ -6,26 +6,50 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Tekmera Explorer is a professional command-line tool for analyzing exported blueprint JSON files from multiple automation platforms. It provides comprehensive diagnostic capabilities including interactive exploration, AI-powered insights, and cross-blueprint analysis with a freemium licensing model.
 
+## Migration Status
+
+**IMPORTANT**: This project is currently in migration from a monolithic architecture to a pure functional projection system. 
+
+- **Legacy System** (`src/tekmera/legacy/`): All existing functionality preserved
+- **New Projection System** (`src/tekmera/projections/`): Pure functional analysis engine
+- **Legacy Scripts** (`scripts/legacy/`): All development scripts moved here
+
+The main `tekmera` command now uses a unified CLI:
+- **Direct commands** (`name`, `count`, `module-count`) use the new projection system  
+- **Interactive mode** (`interactive`) uses the preserved legacy system
+
+## Current CLI Commands
+
+```bash
+# New projection-based commands
+tekmera name blueprint.json                    # Extract blueprint name
+tekmera count blueprint.json                   # Count modules  
+tekmera module-count blueprint.json            # Count modules (alias)
+
+# Legacy interactive mode (preserved)
+tekmera interactive ./blueprints/              # Launch interactive exploration
+```
+
 ## Development Commands
 
 ### Environment Setup
 ```bash
 # First-time setup
-./scripts/setup-dev.sh
+./scripts/legacy/setup-dev.sh
 
 # Daily development workflow 
 source venv/bin/activate
 tekmera init  # Setup credentials if not done
-./scripts/run-dev.sh analyze ./blueprints
+./scripts/legacy/run-dev.sh analyze ./blueprints
 ```
 
 ### Code Quality and CI
 ```bash
 # Auto-fix code issues and run all checks
-./scripts/check-dev.sh
+./scripts/legacy/check-dev.sh
 
 # Skip tests during development
-./scripts/check-dev.sh --skip-tests
+./scripts/legacy/check-dev.sh --skip-tests
 ```
 
 ### Testing

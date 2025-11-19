@@ -190,7 +190,7 @@ class OpenAIService:
                 "timeout": timeout,
                 **kwargs,
             }
-            
+
             # Use max_completion_tokens for newer models, max_tokens for legacy models
             if model in ["gpt-4o", "gpt-4o-mini"]:
                 request_params["max_completion_tokens"] = max_tokens
