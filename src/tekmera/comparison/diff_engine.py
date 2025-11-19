@@ -1,5 +1,5 @@
 """
-Fusion Blueprint Diff CLI - Compare blueprint scenarios
+Blueprint Diff CLI - Compare blueprint scenarios
 """
 
 import argparse
@@ -18,8 +18,8 @@ from ..core.parser import BlueprintParser
 from ..utils.base_cli import BaseCLI
 
 
-class FusionDiff(BaseCLI):
-    """CLI tool for comparing Fusion blueprint scenarios."""
+class BlueprintDiff(BaseCLI):
+    """CLI tool for comparing blueprint scenarios."""
 
     def __init__(self):
         super().__init__(enable_search_display=False)  # Diff engine doesn't need search display
@@ -1150,7 +1150,7 @@ class FusionDiff(BaseCLI):
 
 def test_diff():
     """Test function to compare specific files."""
-    diff_tool = FusionDiff()
+    diff_tool = BlueprintDiff()
     diff_tool.console = Console()
     diff_tool.parser = BlueprintParser()
     diff_tool.analyzer = BlueprintAnalyzer()
@@ -1199,7 +1199,7 @@ def main():
         print(f"Error: Directory {args.directory} does not exist")
         return 1
 
-    diff_tool = FusionDiff()
+    diff_tool = BlueprintDiff()
     diff_tool.run(args.directory)
 
     return 0

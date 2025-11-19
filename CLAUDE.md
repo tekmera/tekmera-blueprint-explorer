@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Tekmera Fusion Explorer is a professional command-line tool for analyzing exported Workfront Fusion blueprint JSON files. It provides comprehensive diagnostic capabilities including interactive exploration, AI-powered insights, and cross-blueprint analysis with a freemium licensing model.
+Tekmera Explorer is a professional command-line tool for analyzing exported blueprint JSON files from multiple automation platforms. It provides comprehensive diagnostic capabilities including interactive exploration, AI-powered insights, and cross-blueprint analysis with a freemium licensing model.
 
 ## Development Commands
 
@@ -98,7 +98,7 @@ pyinstaller --onefile --name tekmera-test-local src/tekmera/__main__.py
 
 ### Blueprint Data Structure
 
-Fusion blueprints are JSON files with this structure:
+Automation platform blueprints are JSON files. Workfront Fusion blueprints use this structure:
 ```json
 {
   "name": "Scenario Name",

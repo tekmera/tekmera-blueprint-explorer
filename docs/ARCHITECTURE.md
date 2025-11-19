@@ -2,15 +2,15 @@
 
 ## Overview
 
-This document describes the platform-aware projection function architecture for Tekmera Fusion Explorer. This architecture transforms the codebase from a stateful, tightly-coupled design into a composable, functional system where each projection function takes blueprint JSON as input and returns standardized output without side effects.
+This document describes the platform-aware projection function architecture for Tekmera Explorer. This architecture transforms the codebase from a stateful, tightly-coupled design into a composable, functional system where each projection function takes one or more blueprint JSON as input and returns standardized output without side effects.
 
 ## Core Principles
 
 ### Pure Functional Design
 - **Immutable Inputs**: Functions never modify input blueprints
 - **Deterministic Output**: Same input always produces identical output  
-- **No Side Effects**: No I/O, logging, or external dependencies in projection functions
-- **Composable**: Functions can be chained and combined
+- **No Side Effects**: No I/O, external dependencies in projection functions
+- **Composable**: Functions can (and should) be chained and combined
 - **Testable**: Easy unit testing with deterministic behavior
 
 ### Platform Awareness
@@ -22,22 +22,36 @@ This document describes the platform-aware projection function architecture for 
 ## Architecture Overview
 
 ```
-src/tekmera/projections/
-├── single/                    # Single blueprint projections
-│   ├── basic/                 # Basic info (name, count, etc.)
-│   ├── modules/               # Module analysis  
-│   ├── flow/                  # Flow analysis
-│   └── connections/           # Connection analysis
-├── multiple/                  # Multi-blueprint projections
-│   ├── corpus/                # Corpus analysis
-│   ├── comparison/            # Blueprint comparison
-│   └── patterns/              # Pattern detection
-└── meta/                      # Metadata and infrastructure
-    ├── types.py               # Type definitions
-    ├── registry.py            # Function discovery
-    ├── platform_detection.py  # Auto-detect platform
-    └── utils.py               # Shared utilities
+src/tekmera/
+├── projections/                   # Pure projection functions (business logic)
+│   ├── single/                    # Single blueprint projections
+│   │   ├── basic/                 # Basic info (name, count, etc.)
+│   │   ├── modules/               # Module analysis  
+│   │   ├── flow/                  # Flow analysis
+│   │   └── connections/           # Connection analysis
+│   ├── multiple/                  # Multi-blueprint projections
+│   │   ├── corpus/                # Corpus analysis
+│   │   ├── comparison/            # Blueprint comparison
+│   │   └── patterns/              # Pattern detection
+│   └── meta/                      # Metadata and infrastructure
+│       ├── types.py               # Type definitions
+│       ├── registry.py            # Function discovery
+│       ├── platform_detection.py  # Auto-detect platform
+│       └── utils.py               # Shared utilities
+├── clients/                       # Client implementations (UI/UX)
+│   ├── cli/                       # Command-line interface client
+│   │   ├── single_use/            # Direct command execution
+│   │   ├── interactive/           # Interactive exploration
+│   │   ├── formatters/            # Output formatting
+│   │   └── main.py                # CLI entry point
+│   ├── api/                       # REST API client (future)
+│   ├── web/                       # Web interface client (future)
+│   └── batch/                     # Batch processing client
+└── legacy/                        # Existing code (during migration)
+    └── ...
 ```
+
+**Key Principle**: Clients consume projections. Projection functions are pure business logic with no UI dependencies. Clients are separate packages that consume projection functions via the standard API, enabling reusability, testability, scalability, and maintainability.
 
 ## Data Types and Schemas
 
@@ -48,374 +62,308 @@ enum Platform {
   MAKE_COM = "make_com", 
   N8N = "n8n",
   ZAPIER = "zapier",
-  POWER_AUTOMATE = "power_automate",
-  INTEGROMAT = "integromat"  // Legacy Make.com
+  POWER_AUTOMATE = "power_automate"
 }
 ```
 
 ### Standard Output Schema
-All projection functions return results with this standardized schema:
-
 ```typescript
 interface ProjectionResult<T> {
-  blueprint_id: string;         // Unique identifier for the blueprint
-  blueprint_name: string;       // Human-readable name
-  platform: Platform;          // Platform identifier
-  data: T;                      // Function-specific data
+  blueprint_id: string;
+  blueprint_name: string;
+  platform: Platform;
+  data: T;
   metadata: {
-    function: string;           // Name of projection function
-    version: string;            // Schema version
-    computed_at: string;        // ISO timestamp
-    input_hash: string;         // SHA256 of input for caching
-    supported_platforms: Platform[];  // Platforms this function supports
+    function: string;
+    version: string;
+    computed_at: string;
+    input_hash: string;
+    supported_platforms: Platform[];
   };
-}
-```
-
-### Function Metadata
-```typescript
-interface FunctionMetadata {
-  name: string;
-  description: string;
-  supported_platforms: Set<Platform>;
-  category: string;             // "single" or "multiple" 
-  subcategory: string;          // "basic", "modules", "flow", etc.
-  return_type: string;
-  examples: List<string>;
 }
 ```
 
 ## Hierarchical Organization
 
 ### Primary Classification: Single vs Multiple Blueprints
-
-The architecture uses a binary classification based on the number of input blueprints:
-
-- **`single/`**: Functions that analyze a single blueprint
-- **`multiple/`**: Functions that analyze multiple blueprints together
-
-This separation is fundamental because:
-- Single blueprint functions focus on intrinsic properties
-- Multiple blueprint functions enable comparative and aggregate analysis
-- Different algorithms and optimizations apply to each category
+- **`single/`**: Functions that analyze a single blueprint (intrinsic properties)
+- **`multiple/`**: Functions that analyze multiple blueprints (comparative/aggregate analysis)
 
 ### Secondary Classification: Functional Domains
-
-Within each primary category, functions are organized by analytical domain:
-
-#### Single Blueprint Domains
-- **`basic/`**: Fundamental properties (name, module count, complexity)
-- **`modules/`**: Module-specific analysis (types, connections, parameters)
-- **`flow/`**: Execution flow analysis (paths, branching, error handling)
-- **`connections/`**: Connection and data flow analysis
-
-#### Multiple Blueprint Domains  
-- **`corpus/`**: Aggregate analysis across blueprints
-- **`comparison/`**: Blueprint comparison and diff analysis
-- **`patterns/`**: Pattern detection and similarity analysis
+- **Single**: `basic/` (name, count), `modules/` (analysis), `flow/` (paths), `connections/` (data flow)
+- **Multiple**: `corpus/` (aggregate), `comparison/` (diffs), `patterns/` (similarity)
 
 ## Function Package Structure
 
-Each functional domain is implemented as a package with platform-specific implementations:
+Each function is a subpackage with platform-specific implementations:
 
 ```
 single/basic/
-├── __init__.py              # Package API and routing
-├── metadata.py              # Function metadata definitions
-├── workfront_fusion.py      # Workfront Fusion implementations
-├── make_com.py              # Make.com implementations  
-├── n8n.py                   # n8n implementations
-└── common.py                # Platform-agnostic implementations
+├── __init__.py                    # Package API and auto-discovery
+├── metadata.py                    # Package-level metadata
+├── name/                          # Name extraction function
+│   ├── __init__.py               # Function API and routing
+│   ├── workfront_fusion.py       # Workfront Fusion implementation
+│   ├── make_com.py               # Make.com implementation
+│   ├── n8n.py                    # n8n implementation
+│   └── common.py                 # Cross-platform implementation
+├── module_count/                  # Module count function
+│   ├── __init__.py
+│   ├── workfront_fusion.py
+│   ├── make_com.py
+│   └── common.py
+└── complexity/                    # Complexity analysis function
+    ├── __init__.py
+    ├── workfront_fusion.py
+    ├── algorithms.py             # Shared complexity algorithms
+    └── common.py
 ```
 
-### Function Implementation Example
+### Function Implementation Pattern
 
 ```python
-# single/basic/metadata.py
-FUNCTIONS = {
-    "name": FunctionMetadata(
-        name="name",
-        description="Extract scenario/workflow name from blueprint",
-        supported_platforms={Platform.WORKFRONT_FUSION, Platform.MAKE_COM, Platform.N8N},
-        category="single",
-        subcategory="basic",
-        return_type="str",
-        examples=["My Workfront Scenario", "User Onboarding Flow"]
-    )
+# single/basic/name/__init__.py
+from ....meta.types import Platform
+from . import workfront_fusion, make_com, n8n, common
+
+IMPLEMENTATIONS = {
+    Platform.WORKFRONT_FUSION: workfront_fusion.name,
+    Platform.MAKE_COM: make_com.name,
+    Platform.N8N: n8n.name,
 }
 
-# single/basic/workfront_fusion.py
-def name(blueprint: Dict[str, Any]) -> ProjectionResult[str]:
+def name(blueprint, platform=None):
+    """Extract scenario name - main entry point."""
+    if platform in IMPLEMENTATIONS:
+        return IMPLEMENTATIONS[platform](blueprint)
+    return common.name(blueprint, platform)
+
+# single/basic/name/workfront_fusion.py
+def name(blueprint):
     """Extract scenario name from Workfront Fusion blueprint."""
     scenario_name = blueprint.get("name", "Unnamed Scenario")
-    return ProjectionResult(
-        blueprint_id=_get_blueprint_id(blueprint),
-        blueprint_name=scenario_name,
-        platform=Platform.WORKFRONT_FUSION,
-        data=scenario_name,
-        metadata={
-            "function": "basic.name",
-            "version": "1.0.0",
-            "computed_at": _now_iso(),
-            "input_hash": _hash_input(blueprint),
-            "supported_platforms": [Platform.WORKFRONT_FUSION]
-        }
-    )
+    return create_result(blueprint, Platform.WORKFRONT_FUSION, "basic.name", scenario_name)
 ```
 
-## Platform-Specific vs Common Implementations
+## Platform Detection
 
-### Platform-Specific Implementation
-Use when platforms have significantly different JSON schemas or require platform-specific logic:
+The `detect_platform()` function enables seamless multi-platform support:
 
 ```python
-# workfront_fusion.py
-def module_count(blueprint: Dict[str, Any]) -> ProjectionResult[int]:
-    """Count modules including nested routes and error handlers (Fusion-specific)."""
-    modules = _get_modules_recursive_fusion(blueprint)  # Fusion-specific traversal
-    return create_result(blueprint, Platform.WORKFRONT_FUSION, "module_count", len(modules))
-
-# make_com.py  
-def module_count(blueprint: Dict[str, Any]) -> ProjectionResult[int]:
-    """Count modules in Make.com scenario."""
-    modules = _get_modules_make(blueprint)  # Make.com-specific structure
-    return create_result(blueprint, Platform.MAKE_COM, "module_count", len(modules))
+# meta/platform_detection.py
+def detect_platform(blueprint: Dict[str, Any]) -> Platform:
+    """Auto-detect platform from blueprint JSON structure."""
+    if "flow" in blueprint and "metadata" in blueprint:
+        return Platform.WORKFRONT_FUSION
+    elif "scenario" in blueprint and "modules" in blueprint.get("scenario", {}):
+        return Platform.MAKE_COM
+    elif "nodes" in blueprint and "connections" in blueprint:
+        return Platform.N8N
+    elif "steps" in blueprint and "trigger" in blueprint:
+        return Platform.ZAPIER
+    else:
+        raise UnsupportedPlatformError("Unable to detect platform")
 ```
 
-### Common Implementation
-Use when platforms have compatible schemas and unified logic is possible:
+## CLI Interface Design
+
+### Dual Interface Modes
+
+```bash
+# Interactive mode (current default)
+tekmera analyze ./blueprints/
+tekmera interactive ./blueprints/
+
+# Single-use commands (new)
+tekmera name ./blueprint.json
+tekmera module-count ./blueprint.json
+tekmera complexity ./blueprint.json --algorithm cyclomatic
+tekmera corpus-summary ./blueprints/*.json
+```
+
+### Command Structure
+
+**All commands automatically detect the platform** from blueprint JSON structure, with optional explicit override via `--platform` flag:
+
+```bash
+# Basic projections
+tekmera name FILE                              # Extract scenario name
+tekmera module-count FILE                      # Count total modules  
+tekmera complexity FILE [--algorithm ALGO]    # Calculate complexity
+tekmera count FILE                             # Alias for module-count
+
+# Advanced analysis
+tekmera flow-paths FILE [--max-depth N]       # Execution paths
+tekmera modules FILE [--include-orphans]      # Module analysis
+
+# Multi-blueprint analysis  
+tekmera corpus-summary FILES...               # Corpus statistics
+tekmera compare FILE1 FILE2                   # Compare blueprints
+tekmera shared-modules FILES...               # Common modules
+
+# Platform override
+tekmera name FILE --platform workfront-fusion
+tekmera name FILE --platform make-com
+```
+
+### Standard Options
+
+```bash
+--platform PLATFORM         # Override auto-detection
+--format FORMAT             # Output: json, table, yaml, csv
+--output FILE, -o FILE      # Output file
+--verbose, -v               # Debug information
+--quiet, -q                 # Suppress output
+```
+
+### File Input Patterns
+
+```bash
+# Single files
+tekmera name ./blueprint.json
+
+# Multiple files  
+tekmera corpus-summary ./bp1.json ./bp2.json
+tekmera corpus-summary ./blueprints/*.json     # Glob patterns
+tekmera corpus-summary ./blueprints/           # Directory
+
+# Stdin
+cat blueprint.json | tekmera name -
+echo '{"name":"test"}' | tekmera name --platform n8n
+```
+
+### Output Formats
+
+```bash
+# Table (interactive default)
+tekmera module-count ./blueprint.json
+┌─────────────────┬───────┐
+│ Module Type     │ Count │
+├─────────────────┼───────┤
+│ workfront:search│   3   │
+└─────────────────┴───────┘
+
+# JSON (scripting default)
+tekmera name ./blueprint.json --format json
+{"blueprint_id": "bp-123", "platform": "workfront_fusion", 
+ "data": "My Scenario", "metadata": {...}}
+
+# CSV (spreadsheet import)
+tekmera corpus-summary ./blueprints/*.json --format csv
+name,module_count,complexity,platform
+"Scenario 1",15,8,"workfront_fusion"
+```
+
+## Programming API Usage
 
 ```python
-# common.py
-def name(blueprint: Dict[str, Any], platform: Platform) -> ProjectionResult[str]:
-    """Extract name with platform-aware logic."""
-    platform_extractors = {
-        Platform.WORKFRONT_FUSION: lambda bp: bp.get("name", "Unnamed Scenario"),
-        Platform.MAKE_COM: lambda bp: bp.get("scenario", {}).get("name", "Unnamed Scenario"),
-        Platform.N8N: lambda bp: bp.get("name", "Unnamed Workflow"),
-    }
+from tekmera.projections import project
+from tekmera.projections.meta.platform_detection import detect_platform
+
+# Main API - auto-detects platform
+result = project("single", "basic", "name", [blueprint])
+
+# Manual platform detection
+platform = detect_platform(blueprint)
+result = project("single", "basic", "name", [blueprint], platform=platform)
+
+# Multi-blueprint analysis
+summary = project("multiple", "corpus", "summary", blueprints)
+
+# Direct function calls
+from tekmera.projections.single.basic import name, module_count
+name_result = name(blueprint)           # Auto-detects platform
+count_result = module_count(blueprint)
+```
+
+### API Integration
+
+```python
+# projections/__init__.py - Main API with auto-detection
+def project(category: str, subcategory: str, function: str, 
+           blueprints: List[Dict], platform: Platform = None, **kwargs):
+    if platform is None and blueprints:
+        platform = detect_platform(blueprints[0])
     
-    extractor = platform_extractors.get(platform)
-    if not extractor:
-        raise UnsupportedPlatformError(f"Platform {platform} not supported")
-        
-    scenario_name = extractor(blueprint)
-    return create_result(blueprint, platform, "name", scenario_name)
+    registry = ProjectionRegistry()
+    func = registry.get_function(category, subcategory, function, platform)
+    
+    return func(blueprints[0] if len(blueprints) == 1 else blueprints, **kwargs)
 ```
 
 ## Function Registry and Discovery
 
-### Registry System
-The `ProjectionRegistry` provides centralized function discovery and routing:
-
 ```python
 class ProjectionRegistry:
-    """Central registry for all projection functions."""
+    """Central registry for function discovery and routing."""
     
     def get_function(self, category: str, subcategory: str, name: str, platform: Platform):
         """Get platform-specific function implementation."""
-        # Try platform-specific implementation first
-        # Fall back to common implementation with platform parameter
+        # Try platform-specific, fall back to common
         
     def list_functions(self, platform: Platform = None) -> List[FunctionMetadata]:
         """List available functions, optionally filtered by platform."""
         
     def get_supported_platforms(self) -> Set[Platform]:
-        """Get all supported platforms across all functions."""
+        """Get all supported platforms."""
 ```
 
-### Auto-Discovery
-Functions are automatically discovered through:
-- Package introspection
-- Metadata registration
-- Platform capability detection
-
-## Usage Patterns
-
-### Main Projection API
-```python
-from tekmera.projections import project
-
-# Single blueprint analysis
-result = project("single", "basic", "name", [blueprint])
-
-# Multiple blueprint analysis  
-result = project("multiple", "corpus", "summary", blueprints)
-
-# Explicit platform specification
-result = project("single", "modules", "types", [blueprint], platform=Platform.N8N)
-```
-
-### Convenience Functions
-```python
-# High-level analysis functions
-basic_info = get_basic_info(blueprint)
-module_analysis = analyze_modules(blueprint) 
-corpus_summary = analyze_corpus(blueprints)
-```
-
-### Function Composition
-```python
-# Chaining projections for complex analysis
-pipeline = (
-    project("single", "basic", "name") | 
-    project("single", "modules", "extract") |
-    project("single", "flow", "trace")
-)
-result = pipeline(blueprint)
-```
-
-## Platform Detection Strategy
-
-### Automatic Detection
-The system automatically detects platform from blueprint structure:
-
-```python
-def detect_platform(blueprint: Dict[str, Any]) -> Platform:
-    """Auto-detect platform from blueprint JSON structure."""
-    # Check for platform-specific markers
-    if "flow" in blueprint and "metadata" in blueprint:
-        return Platform.WORKFRONT_FUSION
-    elif "scenario" in blueprint:
-        return Platform.MAKE_COM
-    elif "nodes" in blueprint and "connections" in blueprint:
-        return Platform.N8N
-    # ... additional detection logic
-```
-
-### Explicit Override
-Users can explicitly specify platform when auto-detection is insufficient:
-
-```python
-# Auto-detect (recommended)
-result = project("single", "basic", "name", [blueprint])
-
-# Explicit override (when needed)
-result = project("single", "basic", "name", [blueprint], platform=Platform.N8N)
-```
+Auto-discovery through package introspection and metadata registration.
 
 ## Migration Strategy
 
-### Phase 1: Foundation (Weeks 1-2)
-1. Create projection infrastructure (`meta/` package)
-2. Implement basic projections for Workfront Fusion
-3. Build registry and discovery system
-4. Add comprehensive tests
+### Implementation Phases
+1. **Foundation (Weeks 1-2)**: Create projection infrastructure and basic functions
+2. **Core Migration (Weeks 3-4)**: Convert existing analysis logic to projections  
+3. **Multi-Platform (Weeks 5-6)**: Add platform support and detection
+4. **Advanced Features (Weeks 7-8)**: Multi-blueprint and comparison projections
+5. **CLI Migration (Weeks 9-10)**: Refactor CLI to use projection API
 
-### Phase 2: Core Projections (Weeks 3-4)
-1. Migrate existing analysis logic to projection functions
-2. Add platform detection and routing
-3. Implement module and flow analysis projections
+## Testing and Performance
 
-### Phase 3: Multi-Platform Support (Weeks 5-6)
-1. Add Make.com platform support
-2. Implement platform-specific optimizations
-3. Add cross-platform compatibility analysis
+### Testing Strategy
+- **Unit Testing**: Each projection function tested in isolation with deterministic verification
+- **Integration Testing**: End-to-end projection pipelines and cross-platform compatibility
+- **Property-Based Testing**: Random blueprint variations to catch edge cases
 
-### Phase 4: Advanced Features (Weeks 7-8)
-1. Multi-blueprint projections (corpus analysis)
-2. Comparison and diff projections
-3. Pattern detection and similarity analysis
-
-### Phase 5: CLI Migration (Weeks 9-10)
-1. Refactor CLI to use projection API
-2. Maintain backward compatibility
-3. Add new projection-based commands
-
-## Testing Strategy
-
-### Unit Testing
-- Each projection function tested in isolation
-- Platform-specific test fixtures
-- Determinism verification (same input → same output)
-
-### Integration Testing  
-- End-to-end projection pipeline testing
-- Cross-platform compatibility testing
-- Performance benchmarking
-
-### Property-Based Testing
-- Generate random blueprint variations
-- Verify invariant properties across platforms
-- Catch edge cases in platform detection
-
-## Performance Considerations
-
-### Caching Strategy
-- Input hash-based result caching
-- Platform-specific cache keys
-- Cache invalidation on schema changes
-
-### Parallel Execution
-- Stateless functions enable parallelization
-- Batch processing of multiple blueprints
-- Concurrent projection execution
-
-### Memory Optimization
-- Immutable data structures
-- Lazy evaluation where possible
-- Streaming for large blueprint collections
+### Performance Optimizations
+- **Caching**: Input hash-based result caching with platform-specific keys
+- **Parallel Execution**: Stateless functions enable concurrent projection execution
+- **Memory Optimization**: Immutable data structures and lazy evaluation
 
 ## Extension Points
 
 ### Adding New Platforms
-1. Create platform-specific implementation files
-2. Add platform enum value
-3. Update detection logic
-4. Add platform-specific tests
+1. Create platform-specific implementation files in existing function packages
+2. Add platform enum value and update detection logic
+3. Add platform-specific tests and utilities
 
-### Adding New Functions
-1. Create function in appropriate domain package
-2. Add metadata description
-3. Implement for supported platforms
-4. Add to registry
+### Adding New Functions  
+1. Create function subpackage in appropriate domain
+2. Implement for supported platforms with shared algorithms as needed
+3. Add to registry and include comprehensive tests
 
-### Custom Function Packages
-- External packages can extend the registry
-- Plugin architecture for third-party functions
-- Standard interfaces for function discovery
+### Custom Clients
+External packages can extend the registry and create custom interfaces (web dashboards, IDE plugins, etc.) that consume the same projection functions.
 
-## Error Handling
+## Error Handling and Documentation
 
-### Function-Level Errors
-- Input validation at package boundaries
-- Graceful degradation for malformed data
-- Clear error messages with context
+### Error Handling
+- **Input Validation**: At client boundaries with clear error messages
+- **Platform Compatibility**: Explicit unsupported platform errors with helpful guidance
+- **Graceful Degradation**: Fallbacks for malformed data
 
-### Platform Compatibility
-- Explicit unsupported platform errors
-- Feature availability checking
-- Compatibility scoring between platforms
-
-## Documentation and Discoverability
-
-### Self-Describing Functions
-- Rich metadata for each function
-- Usage examples in metadata
-- Platform compatibility matrix
-
-### Auto-Generated Documentation
-- Function registry powers documentation generation
-- Interactive function explorer
-- Platform-specific usage guides
+### Self-Describing System
+- **Function Metadata**: Rich descriptions, usage examples, platform compatibility
+- **Auto-Generated Docs**: Registry powers documentation generation and interactive exploration
+- **Platform Discovery Tools**: CLI tools for platform experts (`tekmera dev list-functions --platform make-com`)
 
 ## Future Enhancements
 
-### Cross-Platform Analysis
-- Blueprint compatibility scoring across platforms
-- Migration feasibility analysis
-- Feature gap identification
-
-### Function Composition Language
-- Domain-specific language for projection pipelines
-- Visual function composition interface
-- Saved analysis templates
-
-### Real-Time Analysis
-- Streaming blueprint analysis
-- Incremental updates
-- Live dashboard integration
+- **Cross-Platform Analysis**: Compatibility scoring and migration feasibility analysis
+- **Function Composition**: DSL for projection pipelines and visual composition interface  
+- **Real-Time Analysis**: Streaming blueprint processing with incremental updates
 
 ---
 
-This architecture provides a solid foundation for scalable, maintainable, and extensible blueprint analysis across multiple automation platforms while maintaining the pure functional principles essential for reliable and testable code.
+This architecture provides a solid foundation for scalable, maintainable, and extensible blueprint analysis across multiple automation platforms while maintaining pure functional principles essential for reliable and testable code.

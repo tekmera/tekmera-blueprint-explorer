@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Main CLI entry point for Tekmera Fusion Explorer
+Main CLI entry point for Tekmera Explorer
 """
 from pathlib import Path
 
@@ -15,13 +15,13 @@ from .interactive import InteractiveCLI
 
 
 @click.group()
-@click.version_option(version=get_version_string(), prog_name="tekmera-fusion-explorer")
+@click.version_option(version=get_version_string(), prog_name="tekmera-explorer")
 @click.pass_context
 def cli(ctx):
     """
-    Tekmera Fusion Explorer - Professional CLI for Workfront Fusion blueprint analysis
+    Tekmera Explorer - Professional CLI for automation platform blueprint analysis
 
-    Analyze exported Fusion blueprint JSON files with comprehensive diagnostic capabilities:
+    Analyze exported blueprint JSON files with comprehensive diagnostic capabilities:
 
     \b
     🔍 SCENARIO EXPLORATION

@@ -1,5 +1,5 @@
 """
-Interactive CLI interface for Tekmera Fusion Explorer
+Interactive CLI interface for Tekmera Explorer
 """
 
 import json
@@ -22,7 +22,7 @@ from .trace import TraceInterface
 
 
 class InteractiveCLI(InteractiveCLIBase):
-    """Main interactive CLI interface for the Fusion Blueprint Analyzer."""
+    """Main interactive CLI interface for the Blueprint Analyzer."""
 
     def __init__(self):
         super().__init__(enable_search_display=False)  # Interactive doesn't need search display
@@ -1402,9 +1402,9 @@ User Question: {question}"""
 
     def _handle_diff_mode(self):
         """Handle blueprint comparison mode."""
-        from ...comparison.diff_engine import FusionDiff
+        from ...comparison.diff_engine import BlueprintDiff
 
-        diff_tool = FusionDiff()
+        diff_tool = BlueprintDiff()
         diff_tool.run(self.directory_path)
 
     def _handle_ai_query_mode(self):

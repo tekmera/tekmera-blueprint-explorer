@@ -1,7 +1,7 @@
-# Tekmera Fusion Explorer
+# Tekmera Explorer
 
-**Tekmera Fusion Explorer** is a command-line intelligence tool for **Workfront Fusion** blueprints.  
-It gives integration teams deep visibility into complex automation portfolios — enabling rapid exploration, search, and analysis without opening Fusion.
+**Tekmera Explorer** is a command-line intelligence tool for **automation blueprints** across multiple platforms.  
+It gives integration teams deep visibility into complex automation portfolios — enabling rapid exploration, search, and analysis without opening individual platforms.
 
 Built for architects, developers, and administrators managing dozens or hundreds of scenarios, Tekmera turns exported blueprints into a **structured, queryable knowledge base** that reveals how your automation system actually behaves.
 
@@ -126,7 +126,7 @@ echo 'export OPENAI_API_KEY="your-key"' >> ~/.bashrc
 
 ## Blueprint Structure
 
-The tool supports standard Workfront Fusion blueprint exports:
+The tool supports multiple automation platform blueprint exports, including Workfront Fusion:
 
 ```json
 {
@@ -217,7 +217,7 @@ tekmera analyze ./blueprints
 
 - **Python**: 3.8+ with virtual environment support
 - **Platform**: macOS, Linux, Windows (WSL recommended)  
-- **Blueprints**: Workfront Fusion JSON exports from any environment
+- **Blueprints**: JSON exports from supported automation platforms (Workfront Fusion, Make.com, n8n, etc.)
 - **AI Features**: OpenAI API key (GPT-4 recommended for best results)
 
 ## Technical Details
