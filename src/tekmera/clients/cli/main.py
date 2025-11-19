@@ -83,11 +83,12 @@ def cli():
       name PATHS... [--format=FORMAT]
       module-count PATHS... [--format=FORMAT]
       search QUERY PATHS... [--case-sensitive] [--format=FORMAT]
+      report BLUEPRINT_PATH [--format=FORMAT]
       interactive DIRECTORY
 
     \b
     PATHS can be files or directories. Directories scanned 3 levels deep.
-    Platform auto-detected. Available formats: table (default), json
+    Platform auto-detected. Available formats: table (default), json, pdf
     """
 
 
@@ -106,7 +107,6 @@ def name(paths, format):
     except UnsupportedPlatformError as e:
         click.echo(f"Error: {e}", err=True)
         sys.exit(1)
-
 
 
 @cli.command(name="module-count")
@@ -153,6 +153,45 @@ def search(query, paths, case_sensitive, format):
 
 
 @cli.command()
+@click.argument("blueprint_path", type=click.Path(exists=True, dir_okay=False))
+@click.option(
+    "--format", type=click.Choice(["table", "json", "pdf"]), default="table", help="Output format"
+)
+def report(blueprint_path, format):
+    """Generate one-page summary report for a single blueprint file"""
+    blueprint = load_blueprint(blueprint_path)
+
+    try:
+        result = project("blueprints", "reports", "summary", blueprint)
+        if format == "table":
+            # For table format, print the formatted report text
+            click.echo(result.data.to_text())
+        elif format == "pdf":
+            # For PDF format, generate PDF file
+            from .formatters.pdf import render_report_to_pdf
+            
+            # Create output filename based on blueprint name
+            blueprint_name = result.data.blueprint_name.replace(" ", "_").replace("/", "_")
+            output_path = f"{blueprint_name}_report.pdf"
+            
+            try:
+                pdf_file = render_report_to_pdf(result.data, output_path)
+                click.echo(f"PDF report generated: {pdf_file}")
+            except ImportError as e:
+                click.echo(f"Error: {e}", err=True)
+                click.echo("Install ReportLab with: pip install reportlab", err=True)
+                sys.exit(1)
+        else:
+            # For JSON format, output the structured data
+            # Convert the typed report to dict for JSON serialization
+            json_result = result.__replace__(data=result.data.to_dict())
+            format_result(json_result, format)
+    except UnsupportedPlatformError as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+
+
+@cli.command()
 @click.argument("directory", type=click.Path(exists=True, file_okay=False))
 def interactive(directory):
     """Launch legacy interactive exploration mode"""
@@ -181,6 +220,8 @@ TEKMERA EXPLORER - CURRENT CAPABILITIES
 === BLUEPRINT ANALYSIS COMMANDS ===
 name           Extract blueprint name from JSON file
 module-count   Count modules in blueprint
+search         Search text content across components
+report         Generate one-page summary report
 interactive    Launch full-featured legacy interface
 
 === PLATFORM SUPPORT ===
