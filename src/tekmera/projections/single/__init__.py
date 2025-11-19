@@ -1,3 +1,0 @@
-"""
-Single blueprint projection functions.
-"""

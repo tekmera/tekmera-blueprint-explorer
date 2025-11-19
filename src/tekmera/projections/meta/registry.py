@@ -64,7 +64,13 @@ class ProjectionRegistry:
     def _discover_function(self, category: str, subcategory: str, name: str):
         """Auto-discover function by importing its module and registering implementations."""
         try:
-            module_path = f"tekmera.projections.{category}.{subcategory}.{name}"
+            # Try new structure first: components/blueprints
+            if category in ["components", "blueprints"]:
+                module_path = f"tekmera.projections.{category}.{subcategory}.{name}"
+            else:
+                # Fallback for any legacy paths
+                module_path = f"tekmera.projections.{category}.{subcategory}.{name}"
+
             module = importlib.import_module(module_path)
 
             # Get the main function and its implementations
