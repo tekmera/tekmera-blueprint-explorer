@@ -15,61 +15,38 @@ from rich.table import Table
 from ..analysis.connections import ConnectionAnalyzer
 from ..core.analyzer import BlueprintAnalyzer
 from ..core.parser import BlueprintParser
+from ..utils.base_cli import BaseCLI
 
 
-class FusionDiff:
+class FusionDiff(BaseCLI):
     """CLI tool for comparing Fusion blueprint scenarios."""
 
     def __init__(self):
-        self.console = Console()
-        self.parser = BlueprintParser()
-        self.analyzer = BlueprintAnalyzer()
+        super().__init__(enable_search_display=False)  # Diff engine doesn't need search display
         self.connection_analyzer = ConnectionAnalyzer()
-        self.blueprints = {}
 
-    def run(self, directory: Path):
+    def start(self, directory: Path):
         """Main entry point for the diff CLI."""
-        self.console.print("\n[bold blue]🔄 Fusion Explorer: Diff Scenarios[/bold blue]")
-        self.console.print("Compare blueprint scenarios and explore their differences.\n")
+        self.display_welcome(
+            "Fusion Explorer: Diff Scenarios",
+            "Compare blueprint scenarios and explore their differences.",
+        )
 
         # Load all blueprints
-        self._load_blueprints(directory)
+        self.load_blueprints(
+            directory, include_modules=False
+        )  # Diff engine doesn't need module parsing
 
         if len(self.blueprints) < 2:
-            self.console.print("[red]Need at least 2 blueprint files to compare.[/red]")
+            self.show_error("Need at least 2 blueprint files to compare")
             return
 
         # Interactive scenario selection
         self._interactive_diff()
 
-    def _load_blueprints(self, directory: Path):
-        """Load all blueprint files from directory and subfolders."""
-        # Recursively find all JSON files
-        json_files = list(directory.rglob("*.json"))
-
-        for json_file in json_files:
-            try:
-                blueprint_data = self.parser.load_blueprint(json_file)
-
-                # Extract scenario name correctly for both structures
-                if "blueprint" in blueprint_data:
-                    scenario_name = blueprint_data["blueprint"].get("name", json_file.stem)
-                else:
-                    scenario_name = blueprint_data.get("name", json_file.stem)
-
-                # Create a unique key that includes relative path
-                relative_path = json_file.relative_to(directory)
-                blueprint_key = str(relative_path.with_suffix(""))  # Remove .json extension
-
-                self.blueprints[blueprint_key] = {
-                    "filename": json_file.stem,
-                    "scenario_name": scenario_name,
-                    "file_path": json_file,
-                    "relative_path": relative_path,
-                    "data": blueprint_data,
-                }
-            except Exception as e:
-                self.console.print(f"[red]Warning: Could not load {json_file.name}: {e}[/red]")
+    def run(self, directory: Path):
+        """Legacy method for backward compatibility."""
+        self.start(directory)
 
     def _interactive_diff(self):
         """Interactive scenario selection and comparison."""
@@ -1180,7 +1157,7 @@ def test_diff():
 
     # Load blueprints
     directory = Path("blueprints")
-    diff_tool._load_blueprints(directory)
+    diff_tool.load_blueprints(directory, include_modules=False)
 
     print(f"Found {len(diff_tool.blueprints)} blueprints:")
     for key, blueprint in diff_tool.blueprints.items():

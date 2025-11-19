@@ -4,14 +4,11 @@ Centralized menu definitions with hierarchy and paywall integration
 """
 
 import json
-import logging
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from ..infra.license import LicenseType, license_manager
-
-logger = logging.getLogger(__name__)
 
 
 class ExecResult(Enum):

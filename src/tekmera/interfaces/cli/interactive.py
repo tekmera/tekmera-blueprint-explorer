@@ -8,29 +8,24 @@ from typing import Dict, List, Optional
 
 from InquirerPy import inquirer
 from InquirerPy.separator import Separator
-from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 
 from ...config.menu_system import ExecResult, menu_system
-from ...core.analyzer import BlueprintAnalyzer
-from ...core.parser import BlueprintParser
 from ...infra.license import license_manager
 from ...reporting.reporter import Reporter
 from ...services.openai_service import get_openai_service
+from ...utils.base_cli import InteractiveCLIBase
 from .explorer import BlueprintExplorer
 from .search import SearchInterface
 from .trace import TraceInterface
 
 
-class InteractiveCLI:
+class InteractiveCLI(InteractiveCLIBase):
     """Main interactive CLI interface for the Fusion Blueprint Analyzer."""
 
     def __init__(self):
-        self.console = Console()
-        self.parser = BlueprintParser()
-        self.analyzer = BlueprintAnalyzer()
-        self.blueprints = {}
+        super().__init__(enable_search_display=False)  # Interactive doesn't need search display
         self.directory_path = None
 
         # License is automatically detected from ~/.tekmera/license.json on startup
@@ -45,12 +40,10 @@ class InteractiveCLI:
         self._display_welcome()
 
         # Load blueprints
-        self._load_blueprints()
+        self.load_blueprints(directory, include_modules=True)
 
         if not self.blueprints:
-            self.console.print(
-                "[red]❌ No valid blueprint files found in the specified directory.[/red]"
-            )
+            self.show_error("No valid blueprint files found in the specified directory")
             return
 
         # Main interaction loop
@@ -67,7 +60,7 @@ class InteractiveCLI:
                         continue  # Premium prompt already shown, continue loop
 
             except KeyboardInterrupt:
-                self.console.print("\n[yellow]👋 Goodbye![/yellow]")
+                self.handle_keyboard_interrupt()
                 break
 
     def _display_welcome(self):
@@ -103,53 +96,6 @@ class InteractiveCLI:
         self.console.print("\n")
         self.console.print(panel)
         self.console.print()
-
-    def _load_blueprints(self):
-        """Load all blueprint files from the directory and subfolders."""
-        self.blueprints = {}
-
-        # Recursively find all JSON files
-        json_files = list(self.directory_path.rglob("*.json"))
-
-        if not json_files:
-            return
-
-        self.console.print("📂 Loading blueprints (including subfolders)...")
-
-        for json_file in json_files:
-            try:
-                blueprint_data = self.parser.load_blueprint(json_file)
-
-                # Extract scenario name correctly for both structures
-                if "blueprint" in blueprint_data:
-                    # Diff blueprint structure: name is in blueprint.name
-                    scenario_name = blueprint_data["blueprint"].get("name", json_file.stem)
-                    data = blueprint_data["blueprint"]
-                else:
-                    # Regular blueprint structure: name is at root level
-                    scenario_name = blueprint_data.get("name", json_file.stem)
-                    data = blueprint_data
-
-                # Get module count using recursive parsing
-                modules = self.parser.get_modules(data)
-
-                # Create a unique key that includes relative path
-                relative_path = json_file.relative_to(self.directory_path)
-                blueprint_key = str(relative_path.with_suffix(""))  # Remove .json extension
-
-                self.blueprints[blueprint_key] = {
-                    "filename": json_file.stem,
-                    "scenario_name": scenario_name,
-                    "file_path": json_file,
-                    "relative_path": relative_path,
-                    "data": blueprint_data,
-                    "module_count": len(modules),
-                }
-
-            except Exception as e:
-                self.console.print(f"[yellow]⚠️  Could not load {json_file.name}: {e}[/yellow]")
-
-        self.console.print(f"✅ Loaded {len(self.blueprints)} blueprint(s) from directory tree\n")
 
     def _select_mode(self) -> Optional[Dict[str, str]]:
         """Present mode selection menu using menu system."""
@@ -429,7 +375,8 @@ class InteractiveCLI:
         structure = {}
 
         for key, blueprint in self.blueprints.items():
-            relative_path = blueprint["relative_path"]
+            file_path = blueprint["file_path"]
+            relative_path = file_path.relative_to(self.directory_path)
             path_parts = relative_path.parts[:-1]  # Exclude filename
             filename = relative_path.stem
 

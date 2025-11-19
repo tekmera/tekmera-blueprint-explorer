@@ -1292,38 +1292,6 @@ At each step, you'll see what the module does and how it's configured.
             self.console.print(f"[dim]{nav_instructions}[/dim]")
         self.console.print()
 
-    def _get_user_action(self) -> str:
-        """Get the next action from the user."""
-        choices = []
-        self.flow_steps[self.current_step_index]
-
-        # Navigation options
-        if self.current_step_index in self.branch_points:
-            # This is a router - show branching option
-            branch_count = len(self.branch_points[self.current_step_index]["branches"])
-            choices.append(
-                {"name": f"🔀 Choose branch path ({branch_count} options)", "value": "next"}
-            )
-        elif self.current_step_index < len(self.flow_steps) - 1:
-            choices.append({"name": "➡️  Next module", "value": "next"})
-        else:
-            choices.append({"name": "🏁 Complete live walkthrough", "value": "next"})
-
-        if self.current_step_index > 0:
-            choices.append({"name": "⬅️  Previous module", "value": "back"})
-
-        choices.extend(
-            [
-                {"name": "🔍 Show detailed configuration", "value": "details"},
-                {"name": "🦘 Jump to specific module", "value": "jump"},
-                Separator(),
-                {"name": "🔄 Restart from beginning", "value": "restart"},
-                {"name": "❌ Exit live walkthrough", "value": "exit"},
-            ]
-        )
-
-        return inquirer.select(message="What would you like to do?", choices=choices).execute()
-
     def _show_detailed_view(self, step: FlowStep):
         """Show detailed configuration for the current step."""
         self.console.print("\n[bold]📋 Detailed Configuration[/bold]\n")

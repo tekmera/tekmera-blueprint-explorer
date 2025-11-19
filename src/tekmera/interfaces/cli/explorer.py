@@ -8,7 +8,6 @@ from typing import Any, Dict
 
 from InquirerPy import inquirer
 from InquirerPy.separator import Separator
-from rich.console import Console
 from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.table import Table
@@ -19,19 +18,15 @@ from ...analysis.connections import (
     display_connection_table,
 )
 from ...analysis.corpus_analyzer import CorpusAnalyzer
-from ...core.analyzer import BlueprintAnalyzer
-from ...core.parser import BlueprintParser
+from ...utils.base_cli import InteractiveCLIBase
 
 
-class BlueprintExplorer:
+class BlueprintExplorer(InteractiveCLIBase):
     """Interactive explorer for Fusion blueprint analysis."""
 
     def __init__(self):
-        self.console = Console()
-        self.parser = BlueprintParser()
-        self.analyzer = BlueprintAnalyzer()
+        super().__init__(enable_search_display=True)
         self.corpus_analyzer = CorpusAnalyzer()
-        self.blueprints = {}
         self.current_scenario = None
         self.current_modules = []
         self.modules_per_page = 15
@@ -44,10 +39,10 @@ class BlueprintExplorer:
         self.console.print("Navigate through scenarios and explore module details interactively.\n")
 
         # Load all blueprints
-        self._load_blueprints(directory)
+        self.load_blueprints(directory, include_modules=True)
 
         if not self.blueprints:
-            self.console.print("[red]No valid blueprint files found.[/red]")
+            self.show_error("No valid blueprint files found")
             return
 
         # Load corpus for search functionality
@@ -83,37 +78,8 @@ class BlueprintExplorer:
                 elif action == "connections":
                     self._show_connections()
             except KeyboardInterrupt:
-                self.console.print("\n[yellow]Goodbye![/yellow]")
+                self.handle_keyboard_interrupt()
                 break
-
-    def _load_blueprints(self, directory: Path):
-        """Load all blueprint files from directory and subfolders."""
-        # Recursively find all JSON files
-        json_files = list(directory.rglob("*.json"))
-
-        for json_file in json_files:
-            try:
-                blueprint_data = self.parser.load_blueprint(json_file)
-
-                # Extract scenario name correctly for both structures
-                if "blueprint" in blueprint_data:
-                    scenario_name = blueprint_data["blueprint"].get("name", json_file.stem)
-                else:
-                    scenario_name = blueprint_data.get("name", json_file.stem)
-
-                # Create a unique key that includes relative path
-                relative_path = json_file.relative_to(directory)
-                blueprint_key = str(relative_path.with_suffix(""))  # Remove .json extension
-
-                self.blueprints[blueprint_key] = {
-                    "filename": json_file.stem,
-                    "scenario_name": scenario_name,
-                    "file_path": json_file,
-                    "relative_path": relative_path,
-                    "data": blueprint_data,
-                }
-            except Exception as e:
-                self.console.print(f"[red]Warning: Could not load {json_file.name}: {e}[/red]")
 
     def _main_menu(self) -> str:
         """Display main menu and get user choice."""
@@ -149,26 +115,6 @@ class BlueprintExplorer:
         choices.append({"name": "❌ Quit", "value": "quit"})
 
         return inquirer.select(message="What would you like to do?", choices=choices).execute()
-
-    def _scenario_selection(self):
-        """Let user select a scenario to explore."""
-        choices = []
-
-        for key, blueprint in self.blueprints.items():
-            scenario_name = blueprint["scenario_name"]
-            filename = blueprint["filename"]
-            choices.append({"name": f"{scenario_name} ({filename}.json)", "value": key})
-
-        choices.append(Separator())
-        choices.append({"name": "← Back", "value": "back"})
-
-        selection = inquirer.select(
-            message="Select a scenario to explore:", choices=choices
-        ).execute()
-
-        if selection != "back":
-            self.current_scenario = selection
-            self._load_scenario_modules()
 
     def _load_scenario_modules(self):
         """Load modules for the currently selected scenario."""
@@ -393,7 +339,7 @@ class BlueprintExplorer:
             input("\nPress Enter to continue...")
             return
 
-        self._display_field_search_results(field_pattern, matches, exact_match)
+        self.search_display.display_field_search_results(matches, field_pattern)
 
     def _module_type_search(self):
         """Interactive module type search."""
@@ -413,7 +359,7 @@ class BlueprintExplorer:
             input("\nPress Enter to continue...")
             return
 
-        self._display_module_search_results(type_pattern, matches, exact_match)
+        self.search_display.display_module_search_results(matches, type_pattern)
 
     def _text_search(self):
         """Interactive text search."""
@@ -431,7 +377,7 @@ class BlueprintExplorer:
             input("\nPress Enter to continue...")
             return
 
-        self._display_text_search_results(search_text, matches, case_sensitive)
+        self.search_display.display_text_search_results(matches, search_text)
 
     def _show_field_rankings(self):
         """Show DE field usage rankings."""
@@ -573,157 +519,3 @@ class BlueprintExplorer:
         display_connection_summary(self.console, connection_types)
 
         input("\nPress Enter to continue...")
-
-    def _display_field_search_results(self, pattern: str, matches: list, exact: bool):
-        """Display field search results."""
-        match_type = "exact" if exact else "partial"
-        self.console.print(
-            f"\n[bold green]Found {len(matches)} {match_type} matches for '{pattern}':[/bold green]\n"
-        )
-
-        # Group by field name
-        by_field = {}
-        for match in matches:
-            field = match["field"]
-            if field not in by_field:
-                by_field[field] = []
-            by_field[field].append(match)
-
-        for field, field_matches in by_field.items():
-            table = Table(title=f"Field: {field} ({len(field_matches)} usages)")
-            table.add_column("Scenario", style="green")
-            table.add_column("Module Type", style="cyan")
-            table.add_column("Module ID", style="yellow")
-
-            for match in field_matches:
-                table.add_row(match["scenario_name"], match["module_type"], str(match["module_id"]))
-
-            self.console.print(table)
-            self.console.print()
-
-        input("Press Enter to continue...")
-
-    def _display_module_search_results(self, pattern: str, matches: list, exact: bool):
-        """Display module type search results."""
-        match_type = "exact" if exact else "partial"
-        self.console.print(
-            f"\n[bold green]Found {len(matches)} {match_type} matches for '{pattern}':[/bold green]\n"
-        )
-
-        # Group by module type
-        by_type = {}
-        for match in matches:
-            module_type = match["module_type"]
-            if module_type not in by_type:
-                by_type[module_type] = []
-            by_type[module_type].append(match)
-
-        for module_type, type_matches in by_type.items():
-            table = Table(title=f"Module Type: {module_type} ({len(type_matches)} instances)")
-            table.add_column("Scenario", style="green")
-            table.add_column("Module ID", style="yellow")
-            table.add_column("Blueprint File", style="dim")
-
-            for match in type_matches:
-                table.add_row(
-                    match["scenario_name"], str(match["module_id"]), match["blueprint_file"]
-                )
-
-            self.console.print(table)
-            self.console.print()
-
-        input("Press Enter to continue...")
-
-    def _display_text_search_results(self, search_text: str, matches: list, case_sensitive: bool):
-        """Display text search results with pagination."""
-        sensitivity = "case-sensitive" if case_sensitive else "case-insensitive"
-        self.console.print(
-            f"\n[bold green]Found {len(matches)} {sensitivity} matches for '{search_text}':[/bold green]\n"
-        )
-
-        if len(matches) <= 20:
-            # Show all results if 20 or fewer
-            self._show_text_results_page(matches, search_text, 0, len(matches))
-            input("\nPress Enter to continue...")
-        else:
-            # Use pagination for more than 20 results
-            self._paginate_text_results(matches, search_text)
-
-    def _paginate_text_results(self, matches: list, search_text: str):
-        """Handle pagination for text search results."""
-        results_per_page = 20
-        current_page = 0
-        total_pages = (len(matches) - 1) // results_per_page + 1
-
-        while True:
-            start_idx = current_page * results_per_page
-            end_idx = min(start_idx + results_per_page, len(matches))
-
-            # Show current page of results
-            self._show_text_results_page(
-                matches[start_idx:end_idx], search_text, current_page, total_pages
-            )
-
-            # Show pagination options
-            choices = []
-
-            if current_page > 0:
-                choices.append({"name": "⬅️  Previous page", "value": "prev"})
-            if current_page < total_pages - 1:
-                choices.append({"name": "➡️  Next page", "value": "next"})
-
-            choices.extend(
-                [
-                    Separator(),
-                    {"name": "🔍 Jump to page...", "value": "jump"},
-                    {"name": "← Back to search menu", "value": "back"},
-                ]
-            )
-
-            action = inquirer.select(
-                message=f"Page {current_page + 1} of {total_pages} ({len(matches)} total matches)",
-                choices=choices,
-            ).execute()
-
-            if action == "back":
-                break
-            elif action == "prev":
-                current_page = max(0, current_page - 1)
-            elif action == "next":
-                current_page = min(total_pages - 1, current_page + 1)
-            elif action == "jump":
-                try:
-                    page_num = inquirer.number(
-                        message=f"Enter page number (1-{total_pages}):",
-                        min_allowed=1,
-                        max_allowed=total_pages,
-                    ).execute()
-                    current_page = page_num - 1
-                except (ValueError, KeyboardInterrupt):
-                    continue
-
-    def _show_text_results_page(
-        self, page_matches: list, search_text: str, current_page: int, total_pages: int
-    ):
-        """Display a single page of text search results."""
-        page_info = f" (Page {current_page + 1}/{total_pages})" if total_pages > 1 else ""
-        table = Table(title=f"Text Search Results{page_info}")
-        table.add_column("Scenario", style="green")
-        table.add_column("Module Type", style="cyan")
-        table.add_column("Module ID", style="yellow")
-        table.add_column("Context Preview", style="dim")
-
-        for match in page_matches:
-            # Clean up context preview
-            context = match["context"].replace("\n", " ").replace("\t", " ")
-            if len(context) > 60:
-                context = context[:60] + "..."
-
-            table.add_row(
-                match["scenario_name"], match["module_type"], str(match["module_id"]), context
-            )
-
-        self.console.print(table)
-
-        if total_pages > 1:
-            self.console.print(f"\n[dim]Showing {len(page_matches)} results on this page[/dim]")

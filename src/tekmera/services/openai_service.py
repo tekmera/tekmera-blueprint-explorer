@@ -19,50 +19,42 @@ logger = logging.getLogger(__name__)
 class OpenAIService:
     """Centralized OpenAI API service with intelligent model selection."""
 
-    # Updated model definitions
+    # Current OpenAI model definitions
     MODELS = {
-        "gpt-5.1": {
-            "name": "gpt-5.1",
-            "description": "Latest model for everyday coding tasks",
-            "max_tokens": 200000,
-            "context_window": 2000000,
-            "use_case": "everyday_coding",
-        },
-        "gpt-5.1-codex": {
-            "name": "gpt-5.1-codex",
-            "description": "Advanced model for complex, long-running agentic coding",
-            "max_tokens": 200000,
-            "context_window": 2000000,
-            "use_case": "complex_coding",
-        },
-        "gpt-5.1-codex-mini": {
-            "name": "gpt-5.1-codex-mini",
-            "description": "Cost-efficient model for edits and simple changes",
-            "max_tokens": 100000,
-            "context_window": 1000000,
-            "use_case": "simple_edits",
-        },
-        # Legacy models for fallback
         "gpt-4o": {
             "name": "gpt-4o",
-            "description": "GPT-4 Optimized for complex analysis",
-            "max_tokens": 16384,
+            "description": "GPT-4 Omni for complex analysis and reasoning",
+            "max_tokens": 4096,
             "context_window": 128000,
             "use_case": "complex_analysis",
         },
         "gpt-4o-mini": {
             "name": "gpt-4o-mini",
-            "description": "GPT-4 mini for simple tasks",
+            "description": "GPT-4 Omni Mini for cost-efficient tasks",
             "max_tokens": 16384,
             "context_window": 128000,
             "use_case": "simple_tasks",
         },
+        "gpt-4-turbo": {
+            "name": "gpt-4-turbo",
+            "description": "GPT-4 Turbo for complex reasoning",
+            "max_tokens": 4096,
+            "context_window": 128000,
+            "use_case": "complex_reasoning",
+        },
         "gpt-4": {
             "name": "gpt-4",
-            "description": "GPT-4 for complex reasoning",
+            "description": "GPT-4 for general analysis",
             "max_tokens": 8192,
-            "context_window": 32768,
-            "use_case": "complex_reasoning",
+            "context_window": 8192,
+            "use_case": "general_analysis",
+        },
+        "gpt-3.5-turbo": {
+            "name": "gpt-3.5-turbo",
+            "description": "GPT-3.5 Turbo for simple tasks",
+            "max_tokens": 4096,
+            "context_window": 16385,
+            "use_case": "simple_tasks",
         },
     }
 
@@ -106,32 +98,32 @@ class OpenAIService:
         # Coding tasks
         if task_type in ["coding", "code_generation", "code_analysis"]:
             if complexity == "simple" or query_length < 1000:
-                return "gpt-5.1-codex-mini"
+                return "gpt-4o-mini"
             elif complexity == "complex" or query_length > 10000:
-                return "gpt-5.1-codex"
+                return "gpt-4o"
             else:
-                return "gpt-5.1"
+                return "gpt-4-turbo"
 
         # Editing and simple changes
         elif task_type in ["editing", "simple_edit", "format", "cleanup"]:
-            return "gpt-5.1-codex-mini"
+            return "gpt-4o-mini"
 
         # Complex analysis
         elif task_type in ["analysis", "cross_blueprint", "complex_reasoning"]:
             if complexity == "complex" or query_length > 20000:
-                return "gpt-5.1-codex"
+                return "gpt-4o"
             else:
-                return "gpt-5.1"
+                return "gpt-4-turbo"
 
         # Simple descriptions and summaries
         elif task_type in ["description", "summary", "simple_question"]:
-            return "gpt-5.1-codex-mini"
+            return "gpt-4o-mini"
 
         # Default to standard model
         else:
-            return "gpt-5.1"
+            return "gpt-4o"
 
-    def estimate_tokens(self, text: str, model: str = "gpt-5.1") -> int:
+    def estimate_tokens(self, text: str, model: str = "gpt-4o") -> int:
         """Estimate token count for text using tiktoken."""
         try:
             # Use gpt-4 encoding for new models (closest approximation)
@@ -183,8 +175,8 @@ class OpenAIService:
 
             # Validate model exists
             if model not in self.MODELS:
-                logger.warning(f"Unknown model {model}, falling back to gpt-5.1")
-                model = "gpt-5.1"
+                logger.warning(f"Unknown model {model}, falling back to gpt-4o")
+                model = "gpt-4o"
 
             # Set max_tokens based on model if not specified
             if max_tokens is None:
@@ -195,10 +187,15 @@ class OpenAIService:
                 "model": model,
                 "messages": messages,
                 "temperature": temperature,
-                "max_tokens": max_tokens,
                 "timeout": timeout,
                 **kwargs,
             }
+            
+            # Use max_completion_tokens for newer models, max_tokens for legacy models
+            if model in ["gpt-4o", "gpt-4o-mini"]:
+                request_params["max_completion_tokens"] = max_tokens
+            else:
+                request_params["max_tokens"] = max_tokens
 
             # Add tools if provided
             if tools:

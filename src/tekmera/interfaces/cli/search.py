@@ -3,11 +3,9 @@ Interactive search interface for cross-blueprint analysis
 """
 
 from pathlib import Path
-from typing import Dict, List
 
 from InquirerPy import inquirer
 from InquirerPy.separator import Separator
-from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
@@ -18,15 +16,15 @@ from ...analysis.connections import (
     display_connection_warnings,
 )
 from ...analysis.corpus_analyzer import CorpusAnalyzer
+from ...utils.base_cli import InteractiveCLIBase
 
 
-class SearchInterface:
+class SearchInterface(InteractiveCLIBase):
     """Interactive search interface for cross-blueprint analysis."""
 
     def __init__(self):
-        self.console = Console()
+        super().__init__(enable_search_display=True)
         self.analyzer = CorpusAnalyzer()
-        self.loaded = False
 
     def start(self, directory: Path):
         """Start the interactive search session."""
@@ -38,9 +36,10 @@ class SearchInterface:
             self.analyzer.load_corpus(directory)
 
         stats = self.analyzer.get_corpus_stats()
-        self.console.print(
-            f"✅ Loaded {stats['total_blueprints']} blueprints with {stats['total_modules']} total modules\n"
+        self.show_success(
+            f"Loaded {stats['total_blueprints']} blueprints with {stats['total_modules']} total modules"
         )
+        self.console.print()
 
         self.loaded = True
 
@@ -67,7 +66,7 @@ class SearchInterface:
                 elif action == "corpus_stats":
                     self._show_corpus_stats()
             except KeyboardInterrupt:
-                self.console.print("\n[yellow]Goodbye![/yellow]")
+                self.handle_keyboard_interrupt()
                 break
 
     def _main_menu(self) -> str:
@@ -106,7 +105,7 @@ class SearchInterface:
             input("\nPress Enter to continue...")
             return
 
-        self._display_field_search_results(field_pattern, matches, exact_match)
+        self.search_display.display_field_search_results(matches, field_pattern)
 
     def _module_type_search(self):
         """Interactive module type search."""
@@ -126,7 +125,7 @@ class SearchInterface:
             input("\nPress Enter to continue...")
             return
 
-        self._display_module_search_results(type_pattern, matches, exact_match)
+        self.search_display.display_module_search_results(matches, type_pattern)
 
     def _text_search(self):
         """Interactive text search."""
@@ -144,7 +143,7 @@ class SearchInterface:
             input("\nPress Enter to continue...")
             return
 
-        self._display_text_search_results(search_text, matches, case_sensitive)
+        self.search_display.display_text_search_results(matches, search_text)
 
     def _show_field_rankings(self):
         """Show DE field usage rankings."""
@@ -314,159 +313,3 @@ class SearchInterface:
         self.console.print("\n")
         self.console.print(panel)
         input("\nPress Enter to continue...")
-
-    def _display_field_search_results(self, pattern: str, matches: List[Dict], exact: bool):
-        """Display field search results."""
-        match_type = "exact" if exact else "partial"
-        self.console.print(
-            f"\n[bold green]Found {len(matches)} {match_type} matches for '{pattern}':[/bold green]\n"
-        )
-
-        # Group by field name
-        by_field = {}
-        for match in matches:
-            field = match["field"]
-            if field not in by_field:
-                by_field[field] = []
-            by_field[field].append(match)
-
-        for field, field_matches in by_field.items():
-            table = Table(title=f"Field: {field} ({len(field_matches)} usages)")
-            table.add_column("Scenario", style="green")
-            table.add_column("Module Type", style="cyan")
-            table.add_column("Module ID", style="yellow")
-
-            for match in field_matches:
-                table.add_row(match["scenario_name"], match["module_type"], str(match["module_id"]))
-
-            self.console.print(table)
-            self.console.print()
-
-        input("Press Enter to continue...")
-
-    def _display_module_search_results(self, pattern: str, matches: List[Dict], exact: bool):
-        """Display module type search results."""
-        match_type = "exact" if exact else "partial"
-        self.console.print(
-            f"\n[bold green]Found {len(matches)} {match_type} matches for '{pattern}':[/bold green]\n"
-        )
-
-        # Group by module type
-        by_type = {}
-        for match in matches:
-            module_type = match["module_type"]
-            if module_type not in by_type:
-                by_type[module_type] = []
-            by_type[module_type].append(match)
-
-        for module_type, type_matches in by_type.items():
-            table = Table(title=f"Module Type: {module_type} ({len(type_matches)} instances)")
-            table.add_column("Scenario", style="green")
-            table.add_column("Module ID", style="yellow")
-            table.add_column("Blueprint File", style="dim")
-
-            for match in type_matches:
-                table.add_row(
-                    match["scenario_name"], str(match["module_id"]), match["blueprint_file"]
-                )
-
-            self.console.print(table)
-            self.console.print()
-
-        input("Press Enter to continue...")
-
-    def _display_text_search_results(
-        self, search_text: str, matches: List[Dict], case_sensitive: bool
-    ):
-        """Display text search results with pagination."""
-        sensitivity = "case-sensitive" if case_sensitive else "case-insensitive"
-        self.console.print(
-            f"\n[bold green]Found {len(matches)} {sensitivity} matches for '{search_text}':[/bold green]\n"
-        )
-
-        if len(matches) <= 20:
-            # Show all results if 20 or fewer
-            self._show_text_results_page(matches, search_text, 0, len(matches))
-            input("\nPress Enter to continue...")
-        else:
-            # Use pagination for more than 20 results
-            self._paginate_text_results(matches, search_text)
-
-    def _paginate_text_results(self, matches: List[Dict], search_text: str):
-        """Handle pagination for text search results."""
-        results_per_page = 20
-        current_page = 0
-        total_pages = (len(matches) - 1) // results_per_page + 1
-
-        while True:
-            start_idx = current_page * results_per_page
-            end_idx = min(start_idx + results_per_page, len(matches))
-
-            # Show current page of results
-            self._show_text_results_page(
-                matches[start_idx:end_idx], search_text, current_page, total_pages
-            )
-
-            # Show pagination options
-            choices = []
-
-            if current_page > 0:
-                choices.append({"name": "⬅️  Previous page", "value": "prev"})
-            if current_page < total_pages - 1:
-                choices.append({"name": "➡️  Next page", "value": "next"})
-
-            choices.extend(
-                [
-                    Separator(),
-                    {"name": "🔍 Jump to page...", "value": "jump"},
-                    {"name": "← Back to search menu", "value": "back"},
-                ]
-            )
-
-            action = inquirer.select(
-                message=f"Page {current_page + 1} of {total_pages} ({len(matches)} total matches)",
-                choices=choices,
-            ).execute()
-
-            if action == "back":
-                break
-            elif action == "prev":
-                current_page = max(0, current_page - 1)
-            elif action == "next":
-                current_page = min(total_pages - 1, current_page + 1)
-            elif action == "jump":
-                try:
-                    page_num = inquirer.number(
-                        message=f"Enter page number (1-{total_pages}):",
-                        min_allowed=1,
-                        max_allowed=total_pages,
-                    ).execute()
-                    current_page = page_num - 1
-                except (ValueError, KeyboardInterrupt):
-                    continue
-
-    def _show_text_results_page(
-        self, page_matches: List[Dict], search_text: str, current_page: int, total_pages: int
-    ):
-        """Display a single page of text search results."""
-        page_info = f" (Page {current_page + 1}/{total_pages})" if total_pages > 1 else ""
-        table = Table(title=f"Text Search Results{page_info}")
-        table.add_column("Scenario", style="green")
-        table.add_column("Module Type", style="cyan")
-        table.add_column("Module ID", style="yellow")
-        table.add_column("Context Preview", style="dim")
-
-        for match in page_matches:
-            # Clean up context preview
-            context = match["context"].replace("\n", " ").replace("\t", " ")
-            if len(context) > 60:
-                context = context[:60] + "..."
-
-            table.add_row(
-                match["scenario_name"], match["module_type"], str(match["module_id"]), context
-            )
-
-        self.console.print(table)
-
-        if total_pages > 1:
-            self.console.print(f"\n[dim]Showing {len(page_matches)} results on this page[/dim]")

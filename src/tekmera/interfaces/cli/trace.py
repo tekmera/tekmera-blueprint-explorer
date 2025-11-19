@@ -6,21 +6,17 @@ from pathlib import Path
 
 from InquirerPy import inquirer
 from InquirerPy.separator import Separator
-from rich.console import Console
 
 from ...analysis.flow_walker import FlowWalker
-from ...core.parser import BlueprintParser
+from ...utils.base_cli import InteractiveCLIBase
 
 
-class TraceInterface:
+class TraceInterface(InteractiveCLIBase):
     """Interactive interface for live scenario walkthroughs."""
 
     def __init__(self):
-        self.console = Console()
-        self.parser = BlueprintParser()
+        super().__init__(enable_search_display=False)  # Trace doesn't need search display
         self.walker = FlowWalker()
-        self.blueprints = {}
-        self.loaded = False
 
     def start(self, directory: Path, specific_scenario: str = None):
         """Start the interactive live scenario walkthrough session.
@@ -29,14 +25,16 @@ class TraceInterface:
             directory: Path to directory containing blueprints
             specific_scenario: If provided, walk through this specific scenario directly
         """
-        self.console.print("\n🎥 [bold blue]Live Scenario Walkthrough[/bold blue]")
-        self.console.print("Interactive step-by-step exploration of scenario execution paths.\n")
+        self.display_welcome(
+            "Live Scenario Walkthrough",
+            "Interactive step-by-step exploration of scenario execution paths.",
+        )
 
         # Load blueprints
-        self._load_blueprints(directory)
+        self.load_blueprints(directory, include_modules=True)
 
         if not self.blueprints:
-            self.console.print("[red]No valid blueprint files found.[/red]")
+            self.show_error("No valid blueprint files found")
             return
 
         # If specific scenario provided, walk through it directly
@@ -53,38 +51,8 @@ class TraceInterface:
                 elif action == "walk_scenario":
                     self._walk_scenario()
             except KeyboardInterrupt:
-                self.console.print("\n[yellow]Goodbye![/yellow]")
+                self.handle_keyboard_interrupt()
                 break
-
-    def _load_blueprints(self, directory: Path):
-        """Load all blueprint files from directory and subfolders."""
-        self.blueprints = {}
-        # Recursively find all JSON files
-        json_files = list(directory.rglob("*.json"))
-
-        for json_file in json_files:
-            try:
-                blueprint_data = self.parser.load_blueprint(json_file)
-
-                # Extract scenario name correctly for both structures
-                if "blueprint" in blueprint_data:
-                    scenario_name = blueprint_data["blueprint"].get("name", json_file.stem)
-                else:
-                    scenario_name = blueprint_data.get("name", json_file.stem)
-
-                # Create a unique key that includes relative path
-                relative_path = json_file.relative_to(directory)
-                blueprint_key = str(relative_path.with_suffix(""))  # Remove .json extension
-
-                self.blueprints[blueprint_key] = {
-                    "filename": json_file.stem,
-                    "scenario_name": scenario_name,
-                    "file_path": json_file,
-                    "relative_path": relative_path,
-                    "data": blueprint_data,
-                }
-            except Exception as e:
-                self.console.print(f"[red]Warning: Could not load {json_file.name}: {e}[/red]")
 
     def _main_menu(self) -> str:
         """Display main live walkthrough menu."""

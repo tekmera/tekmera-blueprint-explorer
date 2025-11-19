@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Set, Tuple
 
 from ..core.analyzer import BlueprintAnalyzer
 from ..core.parser import BlueprintParser
+from ..utils.blueprint_loader import BlueprintLoader
 from .connections import ConnectionAnalyzer
 
 
@@ -19,6 +20,7 @@ class CorpusAnalyzer:
     def __init__(self):
         self.parser = BlueprintParser()
         self.analyzer = BlueprintAnalyzer()
+        self.blueprint_loader = BlueprintLoader()
         self.corpus_data = {}  # filename -> blueprint data
         self.all_modules = []  # All modules across all blueprints with metadata
         self.loaded = False
@@ -28,52 +30,40 @@ class CorpusAnalyzer:
         self.corpus_data = {}
         self.all_modules = []
 
-        # Recursively find all JSON files
-        json_files = list(directory.rglob("*.json"))
+        # Use the blueprint loader to get standardized blueprint data
+        blueprints = self.blueprint_loader.load_blueprints(
+            directory=directory, include_modules=True
+        )
 
-        for json_file in json_files:
-            try:
-                blueprint_data = self.parser.load_blueprint(json_file)
+        # Convert to corpus-specific format and build module metadata
+        for blueprint_key, blueprint_info in blueprints.items():
+            # Get modules with orphans included for corpus analysis
+            data = blueprint_info["data"]
+            modules = self.parser.get_modules(data, include_orphans=True)
 
-                # Handle both direct flow and blueprint.flow structures
-                data = blueprint_data
-                if "blueprint" in data:
-                    data = data["blueprint"]
+            # Store in corpus format
+            file_path = blueprint_info["file_path"]
+            relative_path = file_path.relative_to(directory)
 
-                modules = self.parser.get_modules(data, include_orphans=True)
+            self.corpus_data[blueprint_key] = {
+                "filepath": file_path,
+                "data": data,
+                "scenario_name": blueprint_info["scenario_name"],
+                "modules": modules,
+                "relative_path": relative_path,
+            }
 
-                # Create a unique key that includes relative path
-                relative_path = json_file.relative_to(directory)
-                blueprint_key = str(relative_path.with_suffix(""))  # Remove .json extension
-
-                # Extract scenario name correctly for both structures
-                if "blueprint" in blueprint_data:
-                    scenario_name = blueprint_data["blueprint"].get("name", json_file.stem)
-                else:
-                    scenario_name = blueprint_data.get("name", json_file.stem)
-
-                self.corpus_data[blueprint_key] = {
-                    "filepath": json_file,
-                    "data": blueprint_data,
-                    "scenario_name": scenario_name,
-                    "modules": modules,
-                    "relative_path": relative_path,
+            # Add modules with corpus metadata
+            for i, module in enumerate(modules):
+                module_with_metadata = {
+                    "module_data": module,
+                    "blueprint_file": blueprint_key,
+                    "scenario_name": blueprint_info["scenario_name"],
+                    "module_index": i,
+                    "module_id": module.get("id", f"module_{i}"),
+                    "module_type": module.get("module", "UNKNOWN"),
                 }
-
-                # Add modules with corpus metadata
-                for i, module in enumerate(modules):
-                    module_with_metadata = {
-                        "module_data": module,
-                        "blueprint_file": blueprint_key,
-                        "scenario_name": scenario_name,
-                        "module_index": i,
-                        "module_id": module.get("id", f"module_{i}"),
-                        "module_type": module.get("module", "UNKNOWN"),
-                    }
-                    self.all_modules.append(module_with_metadata)
-
-            except Exception as e:
-                print(f"Warning: Could not load {json_file.name}: {e}")
+                self.all_modules.append(module_with_metadata)
 
         self.loaded = True
 

@@ -96,16 +96,6 @@ class Reporter:
             with self.console.pager():
                 self.console.print(self.last_report_content)
 
-    def _offer_export(self) -> None:
-        """Offer to export the report to a file."""
-        if not self.last_report_content:
-            return
-
-        export = inquirer.confirm(message="Export report to file?", default=False).execute()
-
-        if export:
-            self._export_report()
-
     def _export_report(self) -> None:
         """Export the last generated report to a timestamped file."""
         if not self.last_report_content:
