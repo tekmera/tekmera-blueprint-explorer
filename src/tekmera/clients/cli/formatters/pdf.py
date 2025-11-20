@@ -23,6 +23,9 @@ def render_report_to_pdf(report_data: Any, output_path: str) -> str:
     """
     Render a BlueprintSummaryReport to PDF format.
     
+    This function takes the report's built-in text formatting and converts it 
+    to properly formatted PDF with styling for headings, sections, and tables.
+    
     Args:
         report_data: The BlueprintSummaryReport object
         output_path: Path where the PDF should be saved
@@ -53,11 +56,14 @@ def render_report_to_pdf(report_data: Any, output_path: str) -> str:
         bottomMargin=18
     )
     
-    # Build content
+    # Get the formatted text from the report
+    report_text = report_data.to_text()
+    
+    # Build content using the report's structured text
     story = []
     styles = getSampleStyleSheet()
     
-    # Title
+    # Define custom styles
     title_style = ParagraphStyle(
         'CustomTitle',
         parent=styles['Heading1'],
@@ -65,55 +71,67 @@ def render_report_to_pdf(report_data: Any, output_path: str) -> str:
         spaceAfter=30,
         alignment=1,  # Center alignment
     )
-    story.append(Paragraph("BLUEPRINT SUMMARY REPORT", title_style))
-    story.append(Spacer(1, 12))
-    
-    # Blueprint Info
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=14,
+        spaceBefore=20,
+        spaceAfter=10,
+        textColor=colors.black
+    )
+    separator_style = ParagraphStyle(
+        'Separator',
+        parent=styles['Normal'],
+        fontSize=12,
+        textColor=colors.grey
+    )
+    stub_style = ParagraphStyle(
+        'StubNotice',
+        parent=styles['Normal'],
+        textColor=colors.red,
+        fontName='Helvetica-Bold',
+        spaceBefore=5
+    )
     info_style = styles['Normal']
-    story.append(Paragraph(f"<b>Blueprint Name:</b> {report_data.blueprint_name}", info_style))
-    story.append(Paragraph(f"<b>Platform:</b> {_format_platform(report_data.platform)}", info_style))
-    story.append(Paragraph(f"<b>Generated:</b> {report_data.generated_at.strftime('%Y-%m-%d %H:%M:%S')}", info_style))
-    story.append(Spacer(1, 20))
     
-    # Component Analysis Section
-    heading_style = styles['Heading2']
-    story.append(Paragraph("COMPONENT ANALYSIS", heading_style))
-    story.append(Spacer(1, 12))
+    # Parse the report text and apply PDF-specific formatting
+    lines = report_text.split('\n')
     
-    story.append(Paragraph(f"<b>Total Components:</b> {report_data.total_components}", info_style))
-    story.append(Spacer(1, 12))
-    
-    # Component breakdown table
-    table_data = [
-        ['Component Type', 'Count'],
-        ['Modules', str(report_data.component_counts.get('modules', 0))],
-        ['Routers', str(report_data.component_counts.get('routers', 0))],
-        ['Filters', str(report_data.component_counts.get('filters', 0))],
-        ['Error Handlers', str(report_data.component_counts.get('error_handlers', 0))],
-    ]
-    
-    table = Table(table_data)
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 14),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
-    ]))
-    
-    story.append(table)
-    story.append(Spacer(1, 20))
-    
-    # Insights Section
-    story.append(Paragraph("SUMMARY", heading_style))
-    story.append(Spacer(1, 12))
-    
-    for insight in report_data.insights:
-        story.append(Paragraph(f"• {insight}", info_style))
-        story.append(Spacer(1, 6))
+    for line in lines:
+        line = line.strip()
+        
+        if not line:
+            story.append(Spacer(1, 6))
+            continue
+            
+        # Main title
+        if line == "BLUEPRINT SUMMARY REPORT":
+            story.append(Paragraph(line, title_style))
+        
+        # Section headers (all caps with dashes below)
+        elif line.isupper() and not line.startswith("🔴") and not line.startswith("•"):
+            story.append(Paragraph(line, heading_style))
+        
+        # Separator lines (dashes)
+        elif line.startswith("-") and len(set(line)) == 1:
+            # Skip separator lines, handled by heading spacing
+            continue
+        
+        # Stub notices (red text)
+        elif "🔴 STUB:" in line:
+            story.append(Paragraph(line, stub_style))
+        
+        # Bullet points and regular content
+        else:
+            # Handle special formatting for key-value pairs
+            if ":" in line and not line.startswith("•") and not line.startswith("Purpose:"):
+                # Make the part before the colon bold
+                parts = line.split(":", 1)
+                if len(parts) == 2:
+                    line = f"<b>{parts[0]}:</b>{parts[1]}"
+            
+            story.append(Paragraph(line, info_style))
+            story.append(Spacer(1, 3))
     
     # Build PDF
     doc.build(story)

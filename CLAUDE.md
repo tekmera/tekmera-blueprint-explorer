@@ -26,6 +26,14 @@ tekmera name blueprint.json                    # Extract blueprint name
 tekmera count blueprint.json                   # Count modules  
 tekmera module-count blueprint.json            # Count modules (alias)
 
+# Analysis commands
+tekmera report blueprint.json                  # Generate comprehensive summary report
+tekmera search "query" ./blueprints/           # Search text content across blueprints
+
+# Demo and sample generation
+tekmera demo --platform workfront_fusion       # Generate sample Workfront Fusion report
+tekmera demo --platform make_com --format pdf  # Generate sample Make.com PDF report
+
 # Legacy interactive mode (preserved)
 tekmera interactive ./blueprints/              # Launch interactive exploration
 ```

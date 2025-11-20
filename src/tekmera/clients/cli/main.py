@@ -79,51 +79,9 @@ def cli():
     """Tekmera Explorer - Blueprint Analysis Tool
 
     \b
-    Commands:
-      name PATHS... [--format=FORMAT]
-      module-count PATHS... [--format=FORMAT]
-      search QUERY PATHS... [--case-sensitive] [--format=FORMAT]
-      report BLUEPRINT_PATH [--format=FORMAT]
-      interactive DIRECTORY
-
-    \b
     PATHS can be files or directories. Directories scanned 3 levels deep.
     Platform auto-detected. Available formats: table (default), json, pdf
     """
-
-
-@cli.command()
-@click.argument("paths", nargs=-1, required=True, type=click.Path(exists=True))
-@click.option(
-    "--format", type=click.Choice(["table", "json"]), default="table", help="Output format"
-)
-def name(paths, format):
-    """Extract blueprint name(s) from files or directories"""
-    blueprints = load_blueprints_from_paths(list(paths))
-
-    try:
-        result = project("blueprints", "basic", "name", blueprints)
-        format_result(result, format)
-    except UnsupportedPlatformError as e:
-        click.echo(f"Error: {e}", err=True)
-        sys.exit(1)
-
-
-@cli.command(name="module-count")
-@click.argument("paths", nargs=-1, required=True, type=click.Path(exists=True))
-@click.option(
-    "--format", type=click.Choice(["table", "json"]), default="table", help="Output format"
-)
-def module_count(paths, format):
-    """Count modules in blueprint(s) from files or directories"""
-    blueprints = load_blueprints_from_paths(list(paths))
-
-    try:
-        result = project("blueprints", "basic", "module_count", blueprints)
-        format_result(result, format)
-    except UnsupportedPlatformError as e:
-        click.echo(f"Error: {e}", err=True)
-        sys.exit(1)
 
 
 @cli.command()
@@ -192,6 +150,56 @@ def report(blueprint_path, format):
 
 
 @cli.command()
+@click.option(
+    "--platform", 
+    type=click.Choice(["workfront_fusion", "make_com"]), 
+    default="workfront_fusion", 
+    help="Platform for sample report"
+)
+@click.option(
+    "--format", type=click.Choice(["table", "json", "pdf"]), default="table", help="Output format"
+)
+def demo(platform, format):
+    """Generate sample report for demos and documentation"""
+    from ...projections.meta.types import Platform
+    from ...projections.blueprints.reports.summary.sample import create_sample_report
+    
+    # Convert string to enum
+    platform_enum = Platform.WORKFRONT_FUSION if platform == "workfront_fusion" else Platform.MAKE_COM
+    
+    try:
+        # Generate sample report
+        result = create_sample_report(platform_enum)
+        
+        if format == "table":
+            # For table format, print the formatted report text
+            click.echo(result.data.to_text())
+        elif format == "pdf":
+            # For PDF format, generate PDF file
+            from .formatters.pdf import render_report_to_pdf
+            
+            # Create output filename based on blueprint name and platform
+            blueprint_name = f"Sample_{platform.title()}_Report"
+            output_path = f"{blueprint_name}.pdf"
+            
+            try:
+                pdf_file = render_report_to_pdf(result.data, output_path)
+                click.echo(f"Sample PDF report generated: {pdf_file}")
+            except ImportError as e:
+                click.echo(f"Error: {e}", err=True)
+                click.echo("Install ReportLab with: pip install reportlab", err=True)
+                sys.exit(1)
+        else:
+            # For JSON format, output the structured data
+            json_result = result.__replace__(data=result.data.to_dict())
+            format_result(json_result, format)
+            
+    except Exception as e:
+        click.echo(f"Error generating sample report: {e}", err=True)
+        sys.exit(1)
+
+
+@cli.command()
 @click.argument("directory", type=click.Path(exists=True, file_okay=False))
 def interactive(directory):
     """Launch legacy interactive exploration mode"""
@@ -208,50 +216,6 @@ def interactive(directory):
     except Exception as e:
         click.echo(f"❌ Error launching interactive mode: {e}", err=True)
         sys.exit(1)
-
-
-@cli.command()
-def capabilities():
-    """Show detailed current capabilities and architecture"""
-    click.echo(
-        """
-TEKMERA EXPLORER - CURRENT CAPABILITIES
-
-=== BLUEPRINT ANALYSIS COMMANDS ===
-name           Extract blueprint name from JSON file
-module-count   Count modules in blueprint
-search         Search text content across components
-report         Generate one-page summary report
-interactive    Launch full-featured legacy interface
-
-=== PLATFORM SUPPORT ===
-Workfront Fusion    Full support with auto-detection
-Make.com           Basic support with auto-detection
-
-=== OUTPUT FORMATS ===
-table (default)    Human-readable tabular output
-json              Machine-readable JSON output
-
-=== ARCHITECTURE ===
-• Pure functional projection system
-• Platform-aware analysis with auto-detection
-• Component detection: modules, routers, filters, error handlers
-• Immutable input processing with deterministic outputs
-• Registry-based function discovery and routing
-
-=== PROJECTION STRUCTURE ===
-Components/         Individual component analysis (modules, routers, etc.)
-Blueprints/         Whole blueprint analysis (names, counts, etc.)
-
-=== IN DEVELOPMENT ===
-• String search across scenarios
-• Cross-blueprint corpus analysis
-• Enhanced component-level projections
-• Additional platform support
-
-Documentation: See CLAUDE.md and docs/ARCHITECTURE.md
-    """.strip()
-    )
 
 
 def main():
