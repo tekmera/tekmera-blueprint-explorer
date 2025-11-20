@@ -29,6 +29,7 @@ tekmera module-count blueprint.json            # Count modules (alias)
 # Analysis commands
 tekmera report blueprint.json                  # Generate comprehensive summary report
 tekmera search "query" ./blueprints/           # Search text content across blueprints
+tekmera diff blueprint1.json blueprint2.json   # Compare blueprints and generate diff report
 
 # Demo and sample generation
 tekmera demo --platform workfront_fusion       # Generate sample Workfront Fusion report

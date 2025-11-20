@@ -150,6 +150,54 @@ def report(blueprint_path, format):
 
 
 @cli.command()
+@click.argument("blueprint1_path", type=click.Path(exists=True, dir_okay=False))
+@click.argument("blueprint2_path", type=click.Path(exists=True, dir_okay=False))
+@click.option(
+    "--format", type=click.Choice(["table", "json", "pdf"]), default="table", help="Output format"
+)
+def diff(blueprint1_path, blueprint2_path, format):
+    """Compare two blueprint files and generate diff report"""
+    try:
+        # Load both blueprints
+        blueprint1 = load_blueprint(blueprint1_path)
+        blueprint2 = load_blueprint(blueprint2_path)
+        
+        # Import diff functionality (will create this next)
+        from ...projections.blueprints.diff import generate_diff_report
+        
+        # Generate diff report
+        result = generate_diff_report(blueprint1, blueprint2)
+        
+        if format == "table":
+            # For table format, print the formatted report text
+            click.echo(result.data.to_text())
+        elif format == "pdf":
+            # For PDF format, generate PDF file
+            from .formatters.pdf import render_report_to_pdf
+            
+            # Create output filename based on blueprint names
+            name1 = result.data.blueprint1_name.replace(" ", "_").replace("/", "_")
+            name2 = result.data.blueprint2_name.replace(" ", "_").replace("/", "_")
+            output_path = f"{name1}_vs_{name2}_diff.pdf"
+            
+            try:
+                pdf_file = render_report_to_pdf(result.data, output_path)
+                click.echo(f"Diff PDF report generated: {pdf_file}")
+            except ImportError as e:
+                click.echo(f"Error: {e}", err=True)
+                click.echo("Install ReportLab with: pip install reportlab", err=True)
+                sys.exit(1)
+        else:
+            # For JSON format, output the structured data
+            json_result = result.__replace__(data=result.data.to_dict())
+            format_result(json_result, format)
+            
+    except Exception as e:
+        click.echo(f"Error generating diff report: {e}", err=True)
+        sys.exit(1)
+
+
+@cli.command()
 @click.option(
     "--platform", 
     type=click.Choice(["workfront_fusion", "make_com"]), 

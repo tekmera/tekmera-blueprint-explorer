@@ -227,8 +227,8 @@ $RECYCLE.BIN/
 .nfs*
 
 # Project-specific
-# User data and sensitive files
-blueprints/
+# User data and sensitive files - root level only
+/blueprints/
 *.json
 config.ini
 secrets.env
@@ -264,7 +264,6 @@ credentials.json
 .pytest_cache/
 .coverage
 htmlcov/
-blueprints/
 
 # Documentation build artifacts
 docs/build/
