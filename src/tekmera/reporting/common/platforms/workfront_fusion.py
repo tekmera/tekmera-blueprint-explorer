@@ -83,6 +83,11 @@ class WorkfrontFusionReportingHelper:
         # Convert to module changes
         module_changes = detect_node_changes(graph_comparison)
         
+        # Analyze connection changes across all modules
+        from ...diff.analysis.connection_analysis import analyze_connection_changes, format_connection_summary_for_html
+        connection_summary = analyze_connection_changes(module_changes, "workfront_fusion")
+        connection_analysis = format_connection_summary_for_html(connection_summary)
+        
         # Calculate metrics
         structural_change_score = calculate_structural_change_score(topology1, topology2, graph_comparison)
         change_counts = calculate_change_counts(module_changes)
@@ -120,7 +125,9 @@ class WorkfrontFusionReportingHelper:
             structural_changes=[],  # TODO: Extract from graph_comparison
             generated_at=datetime.now(),
             topology_analysis=topology_analysis,
-            configuration_analysis={}
+            configuration_analysis={
+                "connection_analysis": connection_analysis
+            }
         )
         
         return create_result(

@@ -360,21 +360,23 @@ def _get_node_type_description(node: TopologyNode) -> str:
 
 def _analyze_configuration_changes(old_node: TopologyNode, new_node: TopologyNode) -> List[Dict[str, any]]:
     """Analyze specific configuration changes between two nodes."""
-    from .platform_specific import get_platform_specific_analyzer, convert_field_changes_to_module_change_format
     from tekmera.functions.meta.types import Platform
     
-    # Determine platform (default to Workfront Fusion for now)
-    # In a full implementation, this would come from the blueprint metadata
-    platform = Platform.WORKFRONT_FUSION
+    # Determine platform from node metadata
+    platform = old_node.platform if hasattr(old_node, 'platform') else new_node.platform
     
-    # Get platform-specific analyzer
-    analyzer = get_platform_specific_analyzer(platform)
-    
-    # Analyze changes using platform-specific logic
-    field_changes = analyzer(old_node, new_node)
-    
-    # Convert to the format expected by ModuleChange.configuration_changes
-    return convert_field_changes_to_module_change_format(field_changes)
+    # Route to platform-specific analyzer
+    if platform == Platform.WORKFRONT_FUSION:
+        from .workfront_fusion import analyze_workfront_fusion_differences, convert_field_changes_to_module_change_format
+        field_changes = analyze_workfront_fusion_differences(old_node, new_node)
+        return convert_field_changes_to_module_change_format(field_changes)
+    elif platform == Platform.MAKE_COM:
+        from .make_com import analyze_make_com_differences, convert_field_changes_to_module_change_format
+        field_changes = analyze_make_com_differences(old_node, new_node)
+        return convert_field_changes_to_module_change_format(field_changes)
+    else:
+        # Fallback to basic comparison for unknown platforms
+        return _compare_dict_fields(old_node.raw_data, new_node.raw_data)
 
 
 def _compare_dict_fields(old_dict: Dict[str, any], new_dict: Dict[str, any], prefix: str = "", max_depth: int = 3) -> List[Dict[str, any]]:

@@ -65,6 +65,12 @@ class MakeComReportingHelper:
         # For now, create a simple stub report for Make.com
         # TODO: Implement topology analysis for Make.com similar to Workfront Fusion
         
+        # Connection analysis for Make.com (when topology analysis is implemented)
+        from ...diff.analysis.connection_analysis import analyze_connection_changes, format_connection_summary_for_html
+        # For now, empty module changes until topology analysis is implemented
+        connection_summary = analyze_connection_changes([], "make_com")
+        connection_analysis = format_connection_summary_for_html(connection_summary)
+        
         # Create minimal summary
         summary = DiffSummary(
             total_changes=0,
@@ -84,7 +90,9 @@ class MakeComReportingHelper:
             structural_changes=[],
             generated_at=datetime.now(),
             topology_analysis={"stub": "Make.com topology analysis not yet implemented"},
-            configuration_analysis={}
+            configuration_analysis={
+                "connection_analysis": connection_analysis
+            }
         )
         
         return create_result(
