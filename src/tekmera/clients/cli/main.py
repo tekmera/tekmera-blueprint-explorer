@@ -3,7 +3,11 @@ Main CLI entry point with projection commands and legacy interactive mode.
 """
 
 import json
+import os
+import platform
+import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -13,6 +17,81 @@ from ..._version import get_version_string
 from ...projections import project
 from ...projections.meta.types import UnsupportedPlatformError
 from .formatters.table import format_result
+
+
+def _simplify_blueprint_name(name: str) -> str:
+    """Simplify blueprint name for file naming."""
+    # Basic cleaning
+    simplified = name.replace(" ", "_").replace("/", "_").replace("|", "_").replace(":", "_").replace(">", "_")
+    
+    # Remove common prefixes
+    for prefix in ["FUS001", "FUS002", "FUS003", "FUS004", "FUS005", "FUS006", "FUS007", "FUS008", "FUS009", 
+                  "FUS010", "FUS011", "FUS012", "FUS013", "FUS014", "FUS015", "FUS016", "FUS017", "FUS018", 
+                  "FUS019", "FUS020", "FUS", "MAKE", "Blueprint_", "Scenario_", "Template_"]:
+        if simplified.startswith(prefix):
+            simplified = simplified[len(prefix):]
+            # Clean up leading separators
+            while simplified.startswith(("_", "-", ".", " ")):
+                simplified = simplified[1:]
+            break
+    
+    # Remove version suffixes like v1.2, v2.1, V1.2, etc.
+    import re
+    simplified = re.sub(r'_?[vV]\d+[\.\d]*$', '', simplified)
+    
+    # Intelligent truncation - try to preserve meaningful parts
+    if len(simplified) > 35:
+        # Split on underscores and try to keep key parts
+        parts = simplified.split("_")
+        if len(parts) > 1:
+            # Keep first and last meaningful parts
+            key_parts = []
+            current_length = 0
+            
+            # Always include first part if it's meaningful
+            if parts[0] and len(parts[0]) > 2:
+                key_parts.append(parts[0])
+                current_length = len(parts[0])
+            
+            # Add middle parts if they fit
+            for part in parts[1:-1]:
+                if current_length + len(part) + 1 <= 25:  # +1 for underscore
+                    key_parts.append(part)
+                    current_length += len(part) + 1
+                else:
+                    # Skip long middle parts but indicate truncation
+                    if "..." not in key_parts:
+                        key_parts.append("...")
+                    break
+            
+            # Always try to include last part if it's meaningful
+            last_part = parts[-1]
+            if last_part and len(last_part) > 2 and current_length + len(last_part) + 4 <= 35:  # +4 for _...
+                if key_parts[-1] == "...":
+                    key_parts.append(last_part)
+                else:
+                    key_parts.append(last_part)
+            
+            simplified = "_".join(key_parts)
+        else:
+            # Single long string, truncate intelligently
+            simplified = simplified[:32] + "..."
+    
+    return simplified
+
+
+def _open_file(file_path: str):
+    """Open file with the default system application."""
+    try:
+        if platform.system() == "Darwin":  # macOS
+            subprocess.run(["open", file_path], check=True)
+        elif platform.system() == "Windows":  # Windows
+            os.startfile(file_path)
+        else:  # Linux and others
+            subprocess.run(["xdg-open", file_path], check=True)
+    except (subprocess.CalledProcessError, FileNotFoundError, AttributeError):
+        # If opening fails, just continue silently
+        pass
 
 
 def load_blueprint(file_path: str) -> Dict[str, Any]:
@@ -80,7 +159,7 @@ def cli():
 
     \b
     PATHS can be files or directories. Directories scanned 3 levels deep.
-    Platform auto-detected. Available formats: table (default), json, pdf
+    Platform auto-detected. Available formats: table (default), json, html
     """
 
 
@@ -113,32 +192,35 @@ def search(query, paths, case_sensitive, format):
 @cli.command()
 @click.argument("blueprint_path", type=click.Path(exists=True, dir_okay=False))
 @click.option(
-    "--format", type=click.Choice(["table", "json", "pdf"]), default="table", help="Output format"
+    "--format", type=click.Choice(["table", "json", "html"]), default="table", help="Output format"
 )
 def report(blueprint_path, format):
     """Generate one-page summary report for a single blueprint file"""
     blueprint = load_blueprint(blueprint_path)
 
     try:
-        result = project("blueprints", "reports", "summary", blueprint)
+        # Use new reporting system instead of projection directly
+        from ...reporting.summary import generate_summary_report
+        result = generate_summary_report(blueprint)
         if format == "table":
             # For table format, print the formatted report text
             click.echo(result.data.to_text())
-        elif format == "pdf":
-            # For PDF format, generate PDF file
-            from .formatters.pdf import render_report_to_pdf
+        elif format == "html":
+            # For HTML format, generate HTML file
+            from .formatters.html import render_report_to_html
             
-            # Create output filename based on blueprint name
-            blueprint_name = result.data.blueprint_name.replace(" ", "_").replace("/", "_")
-            output_path = f"{blueprint_name}_report.pdf"
+            # Create reports directory
+            reports_dir = Path("reports")
+            reports_dir.mkdir(exist_ok=True)
             
-            try:
-                pdf_file = render_report_to_pdf(result.data, output_path)
-                click.echo(f"PDF report generated: {pdf_file}")
-            except ImportError as e:
-                click.echo(f"Error: {e}", err=True)
-                click.echo("Install ReportLab with: pip install reportlab", err=True)
-                sys.exit(1)
+            # Create simplified output filename based on blueprint name
+            blueprint_name = _simplify_blueprint_name(result.data.blueprint_name)
+            output_path = reports_dir / f"{blueprint_name}_report.html"
+            
+            html_file = render_report_to_html(result.data, str(output_path))
+            click.echo(f"HTML report generated: {html_file}")
+            # Auto-open the HTML file
+            _open_file(html_file)
         else:
             # For JSON format, output the structured data
             # Convert the typed report to dict for JSON serialization
@@ -153,7 +235,7 @@ def report(blueprint_path, format):
 @click.argument("blueprint1_path", type=click.Path(exists=True, dir_okay=False))
 @click.argument("blueprint2_path", type=click.Path(exists=True, dir_okay=False))
 @click.option(
-    "--format", type=click.Choice(["table", "json", "pdf"]), default="table", help="Output format"
+    "--format", type=click.Choice(["table", "json", "html"]), default="table", help="Output format"
 )
 def diff(blueprint1_path, blueprint2_path, format):
     """Compare two blueprint files and generate diff report"""
@@ -162,8 +244,8 @@ def diff(blueprint1_path, blueprint2_path, format):
         blueprint1 = load_blueprint(blueprint1_path)
         blueprint2 = load_blueprint(blueprint2_path)
         
-        # Import diff functionality (will create this next)
-        from ...projections.blueprints.diff import generate_diff_report
+        # Use new reporting system for diff reports
+        from ...reporting.diff import generate_diff_report
         
         # Generate diff report
         result = generate_diff_report(blueprint1, blueprint2)
@@ -171,22 +253,22 @@ def diff(blueprint1_path, blueprint2_path, format):
         if format == "table":
             # For table format, print the formatted report text
             click.echo(result.data.to_text())
-        elif format == "pdf":
-            # For PDF format, generate PDF file
-            from .formatters.pdf import render_report_to_pdf
+        elif format == "html":
+            # For HTML format, generate HTML file
+            from .formatters.html import render_report_to_html
             
-            # Create output filename based on blueprint names
-            name1 = result.data.blueprint1_name.replace(" ", "_").replace("/", "_")
-            name2 = result.data.blueprint2_name.replace(" ", "_").replace("/", "_")
-            output_path = f"{name1}_vs_{name2}_diff.pdf"
+            # Create reports directory
+            reports_dir = Path("reports")
+            reports_dir.mkdir(exist_ok=True)
             
-            try:
-                pdf_file = render_report_to_pdf(result.data, output_path)
-                click.echo(f"Diff PDF report generated: {pdf_file}")
-            except ImportError as e:
-                click.echo(f"Error: {e}", err=True)
-                click.echo("Install ReportLab with: pip install reportlab", err=True)
-                sys.exit(1)
+            # Create timestamp-based filename
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = reports_dir / f"diff_{timestamp}.html"
+            
+            html_file = render_report_to_html(result.data, str(output_path))
+            click.echo(f"Diff HTML report generated: {html_file}")
+            # Auto-open the HTML file
+            _open_file(html_file)
         else:
             # For JSON format, output the structured data
             json_result = result.__replace__(data=result.data.to_dict())
@@ -205,12 +287,12 @@ def diff(blueprint1_path, blueprint2_path, format):
     help="Platform for sample report"
 )
 @click.option(
-    "--format", type=click.Choice(["table", "json", "pdf"]), default="table", help="Output format"
+    "--format", type=click.Choice(["table", "json", "html"]), default="table", help="Output format"
 )
 def demo(platform, format):
     """Generate sample report for demos and documentation"""
     from ...projections.meta.types import Platform
-    from ...projections.blueprints.reports.summary.sample import create_sample_report
+    from ...reporting.summary.sample import create_sample_report
     
     # Convert string to enum
     platform_enum = Platform.WORKFRONT_FUSION if platform == "workfront_fusion" else Platform.MAKE_COM
@@ -222,21 +304,16 @@ def demo(platform, format):
         if format == "table":
             # For table format, print the formatted report text
             click.echo(result.data.to_text())
-        elif format == "pdf":
-            # For PDF format, generate PDF file
-            from .formatters.pdf import render_report_to_pdf
+        elif format == "html":
+            # For HTML format, generate HTML file
+            from .formatters.html import render_report_to_html
             
             # Create output filename based on blueprint name and platform
             blueprint_name = f"Sample_{platform.title()}_Report"
-            output_path = f"{blueprint_name}.pdf"
+            output_path = f"{blueprint_name}.html"
             
-            try:
-                pdf_file = render_report_to_pdf(result.data, output_path)
-                click.echo(f"Sample PDF report generated: {pdf_file}")
-            except ImportError as e:
-                click.echo(f"Error: {e}", err=True)
-                click.echo("Install ReportLab with: pip install reportlab", err=True)
-                sys.exit(1)
+            html_file = render_report_to_html(result.data, output_path)
+            click.echo(f"Sample HTML report generated: {html_file}")
         else:
             # For JSON format, output the structured data
             json_result = result.__replace__(data=result.data.to_dict())

@@ -27,7 +27,7 @@ def extract_all_components(
 
     top_level_flow = blueprint.get("flow", [])
 
-    def extract_components_recursive(flow_items, parent_context="main"):
+    def extract_components_recursive(flow_items, parent_context="main", parent_router_id=None):
         """Recursively extract all component types from flow."""
         for item in flow_items:
             # Add context about where this component was found
@@ -46,8 +46,9 @@ def extract_all_components(
 
             # 2. Check if it's a router (has 'routes' field)
             if "routes" in item:
+                router_id = str(item.get("id", "unknown"))
                 router_component = RouterComponent(
-                    id=str(item.get("id", "unknown")),
+                    id=router_id,
                     platform=Platform.WORKFRONT_FUSION,
                     extraction_context=parent_context,
                     raw_data=item_with_context,
@@ -56,12 +57,12 @@ def extract_all_components(
                 )
                 components["routers"].append(router_component)
 
-                # Recursively process routes
+                # Recursively process routes, passing router ID for filter context
                 for route_idx, route in enumerate(item["routes"]):
                     route_flow = route.get("flow", [])
                     if route_flow:
                         extract_components_recursive(
-                            route_flow, f"{parent_context}.route[{route_idx}]"
+                            route_flow, f"{parent_context}.route[{route_idx}]", router_id
                         )
 
             # 3. Check if it has a filter
@@ -73,6 +74,7 @@ def extract_all_components(
                     raw_data=item_with_context,
                     filter_name=item["filter"].get("name", "Unnamed Filter"),
                     conditions_count=len(item["filter"].get("conditions", [])),
+                    source_router_id=parent_router_id,
                 )
                 components["filters"].append(filter_component)
 
@@ -92,7 +94,7 @@ def extract_all_components(
                 components["error_handlers"].append(error_handler_component)
 
                 # Recursively process error handlers
-                extract_components_recursive(item["onerror"], f"{parent_context}.onerror")
+                extract_components_recursive(item["onerror"], f"{parent_context}.onerror", parent_router_id)
 
     # Extract components from main execution flow
     extract_components_recursive(top_level_flow)
@@ -102,7 +104,7 @@ def extract_all_components(
         orphans = blueprint.get("metadata", {}).get("designer", {}).get("orphans", [])
         for orphan_idx, orphan_group in enumerate(orphans):
             if isinstance(orphan_group, list):
-                extract_components_recursive(orphan_group, f"orphan[{orphan_idx}]")
+                extract_components_recursive(orphan_group, f"orphan[{orphan_idx}]", None)
 
     return components
 

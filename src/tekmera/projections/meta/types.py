@@ -205,11 +205,13 @@ class FilterComponent(ComponentBase):
         raw_data: Dict[str, Any],
         filter_name: str,
         conditions_count: int,
+        source_router_id: str | None = None,
         metadata: Dict[str, Any] | None = None,
     ):
         super().__init__(id, "filter", platform, extraction_context, raw_data, metadata)
         self.filter_name = filter_name
         self.conditions_count = conditions_count
+        self.source_router_id = source_router_id
 
 
 class ErrorHandlerComponent(ComponentBase):
