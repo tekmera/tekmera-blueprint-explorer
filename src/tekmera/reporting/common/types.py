@@ -6,7 +6,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict
 
-from tekmera.projections.meta.types import Platform
+from tekmera.functions.meta.types import Platform
 
 
 class ReportFormat(Enum):

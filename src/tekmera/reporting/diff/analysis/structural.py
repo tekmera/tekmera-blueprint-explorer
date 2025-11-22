@@ -7,7 +7,7 @@ and detecting additions, removals, and structural changes.
 from typing import Any, Dict, List, Set, Tuple
 from dataclasses import dataclass
 
-from tekmera.projections.components.topology.types import TopologyGraph, TopologyNode
+from tekmera.functions.components.topology.types import TopologyGraph, TopologyNode
 from ..diff import ModuleChange, StructuralChange, ChangeType, ChangeImpact
 
 
@@ -361,7 +361,7 @@ def _get_node_type_description(node: TopologyNode) -> str:
 def _analyze_configuration_changes(old_node: TopologyNode, new_node: TopologyNode) -> List[Dict[str, any]]:
     """Analyze specific configuration changes between two nodes."""
     from .platform_specific import get_platform_specific_analyzer, convert_field_changes_to_module_change_format
-    from tekmera.projections.meta.types import Platform
+    from tekmera.functions.meta.types import Platform
     
     # Determine platform (default to Workfront Fusion for now)
     # In a full implementation, this would come from the blueprint metadata

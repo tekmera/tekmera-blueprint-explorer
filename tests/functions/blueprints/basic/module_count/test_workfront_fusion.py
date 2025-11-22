@@ -4,8 +4,8 @@ Tests for Workfront Fusion module count extraction.
 
 import pytest
 
-from tekmera.projections.meta.types import Platform
-from tekmera.projections.single.basic.module_count.workfront_fusion import module_count
+from tekmera.functions.meta.types import Platform
+from tekmera.functions.single.basic.module_count.workfront_fusion import module_count
 
 
 class TestWorkfrontFusionModuleCount:

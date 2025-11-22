@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Dict, Any
 from ...diff.diff import ModuleChange, BlueprintDiffReport, DiffSummary, ChangeScale
-from tekmera.projections.meta.types import Platform, ProjectionResult, create_result
+from tekmera.functions.meta.types import Platform, ProjectionResult, create_result
 
 
 class WorkfrontFusionReportingHelper:
@@ -35,7 +35,7 @@ class WorkfrontFusionReportingHelper:
     @staticmethod
     def analyze_components(blueprint: Dict[str, Any]) -> Dict[str, int]:
         """Analyze components in a Workfront Fusion blueprint."""
-        from tekmera.projections.meta.utils.workfront_fusion.extract_components import extract_all_components
+        from tekmera.functions.meta.utils.workfront_fusion.extract_components import extract_all_components
         
         # Extract all components and count them
         all_components = extract_all_components(blueprint, include_orphans=True)
@@ -51,7 +51,7 @@ class WorkfrontFusionReportingHelper:
     def detect_trigger(blueprint: Dict[str, Any]):
         """Detect trigger information for Workfront Fusion blueprint."""
         try:
-            from tekmera.projections.components.triggers.detection.workfront_fusion import detect_trigger
+            from tekmera.functions.components.triggers.detection.workfront_fusion import detect_trigger
             trigger_result = detect_trigger(blueprint)
             return trigger_result.data
         except Exception:
@@ -66,8 +66,8 @@ class WorkfrontFusionReportingHelper:
         blueprint1_name = blueprint1.get("name", "Unnamed Blueprint 1")
         blueprint2_name = blueprint2.get("name", "Unnamed Blueprint 2")
         
-        # Extract topology graphs using projections
-        from tekmera.projections.components.topology import extract_topology
+        # Extract topology graphs using functions
+        from tekmera.functions.components.topology import extract_topology
         
         topology1_result = extract_topology(blueprint1)
         topology2_result = extract_topology(blueprint2)

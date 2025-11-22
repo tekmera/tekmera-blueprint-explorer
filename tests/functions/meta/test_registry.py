@@ -4,8 +4,8 @@ Tests for projection registry system.
 
 import pytest
 
-from tekmera.projections.meta.registry import ProjectionRegistry
-from tekmera.projections.meta.types import Platform, UnsupportedPlatformError
+from tekmera.functions.meta.registry import ProjectionRegistry
+from tekmera.functions.meta.types import Platform, UnsupportedPlatformError
 
 
 class TestProjectionRegistry:

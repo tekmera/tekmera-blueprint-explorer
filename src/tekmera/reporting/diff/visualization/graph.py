@@ -7,7 +7,7 @@ topology changes in text-based diff reports.
 from typing import Dict, List, Set, Tuple
 from dataclasses import dataclass
 
-from tekmera.projections.components.topology.types import TopologyGraph, TopologyNode, EdgeType
+from tekmera.functions.components.topology.types import TopologyGraph, TopologyNode, EdgeType
 from ..analysis.structural import GraphComparisonResult
 
 

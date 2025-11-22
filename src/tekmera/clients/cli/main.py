@@ -14,8 +14,8 @@ from typing import Any, Dict, List
 import click
 
 from ..._version import get_version_string
-from ...projections import project
-from ...projections.meta.types import UnsupportedPlatformError
+from ...functions import project
+from ...functions.meta.types import UnsupportedPlatformError
 from .formatters.table import format_result
 
 
@@ -291,7 +291,7 @@ def diff(blueprint1_path, blueprint2_path, format):
 )
 def demo(platform, format):
     """Generate sample report for demos and documentation"""
-    from ...projections.meta.types import Platform
+    from ...functions.meta.types import Platform
     from ...reporting.summary.sample import create_sample_report
     
     # Convert string to enum

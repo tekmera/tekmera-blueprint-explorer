@@ -8,8 +8,8 @@ from typing import Any, Dict, List, Optional
 from dataclasses import dataclass
 
 from ..diff import ModuleChange, ChangeType, ChangeImpact
-from tekmera.projections.components.topology.types import TopologyNode
-from tekmera.projections.meta.types import Platform
+from tekmera.functions.components.topology.types import TopologyNode
+from tekmera.functions.meta.types import Platform
 
 
 @dataclass
@@ -45,8 +45,8 @@ def analyze_workfront_fusion_differences(old_node: TopologyNode, new_node: Topol
     # Determine component type and route to specific analyzer
     if old_node.is_filter or new_node.is_filter or "filter" in old_config or "filter" in new_config:
         # This is a filter component
-        from tekmera.projections.components.filters.diff import analyze_filter_differences, FilterDifference
-        from tekmera.projections.meta.types import Platform
+        from tekmera.functions.components.filters.diff import analyze_filter_differences, FilterDifference
+        from tekmera.functions.meta.types import Platform
         
         # Analyze filter-specific differences
         filter_diffs = analyze_filter_differences(
@@ -68,8 +68,8 @@ def analyze_workfront_fusion_differences(old_node: TopologyNode, new_node: Topol
     
     elif old_node.is_router or new_node.is_router or "routes" in old_config or "routes" in new_config:
         # This is a router component
-        from tekmera.projections.components.routers.diff import analyze_router_differences, RouterDifference
-        from tekmera.projections.meta.types import Platform
+        from tekmera.functions.components.routers.diff import analyze_router_differences, RouterDifference
+        from tekmera.functions.meta.types import Platform
         
         # Analyze router-specific differences
         router_diffs = analyze_router_differences(
@@ -91,8 +91,8 @@ def analyze_workfront_fusion_differences(old_node: TopologyNode, new_node: Topol
     
     else:
         # This is a regular module component
-        from tekmera.projections.components.modules.diff import analyze_module_differences, ModuleDifference
-        from tekmera.projections.meta.types import Platform
+        from tekmera.functions.components.modules.diff import analyze_module_differences, ModuleDifference
+        from tekmera.functions.meta.types import Platform
         
         # Analyze module-specific differences
         module_diffs = analyze_module_differences(

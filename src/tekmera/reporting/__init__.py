@@ -1,7 +1,7 @@
 """Platform-agnostic reporting module for Tekmera.
 
 This module provides platform-independent report generation, formatting,
-and presentation capabilities. It consumes data from projections modules
+and presentation capabilities. It consumes data from functions modules
 and presents it in various formats (text, JSON, HTML).
 """
 

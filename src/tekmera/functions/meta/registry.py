@@ -66,10 +66,10 @@ class ProjectionRegistry:
         try:
             # Try new structure first: components/blueprints
             if category in ["components", "blueprints"]:
-                module_path = f"tekmera.projections.{category}.{subcategory}.{name}"
+                module_path = f"tekmera.functions.{category}.{subcategory}.{name}"
             else:
                 # Fallback for any legacy paths
-                module_path = f"tekmera.projections.{category}.{subcategory}.{name}"
+                module_path = f"tekmera.functions.{category}.{subcategory}.{name}"
 
             module = importlib.import_module(module_path)
 

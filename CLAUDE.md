@@ -8,20 +8,20 @@ Tekmera Explorer is a professional command-line tool for analyzing exported blue
 
 ## Migration Status
 
-**IMPORTANT**: This project is currently in migration from a monolithic architecture to a pure functional projection system. 
+**IMPORTANT**: This project is currently in migration from a monolithic architecture to a pure functional system. 
 
 - **Legacy System** (`src/tekmera/legacy/`): All existing functionality preserved
-- **New Projection System** (`src/tekmera/projections/`): Pure functional analysis engine
+- **New Functions System** (`src/tekmera/functions/`): Pure functional analysis engine
 - **Legacy Scripts** (`scripts/legacy/`): All development scripts moved here
 
 The main `tekmera` command now uses a unified CLI:
-- **Direct commands** (`name`, `count`, `module-count`) use the new projection system  
+- **Direct commands** (`name`, `count`, `module-count`) use the new functions system  
 - **Interactive mode** (`interactive`) uses the preserved legacy system
 
 ## Current CLI Commands
 
 ```bash
-# New projection-based commands
+# New function-based commands
 tekmera name blueprint.json                    # Extract blueprint name
 tekmera count blueprint.json                   # Count modules  
 tekmera module-count blueprint.json            # Count modules (alias)

@@ -4,8 +4,8 @@ Integration tests for module count extraction across platforms.
 
 import pytest
 
-from tekmera.projections import project
-from tekmera.projections.meta.types import Platform, UnsupportedPlatformError
+from tekmera.functions import project
+from tekmera.functions.meta.types import Platform, UnsupportedPlatformError
 
 
 class TestModuleCountIntegration:

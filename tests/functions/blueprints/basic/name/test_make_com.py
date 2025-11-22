@@ -1,29 +1,28 @@
 """
-Tests for Workfront Fusion name extraction.
+Tests for Make.com name extraction.
 """
 
 import pytest
 
-from tekmera.projections.meta.types import Platform
-from tekmera.projections.single.basic.name.workfront_fusion import name
+from tekmera.functions.meta.types import Platform
+from tekmera.functions.single.basic.name.make_com import name
 
 
-class TestWorkfrontFusionName:
-    """Test Workfront Fusion name extraction following required test patterns."""
+class TestMakeComName:
+    """Test Make.com name extraction following required test patterns."""
 
     def test_name_blue_sky(self):
-        """Blue sky: Happy path test with typical Workfront Fusion blueprint."""
+        """Blue sky: Happy path test with typical Make.com blueprint."""
         blueprint = {
-            "name": "My Fusion Scenario",
-            "flow": [{"id": 1, "module": "workfront-workfront:searchv3"}],
-            "metadata": {"designer": {"orphans": []}},
+            "name": "My Make Scenario",
+            "scenario": {"modules": [{"id": 18, "module": "util:SetVariable2"}]},
         }
 
         result = name(blueprint)
 
-        assert result.platform == Platform.WORKFRONT_FUSION
-        assert result.data == "My Fusion Scenario"
-        assert result.blueprint_name == "My Fusion Scenario"
+        assert result.platform == Platform.MAKE_COM
+        assert result.data == "My Make Scenario"
+        assert result.blueprint_name == "My Make Scenario"
         assert result.metadata.function == "single.basic.name"
         assert result.metadata.version == "1.0.0"
         assert result.metadata.input_hash is not None
@@ -32,33 +31,35 @@ class TestWorkfrontFusionName:
     def test_name_complex_case(self):
         """Complex: Edge case with special characters, unicode, and unusual formatting."""
         blueprint = {
-            "name": "🚀 Complex Scenario: Test | With-Special_Characters & Symbols (v2.1) — Updated 2024",
-            "flow": [],
-            "metadata": {"designer": {"orphans": [[{"id": 99, "module": "orphaned-module"}]]}},
+            "name": "⚡ Advanced Automation: Data Processing & API Integration (2024) — Version 3.5",
+            "scenario": {
+                "modules": [],
+                "metadata": {"version": "3.5", "tags": ["production", "critical"]},
+            },
         }
 
         result = name(blueprint)
 
         assert (
             result.data
-            == "🚀 Complex Scenario: Test | With-Special_Characters & Symbols (v2.1) — Updated 2024"
+            == "⚡ Advanced Automation: Data Processing & API Integration (2024) — Version 3.5"
         )
-        assert result.platform == Platform.WORKFRONT_FUSION
+        assert result.platform == Platform.MAKE_COM
         assert result.blueprint_name == result.data
 
     def test_name_error_missing_name(self):
         """Error handling: Blueprint without name field defaults to 'Unnamed Scenario'."""
-        blueprint = {"flow": [], "metadata": {}}
+        blueprint = {"scenario": {"modules": []}}
 
         result = name(blueprint)
 
         assert result.data == "Unnamed Scenario"
         assert result.blueprint_name == "Unnamed Scenario"
-        assert result.platform == Platform.WORKFRONT_FUSION
+        assert result.platform == Platform.MAKE_COM
 
     def test_name_error_empty_name(self):
         """Error handling: Blueprint with empty name defaults to 'Unnamed Scenario'."""
-        blueprint = {"name": "", "flow": [], "metadata": {}}
+        blueprint = {"name": "", "scenario": {"modules": []}}
 
         result = name(blueprint)
 
@@ -67,7 +68,7 @@ class TestWorkfrontFusionName:
 
     def test_name_error_null_name(self):
         """Error handling: Blueprint with null name defaults to 'Unnamed Scenario'."""
-        blueprint = {"name": None, "flow": [], "metadata": {}}
+        blueprint = {"name": None, "scenario": {"modules": []}}
 
         result = name(blueprint)
 

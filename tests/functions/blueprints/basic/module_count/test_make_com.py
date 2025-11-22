@@ -4,8 +4,8 @@ Tests for Make.com module count extraction.
 
 import pytest
 
-from tekmera.projections.meta.types import Platform
-from tekmera.projections.single.basic.module_count.make_com import module_count
+from tekmera.functions.meta.types import Platform
+from tekmera.functions.single.basic.module_count.make_com import module_count
 
 
 class TestMakeComModuleCount:

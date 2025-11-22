@@ -2,9 +2,9 @@
 
 import pytest
 
-from tekmera.projections.components.triggers.detection import detect_trigger
-from tekmera.projections.meta.trigger_types import TriggerExecutionPattern
-from tekmera.projections.meta.types import Platform
+from tekmera.functions.components.triggers.detection import detect_trigger
+from tekmera.functions.meta.trigger_types import TriggerExecutionPattern
+from tekmera.functions.meta.types import Platform
 
 
 class TestTriggerDetection:

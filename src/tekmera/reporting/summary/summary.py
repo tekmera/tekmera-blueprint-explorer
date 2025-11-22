@@ -5,9 +5,9 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from ..common.types import BaseReport, ReportMetadata, ReportType
-from tekmera.projections.meta.trigger_types import UniversalTrigger
-from tekmera.projections.meta.types import Platform, ProjectionResult, create_result
-from tekmera.projections.meta.platform_detection import detect_platform
+from tekmera.functions.meta.trigger_types import UniversalTrigger
+from tekmera.functions.meta.types import Platform, ProjectionResult, create_result
+from tekmera.functions.meta.platform_detection import detect_platform
 
 
 @dataclass

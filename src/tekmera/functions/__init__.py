@@ -50,7 +50,7 @@ def project(
         # Import the main function directly (not platform-specific implementation)
         import importlib
 
-        module_path = f"tekmera.projections.{category}.{subcategory}.{function}"
+        module_path = f"tekmera.functions.{category}.{subcategory}.{function}"
         module = importlib.import_module(module_path)
         func = getattr(module, function)
         return func(input_data, **kwargs)

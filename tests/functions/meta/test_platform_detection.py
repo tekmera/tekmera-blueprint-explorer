@@ -4,8 +4,8 @@ Tests for platform detection logic.
 
 import pytest
 
-from tekmera.projections.meta.platform_detection import detect_platform
-from tekmera.projections.meta.types import Platform, UnsupportedPlatformError
+from tekmera.functions.meta.platform_detection import detect_platform
+from tekmera.functions.meta.types import Platform, UnsupportedPlatformError
 
 
 class TestPlatformDetection:

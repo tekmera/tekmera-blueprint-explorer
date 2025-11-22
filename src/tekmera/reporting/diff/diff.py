@@ -6,8 +6,8 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from ..common.types import BaseReport, ReportMetadata, ReportType
-from tekmera.projections.meta.types import Platform, ProjectionResult, create_result
-from tekmera.projections.meta.platform_detection import detect_platform
+from tekmera.functions.meta.types import Platform, ProjectionResult, create_result
+from tekmera.functions.meta.platform_detection import detect_platform
 
 
 class ChangeType(Enum):

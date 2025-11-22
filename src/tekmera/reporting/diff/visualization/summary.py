@@ -5,7 +5,7 @@ to give deeper insights into blueprint structural changes.
 """
 
 from typing import Dict, List, Any
-from tekmera.projections.components.topology.types import TopologyGraph
+from tekmera.functions.components.topology.types import TopologyGraph
 from ..analysis.structural import GraphComparisonResult
 from ..diff import ModuleChange, ChangeType, ChangeImpact
 

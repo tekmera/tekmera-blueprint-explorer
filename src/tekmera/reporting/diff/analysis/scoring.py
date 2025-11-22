@@ -7,7 +7,7 @@ and assessing the risk level of blueprint modifications.
 from typing import Dict, List
 import math
 
-from tekmera.projections.components.topology.types import TopologyGraph
+from tekmera.functions.components.topology.types import TopologyGraph
 from ..diff import ModuleChange, ChangeType, ChangeImpact, ChangeScale
 from .structural import GraphComparisonResult
 

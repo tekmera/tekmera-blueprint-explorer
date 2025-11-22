@@ -6,7 +6,7 @@ This module provides sample blueprint reports for demo purposes.
 from typing import Dict, Any
 from datetime import datetime
 
-from tekmera.projections.meta.types import Platform, ProjectionResult, create_result
+from tekmera.functions.meta.types import Platform, ProjectionResult, create_result
 from .summary import BlueprintSummaryReport
 
 
