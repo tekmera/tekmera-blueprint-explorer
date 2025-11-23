@@ -19,7 +19,7 @@ class FieldChange:
     old_value: Any
     new_value: Any
     change_type: str  # "added", "removed", "modified"
-    significance: str  # "critical", "important", "minor", "cosmetic"
+    parameter_type: str  # "connection", "data_processing", "metadata", "configuration"
     human_description: str  # Human-readable description of the change
 
 
@@ -142,7 +142,7 @@ def analyze_make_com_differences(old_node: TopologyNode, new_node: TopologyNode)
             old_value=old_node.module_type,
             new_value=new_node.module_type,
             change_type="modified",
-            significance="critical",
+            parameter_type="configuration",
             human_description=f"Module type changed from {old_node.module_type} to {new_node.module_type}"
         ))
     
@@ -177,8 +177,8 @@ def _analyze_fusion_parameters(old_params: Dict[str, Any], new_params: Dict[str,
             else:
                 change_type = "modified"
             
-            # Assess significance based on parameter name and content
-            significance = _assess_fusion_parameter_significance(key, old_value, new_value)
+            # Categorize parameter type
+            parameter_type = _categorize_fusion_parameter_type(key, old_value, new_value)
             
             # Generate human description
             description = _generate_fusion_parameter_description(key, old_value, new_value, change_type)
@@ -188,7 +188,7 @@ def _analyze_fusion_parameters(old_params: Dict[str, Any], new_params: Dict[str,
                 old_value=old_value,
                 new_value=new_value,
                 change_type=change_type,
-                significance=significance,
+                parameter_type=parameter_type,
                 human_description=description
             ))
     
@@ -334,7 +334,7 @@ def _analyze_make_parameters(old_params: Dict[str, Any], new_params: Dict[str, A
             else:
                 change_type = "modified"
             
-            significance = _assess_make_parameter_significance(key, old_value, new_value)
+            parameter_type = _categorize_make_parameter_type(key, old_value, new_value)
             description = _generate_make_parameter_description(key, old_value, new_value, change_type)
             
             changes.append(FieldChange(
@@ -342,7 +342,7 @@ def _analyze_make_parameters(old_params: Dict[str, Any], new_params: Dict[str, A
                 old_value=old_value,
                 new_value=new_value,
                 change_type=change_type,
-                significance=significance,
+                parameter_type=parameter_type,
                 human_description=description
             ))
     
@@ -440,45 +440,45 @@ def _analyze_make_filters(old_filter: Dict[str, Any], new_filter: Dict[str, Any]
     return changes
 
 
-def _assess_fusion_parameter_significance(param_name: str, old_value: Any, new_value: Any) -> str:
-    """Assess the significance of a Workfront Fusion parameter change."""
+def _categorize_fusion_parameter_type(param_name: str, old_value: Any, new_value: Any) -> str:
+    """Categorize the type of Workfront Fusion parameter change."""
     param_lower = param_name.lower()
     
-    # Critical changes that can break functionality
+    # Connection and endpoint parameters
     if param_lower in ["url", "endpoint", "method", "connection", "objecttype", "recordtype"]:
-        return "critical"
+        return "connection"
     
-    # Important changes that affect behavior
+    # Data processing parameters
     elif param_lower in ["filter", "limit", "outputfields", "fields", "query", "search"]:
-        return "important"
+        return "data_processing"
     
-    # Minor changes in configuration
+    # Display and metadata parameters
     elif param_lower in ["name", "notes", "description", "label"]:
-        return "cosmetic"
+        return "metadata"
     
-    # Default to minor for unknown parameters
+    # Other configuration parameters
     else:
-        return "minor"
+        return "configuration"
 
 
-def _assess_make_parameter_significance(param_name: str, old_value: Any, new_value: Any) -> str:
-    """Assess the significance of a Make.com parameter change."""
+def _categorize_make_parameter_type(param_name: str, old_value: Any, new_value: Any) -> str:
+    """Categorize the type of Make.com parameter change."""
     param_lower = param_name.lower()
     
-    # Critical changes
+    # Connection and endpoint parameters
     if param_lower in ["url", "endpoint", "method", "connection", "type"]:
-        return "critical"
+        return "connection"
     
-    # Important changes
+    # Data processing parameters
     elif param_lower in ["filter", "limit", "fields", "query", "body", "headers"]:
-        return "important"
+        return "data_processing"
     
-    # Cosmetic changes
+    # Display and metadata parameters
     elif param_lower in ["name", "label", "description"]:
-        return "cosmetic"
+        return "metadata"
     
     else:
-        return "minor"
+        return "configuration"
 
 
 def _generate_fusion_parameter_description(param_name: str, old_value: Any, new_value: Any, change_type: str) -> str:
@@ -534,7 +534,7 @@ def convert_field_changes_to_module_change_format(field_changes: List[FieldChang
             "old_value": change.old_value,
             "new_value": change.new_value,
             "change_type": change.change_type,
-            "significance": change.significance,
+            "parameter_type": change.parameter_type,
             "description": change.human_description
         }
         for change in field_changes

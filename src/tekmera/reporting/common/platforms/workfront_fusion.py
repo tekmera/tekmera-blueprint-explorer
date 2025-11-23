@@ -14,19 +14,15 @@ class WorkfrontFusionReportingHelper:
         """Get Workfront Fusion component type for reporting display."""
         module_type = change.module_type.lower()
         
-        # Use component-specific logic
-        if module_type == "filters" or "filter" in module_type:
+        # Based on real blueprint data analysis - stick to verified patterns
+        if "filter" in module_type:
             return "Filters"
-        elif module_type == "routers" or "router" in module_type:
+        elif "router" in module_type:
             return "Routers"
         elif "trigger" in module_type or "watch" in module_type:
             return "Triggers"
         elif "error" in module_type or "onerror" in module_type:
             return "Error Handlers"
-        elif "http" in module_type or "webhook" in module_type:
-            return "HTTP/API"
-        elif "json" in module_type or "xml" in module_type:
-            return "Data Transform"
         else:
             return "Modules"
     

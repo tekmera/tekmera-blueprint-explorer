@@ -14,17 +14,15 @@ class MakeComReportingHelper:
         """Get Make.com component type for reporting display."""
         module_type = change.module_type.lower()
         
-        # Make.com specific categorization
-        if module_type == "filters" or "filter" in module_type:
+        # Based on real blueprint data analysis - stick to verified patterns
+        if "filter" in module_type:
             return "Filters"
-        elif module_type == "routers" or "router" in module_type:
+        elif "router" in module_type:
             return "Routers"
         elif "trigger" in module_type or "watch" in module_type:
             return "Triggers"
         elif "error" in module_type:
             return "Error Handlers"
-        elif "http" in module_type or "webhook" in module_type:
-            return "HTTP/API"
         else:
             return "Modules"
     
