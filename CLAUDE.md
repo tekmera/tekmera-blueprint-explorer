@@ -4,39 +4,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Tekmera Explorer is a professional command-line tool for analyzing exported blueprint JSON files from multiple automation platforms. It provides comprehensive diagnostic capabilities including interactive exploration, AI-powered insights, and cross-blueprint analysis with a freemium licensing model.
+Tekmera Explorer is a professional command-line tool for analyzing exported blueprint JSON files from multiple automation platforms. It provides comprehensive diagnostic capabilities and cross-blueprint analysis with a freemium licensing model.
 
-## Migration Status
+## Architecture
 
-**IMPORTANT**: This project is currently in migration from a monolithic architecture to a pure functional system. 
+**CURRENT**: Pure functional system with clean separation of concerns.
 
-- **Legacy System** (`src/tekmera/legacy/`): All existing functionality preserved
-- **New Functions System** (`src/tekmera/functions/`): Pure functional analysis engine
-- **Legacy Scripts** (`scripts/legacy/`): All development scripts moved here
+- **Functions System** (`src/tekmera/functions/`): Pure functional analysis engine
+- **Reporting System** (`src/tekmera/reporting/`): Report generation and visualization  
+- **Client System** (`src/tekmera/clients/`): CLI and output formatting
 
-The main `tekmera` command now uses a unified CLI:
-- **Direct commands** (`name`, `count`, `module-count`) use the new functions system  
-- **Interactive mode** (`interactive`) uses the preserved legacy system
+The `tekmera` command provides direct analysis commands using the functional system.
 
 ## Current CLI Commands
 
 ```bash
-# New function-based commands
-tekmera name blueprint.json                    # Extract blueprint name
-tekmera count blueprint.json                   # Count modules  
-tekmera module-count blueprint.json            # Count modules (alias)
-
 # Analysis commands
-tekmera report blueprint.json                  # Generate comprehensive summary report
-tekmera search "query" ./blueprints/           # Search text content across blueprints
-tekmera diff blueprint1.json blueprint2.json   # Compare blueprints and generate diff report
+tekmera report blueprint.json                              # Generate comprehensive summary report
+tekmera search "query" ./blueprints/                       # Search text content across blueprints  
+tekmera diff blueprint1.json blueprint2.json               # Compare blueprints and generate diff report
 
 # Demo and sample generation
-tekmera demo --platform workfront_fusion       # Generate sample Workfront Fusion report
-tekmera demo --platform make_com --format pdf  # Generate sample Make.com PDF report
-
-# Legacy interactive mode (preserved)
-tekmera interactive ./blueprints/              # Launch interactive exploration
+tekmera demo --platform workfront_fusion                   # Generate sample Workfront Fusion report
+tekmera demo --platform make_com --format html             # Generate sample Make.com HTML report
 ```
 
 ## Development Commands
@@ -44,21 +34,23 @@ tekmera interactive ./blueprints/              # Launch interactive exploration
 ### Environment Setup
 ```bash
 # First-time setup
-./scripts/legacy/setup-dev.sh
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+pip install -e .
 
 # Daily development workflow 
 source venv/bin/activate
-tekmera init  # Setup credentials if not done
-./scripts/legacy/run-dev.sh analyze ./blueprints
+tekmera report ./blueprints/blueprint-14926.json
 ```
 
 ### Code Quality and CI
 ```bash
 # Auto-fix code issues and run all checks
-./scripts/legacy/check-dev.sh
-
-# Skip tests during development
-./scripts/legacy/check-dev.sh --skip-tests
+black src/ tests/
+flake8 src/ tests/
+mypy src/
+pytest tests/ -v
 ```
 
 ### Testing

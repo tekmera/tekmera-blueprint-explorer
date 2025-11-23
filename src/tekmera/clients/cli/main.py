@@ -1,5 +1,5 @@
 """
-Main CLI entry point with projection commands and legacy interactive mode.
+Main CLI entry point with projection commands.
 """
 
 import json
@@ -17,81 +17,11 @@ from ..._version import get_version_string
 from ...functions import project
 from ...functions.meta.types import UnsupportedPlatformError
 from .formatters.table import format_result
+from .render import render_and_output, _simplify_blueprint_name
 
 
-def _simplify_blueprint_name(name: str) -> str:
-    """Simplify blueprint name for file naming."""
-    # Basic cleaning
-    simplified = name.replace(" ", "_").replace("/", "_").replace("|", "_").replace(":", "_").replace(">", "_")
-    
-    # Remove common prefixes
-    for prefix in ["FUS001", "FUS002", "FUS003", "FUS004", "FUS005", "FUS006", "FUS007", "FUS008", "FUS009", 
-                  "FUS010", "FUS011", "FUS012", "FUS013", "FUS014", "FUS015", "FUS016", "FUS017", "FUS018", 
-                  "FUS019", "FUS020", "FUS", "MAKE", "Blueprint_", "Scenario_", "Template_"]:
-        if simplified.startswith(prefix):
-            simplified = simplified[len(prefix):]
-            # Clean up leading separators
-            while simplified.startswith(("_", "-", ".", " ")):
-                simplified = simplified[1:]
-            break
-    
-    # Remove version suffixes like v1.2, v2.1, V1.2, etc.
-    import re
-    simplified = re.sub(r'_?[vV]\d+[\.\d]*$', '', simplified)
-    
-    # Intelligent truncation - try to preserve meaningful parts
-    if len(simplified) > 35:
-        # Split on underscores and try to keep key parts
-        parts = simplified.split("_")
-        if len(parts) > 1:
-            # Keep first and last meaningful parts
-            key_parts = []
-            current_length = 0
-            
-            # Always include first part if it's meaningful
-            if parts[0] and len(parts[0]) > 2:
-                key_parts.append(parts[0])
-                current_length = len(parts[0])
-            
-            # Add middle parts if they fit
-            for part in parts[1:-1]:
-                if current_length + len(part) + 1 <= 25:  # +1 for underscore
-                    key_parts.append(part)
-                    current_length += len(part) + 1
-                else:
-                    # Skip long middle parts but indicate truncation
-                    if "..." not in key_parts:
-                        key_parts.append("...")
-                    break
-            
-            # Always try to include last part if it's meaningful
-            last_part = parts[-1]
-            if last_part and len(last_part) > 2 and current_length + len(last_part) + 4 <= 35:  # +4 for _...
-                if key_parts[-1] == "...":
-                    key_parts.append(last_part)
-                else:
-                    key_parts.append(last_part)
-            
-            simplified = "_".join(key_parts)
-        else:
-            # Single long string, truncate intelligently
-            simplified = simplified[:32] + "..."
-    
-    return simplified
 
 
-def _open_file(file_path: str):
-    """Open file with the default system application."""
-    try:
-        if platform.system() == "Darwin":  # macOS
-            subprocess.run(["open", file_path], check=True)
-        elif platform.system() == "Windows":  # Windows
-            os.startfile(file_path)
-        else:  # Linux and others
-            subprocess.run(["xdg-open", file_path], check=True)
-    except (subprocess.CalledProcessError, FileNotFoundError, AttributeError):
-        # If opening fails, just continue silently
-        pass
 
 
 def load_blueprint(file_path: str) -> Dict[str, Any]:
@@ -199,34 +129,18 @@ def report(blueprint_path, format):
     blueprint = load_blueprint(blueprint_path)
 
     try:
-        # Use new reporting system instead of projection directly
+        # Use new reporting system to generate summary report
         from ...reporting.summary import generate_summary_report
         result = generate_summary_report(blueprint)
-        if format == "table":
-            # For table format, print the formatted report text
-            click.echo(result.data.to_text())
-        elif format == "html":
-            # For HTML format, generate HTML file
-            from .formatters.html import render_report_to_html
-            
-            # Create reports directory
-            reports_dir = Path("reports")
-            reports_dir.mkdir(exist_ok=True)
-            
-            # Create simplified output filename based on blueprint name
-            blueprint_name = _simplify_blueprint_name(result.data.blueprint_name)
-            output_path = reports_dir / f"{blueprint_name}_report.html"
-            
-            html_file = render_report_to_html(result.data, str(output_path))
-            click.echo(f"HTML report generated: {html_file}")
-            # Auto-open the HTML file
-            _open_file(html_file)
-        else:
-            # For JSON format, output the structured data
-            # Convert the typed report to dict for JSON serialization
-            json_result = result.__replace__(data=result.data.to_dict())
-            format_result(json_result, format)
+        
+        # Use unified rendering system
+        blueprint_name = _simplify_blueprint_name(result.data.blueprint_name)
+        render_and_output(result.data, format, f"{blueprint_name}_report")
+        
     except UnsupportedPlatformError as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+    except ValueError as e:
         click.echo(f"Error: {e}", err=True)
         sys.exit(1)
 
@@ -250,30 +164,10 @@ def diff(blueprint1_path, blueprint2_path, format):
         # Generate diff report
         result = generate_diff_report(blueprint1, blueprint2)
         
-        if format == "table":
-            # For table format, print the formatted report text
-            click.echo(result.data.to_text())
-        elif format == "html":
-            # For HTML format, generate HTML file
-            from .formatters.html import render_report_to_html
-            
-            # Create reports directory
-            reports_dir = Path("reports")
-            reports_dir.mkdir(exist_ok=True)
-            
-            # Create timestamp-based filename
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_path = reports_dir / f"diff_{timestamp}.html"
-            
-            html_file = render_report_to_html(result.data, str(output_path))
-            click.echo(f"Diff HTML report generated: {html_file}")
-            # Auto-open the HTML file
-            _open_file(html_file)
-        else:
-            # For JSON format, output the structured data
-            json_result = result.__replace__(data=result.data.to_dict())
-            format_result(json_result, format)
-            
+        # Use unified rendering system with timestamp-based filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        render_and_output(result.data, format, f"diff_{timestamp}")
+        
     except Exception as e:
         click.echo(f"Error generating diff report: {e}", err=True)
         sys.exit(1)
@@ -301,46 +195,15 @@ def demo(platform, format):
         # Generate sample report
         result = create_sample_report(platform_enum)
         
-        if format == "table":
-            # For table format, print the formatted report text
-            click.echo(result.data.to_text())
-        elif format == "html":
-            # For HTML format, generate HTML file
-            from .formatters.html import render_report_to_html
-            
-            # Create output filename based on blueprint name and platform
-            blueprint_name = f"Sample_{platform.title()}_Report"
-            output_path = f"{blueprint_name}.html"
-            
-            html_file = render_report_to_html(result.data, output_path)
-            click.echo(f"Sample HTML report generated: {html_file}")
-        else:
-            # For JSON format, output the structured data
-            json_result = result.__replace__(data=result.data.to_dict())
-            format_result(json_result, format)
-            
+        # Use unified rendering system
+        sample_filename = f"Sample_{platform.title()}_Report"
+        render_and_output(result.data, format, sample_filename)
+        
     except Exception as e:
         click.echo(f"Error generating sample report: {e}", err=True)
         sys.exit(1)
 
 
-@cli.command()
-@click.argument("directory", type=click.Path(exists=True, file_okay=False))
-def interactive(directory):
-    """Launch legacy interactive exploration mode"""
-    click.echo("🔄 Launching legacy interactive mode...")
-
-    # Import and launch legacy interactive system
-    from ...legacy.interfaces.cli.interactive import InteractiveCLI
-
-    try:
-        # Initialize and launch legacy interactive CLI
-        interactive_cli = InteractiveCLI()
-        interactive_cli.start(Path(directory))
-
-    except Exception as e:
-        click.echo(f"❌ Error launching interactive mode: {e}", err=True)
-        sys.exit(1)
 
 
 def main():

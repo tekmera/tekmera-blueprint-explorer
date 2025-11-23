@@ -1,36 +1,25 @@
 # Development Scripts
 
-This directory contains development and build scripts for the Tekmera project.
+This directory will contain development and build scripts for the Tekmera project.
 
-## Directory Structure
+## Status
 
-### `legacy/`
-Contains all original development scripts preserved during the projection system migration:
-- Development workflow scripts (`run-dev.sh`, `check-dev.sh`, `setup-dev.sh`)
-- Release management scripts (`release-*.sh`)
-- License generation scripts (`generate-*-license.py`)
-- Environment-specific runners (`run-dev-*.sh`)
+Development scripts are being redesigned to support the new pure functional architecture. 
 
-These scripts continue to work with the current legacy system and should be used for development until migration is complete.
-
-## Usage
-
-For current development, use scripts from the legacy folder:
+For current development, use standard Python development practices:
 
 ```bash
 # Setup development environment
-./scripts/legacy/setup-dev.sh
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+pip install -e .
 
-# Run development environment
-./scripts/legacy/run-dev.sh
+# Run tests
+pytest tests/ -v
 
-# Check code quality  
-./scripts/legacy/check-dev.sh
-
-# Build releases
-./scripts/legacy/release-patch.sh
+# Check code quality
+flake8 src/ tests/
+black src/ tests/
+mypy src/
 ```
-
-## Migration Notes
-
-As the projection system migration progresses, new scripts will be added to support the new architecture. Legacy scripts will be maintained until the migration is complete and all functionality has been validated.

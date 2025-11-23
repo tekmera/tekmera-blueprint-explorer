@@ -1,7 +1,7 @@
 """
-HTML formatter for report output.
+HTML formatter for diff reports.
 
-Clean, simple HTML generation for Tekmera reports with proper separation of concerns.
+Clean, simple HTML generation for Tekmera diff reports with proper separation of concerns.
 """
 
 import html
@@ -9,7 +9,43 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List
 
+from .base import BaseFormatter, register_formatter
+from tekmera.reporting.common.types import BaseReport, ReportType, ReportFormat
+from tekmera.reporting.diff.diff import BlueprintDiffReport
 
+
+@register_formatter(ReportType.DIFF, ReportFormat.HTML)
+class HTMLDiffFormatter(BaseFormatter):
+    """HTML formatter for diff reports."""
+    
+    def render(self, report: BaseReport) -> str:
+        """Render diff report as HTML."""
+        if not isinstance(report, BlueprintDiffReport):
+            raise ValueError(f"HTMLDiffFormatter can only render BlueprintDiffReport, got {type(report)}")
+        
+        return self._generate_html(report)
+    
+    def get_file_extension(self) -> str:
+        """HTML files have .html extension."""
+        return ".html"
+    
+    def should_write_to_file(self) -> bool:
+        """HTML output should be written to file."""
+        return True
+    
+    def _generate_html(self, report_data) -> str:
+        """Generate complete HTML document for diff report."""
+        # Extract structured data from report
+        overview_data = extract_overview(report_data)
+        connection_analysis = extract_connection_analysis(report_data)
+        summary_data = extract_summary(report_data, connection_analysis)
+        component_groups = extract_component_groups(report_data)
+        
+        # Generate HTML
+        return _generate_html(summary_data, overview_data, component_groups, connection_analysis)
+
+
+# Legacy function for backward compatibility
 def render_report_to_html(report_data: Any, output_path: str) -> str:
     """
     Render a report to clean HTML format.
