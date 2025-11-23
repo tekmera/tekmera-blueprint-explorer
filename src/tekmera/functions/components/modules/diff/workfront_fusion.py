@@ -64,20 +64,24 @@ def _analyze_workfront_parameters(old_params: Dict[str, Any], new_params: Dict[s
             else:
                 change_type = "modified"
             
-            # Assess business significance
-            significance = _assess_workfront_parameter_significance(key, old_value, new_value)
-            
-            # Generate business-focused description
-            description = _generate_workfront_parameter_description(key, old_value, new_value, change_type)
-            
-            differences.append(ModuleDifference(
-                field_path=f"parameters.{key}",
-                old_value=old_value,
-                new_value=new_value,
-                change_type=change_type,
-                significance=significance,
-                description=description
-            ))
+            # Check if this parameter contains JSON and should be parsed
+            if change_type == "modified" and _is_json_field(old_value) and _is_json_field(new_value):
+                # Parse JSON and return individual field differences
+                json_differences = _analyze_json_field_changes(old_value, new_value, f"parameters.{key}")
+                differences.extend(json_differences)
+            else:
+                # Handle as regular parameter
+                significance = _assess_workfront_parameter_significance(key, old_value, new_value)
+                description = _generate_workfront_parameter_description(key, old_value, new_value, change_type)
+                
+                differences.append(ModuleDifference(
+                    field_path=f"parameters.{key}",
+                    old_value=old_value,
+                    new_value=new_value,
+                    change_type=change_type,
+                    significance=significance,
+                    description=description
+                ))
     
     return differences
 
@@ -86,30 +90,77 @@ def _analyze_workfront_mapper(old_mapper: Dict[str, Any], new_mapper: Dict[str, 
     """Analyze Workfront Fusion mapper configuration changes."""
     differences = []
     
-    # Mapper changes affect data transformation
     if old_mapper != new_mapper:
-        # Count field mappings
-        old_fields = len(old_mapper) if old_mapper else 0
-        new_fields = len(new_mapper) if new_mapper else 0
+        # Analyze specific field mapping changes
+        all_fields = set(old_mapper.keys()) | set(new_mapper.keys())
         
-        if old_fields != new_fields:
-            differences.append(ModuleDifference(
-                field_path="mapper",
-                old_value=f"{old_fields} field mappings",
-                new_value=f"{new_fields} field mappings",
-                change_type="modified",
-                significance="important",
-                description=f"Field mappings changed from {old_fields} to {new_fields} fields"
-            ))
-        else:
-            differences.append(ModuleDifference(
-                field_path="mapper",
-                old_value="field_mappings",
-                new_value="field_mappings_modified",
-                change_type="modified",
-                significance="important",
-                description="Field mapping values or expressions modified"
-            ))
+        for field in all_fields:
+            # Skip internal representation fields that aren't meaningful to users
+            if field == "data":
+                continue
+                
+            old_value = old_mapper.get(field)
+            new_value = new_mapper.get(field)
+            
+            if old_value != new_value:
+                if field not in old_mapper:
+                    change_type = "added"
+                    differences.append(ModuleDifference(
+                        field_path=f"mapper.{field}",
+                        old_value=None,
+                        new_value=new_value,
+                        change_type=change_type,
+                        significance="important",
+                        description=f"Mapper field '{field}' added"
+                    ))
+                elif field not in new_mapper:
+                    change_type = "removed"
+                    differences.append(ModuleDifference(
+                        field_path=f"mapper.{field}",
+                        old_value=old_value,
+                        new_value=None,
+                        change_type=change_type,
+                        significance="important",
+                        description=f"Mapper field '{field}' removed"
+                    ))
+                else:
+                    change_type = "modified"
+                    
+                    # Check if the field contains JSON and parse it
+                    try:
+                        if _is_json_field(old_value) and _is_json_field(new_value):
+                            json_differences = _analyze_json_field_changes(old_value, new_value, f"mapper.{field}")
+                            if json_differences:
+                                differences.extend(json_differences)
+                            else:
+                                # JSON parsing succeeded but found no differences
+                                differences.append(ModuleDifference(
+                                    field_path=f"mapper.{field}",
+                                    old_value=old_value,
+                                    new_value=new_value,
+                                    change_type=change_type,
+                                    significance="important",
+                                    description=f"Mapper field '{field}' JSON content unchanged"
+                                ))
+                        else:
+                            differences.append(ModuleDifference(
+                                field_path=f"mapper.{field}",
+                                old_value=old_value,
+                                new_value=new_value,
+                                change_type=change_type,
+                                significance="important",
+                                description=f"Mapper field '{field}' modified"
+                            ))
+                    except Exception as e:
+                        # If JSON parsing fails, fall back to regular field handling
+                        differences.append(ModuleDifference(
+                            field_path=f"mapper.{field}",
+                            old_value=old_value,
+                            new_value=new_value,
+                            change_type=change_type,
+                            significance="important",
+                            description=f"Mapper field '{field}' modified (JSON parsing failed: {str(e)})"
+                        ))
     
     return differences
 
@@ -225,8 +276,6 @@ def _format_value_display(value: Any) -> str:
     if value is None:
         return "None"
     elif isinstance(value, str):
-        if len(value) > 30:
-            return f"'{value[:27]}...'"
         return f"'{value}'"
     elif isinstance(value, (dict, list)):
         return f"{type(value).__name__} with {len(value)} items"
@@ -262,3 +311,90 @@ def get_workfront_module_category(module_data: Dict[str, Any]) -> str:
     
     else:
         return "general"
+
+
+def _is_json_field(value: Any) -> bool:
+    """Check if a value is a JSON string."""
+    if not isinstance(value, str):
+        return False
+    
+    # Handle JSON strings with newlines and extra whitespace
+    stripped = value.strip()
+    
+    # Try to parse as JSON to be sure
+    try:
+        import json
+        json.loads(stripped)
+        return True
+    except (json.JSONDecodeError, TypeError):
+        return False
+
+
+def _analyze_json_field_changes(old_json: str, new_json: str, field_prefix: str) -> List[ModuleDifference]:
+    """Parse JSON fields and return individual field differences."""
+    import json
+    
+    differences = []
+    
+    try:
+        old_data = json.loads(old_json)
+        new_data = json.loads(new_json)
+        
+        # Get all keys from both JSON objects
+        if isinstance(old_data, dict) and isinstance(new_data, dict):
+            all_keys = set(old_data.keys()) | set(new_data.keys())
+            
+            for key in all_keys:
+                old_val = old_data.get(key)
+                new_val = new_data.get(key)
+                
+                if key not in old_data:
+                    differences.append(ModuleDifference(
+                        field_path=f"{field_prefix}.{key}",
+                        old_value=None,
+                        new_value=new_val,
+                        change_type="added",
+                        significance="important",
+                        description=f"JSON field '{key}' added"
+                    ))
+                elif key not in new_data:
+                    differences.append(ModuleDifference(
+                        field_path=f"{field_prefix}.{key}",
+                        old_value=old_val,
+                        new_value=None,
+                        change_type="removed",
+                        significance="important",
+                        description=f"JSON field '{key}' removed"
+                    ))
+                elif old_val != new_val:
+                    differences.append(ModuleDifference(
+                        field_path=f"{field_prefix}.{key}",
+                        old_value=old_val,
+                        new_value=new_val,
+                        change_type="modified",
+                        significance="important",
+                        description=f"JSON field '{key}' modified"
+                    ))
+        else:
+            # If not both dicts, treat as a single value change
+            differences.append(ModuleDifference(
+                field_path=field_prefix,
+                old_value=old_json,
+                new_value=new_json,
+                change_type="modified",
+                significance="important",
+                description=f"JSON content modified"
+            ))
+            
+    except (json.JSONDecodeError, TypeError):
+        # If JSON parsing fails, fall back to treating as regular field
+        differences.append(ModuleDifference(
+            field_path=field_prefix,
+            old_value=old_json,
+            new_value=new_json,
+            change_type="modified",
+            significance="important",
+            description=f"Field modified"
+        ))
+    
+    return differences

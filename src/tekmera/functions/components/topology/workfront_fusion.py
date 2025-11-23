@@ -31,17 +31,17 @@ def extract_workfront_topology(blueprint: Dict[str, Any]) -> ProjectionResult[To
     
     # Filter nodes
     for component in components["filters"]:
-        # Include FilterComponent metadata in raw_data
-        enhanced_raw_data = {**component.raw_data}
+        # For filter nodes, raw_data should contain ONLY the filter configuration
+        filter_data = component.raw_data.get("filter", {})
         if component.source_router_id:
-            enhanced_raw_data['source_router_id'] = component.source_router_id
+            filter_data['source_router_id'] = component.source_router_id
         
         node = TopologyNode(
             id=f"{component.id}_filter",
             module_type="filter",
             name=component.filter_name,
             platform=Platform.WORKFRONT_FUSION,
-            raw_data=enhanced_raw_data
+            raw_data=filter_data
         )
         nodes.append(node)
     
@@ -56,16 +56,8 @@ def extract_workfront_topology(blueprint: Dict[str, Any]) -> ProjectionResult[To
         )
         nodes.append(node)
     
-    # Error handler nodes
-    for component in components["error_handlers"]:
-        node = TopologyNode(
-            id=f"{component.id}_error",
-            module_type="error_handler",
-            name=component.raw_data.get("name", f"Error Handler {component.id}"),
-            platform=Platform.WORKFRONT_FUSION,
-            raw_data=component.raw_data
-        )
-        nodes.append(node)
+    # Error handlers are processed as regular modules through recursive extraction
+    # No need for separate error handler nodes - they get their own module IDs
     
     # Simple edge creation based on flow order
     # This is a simplified implementation - real implementation would parse flow structure

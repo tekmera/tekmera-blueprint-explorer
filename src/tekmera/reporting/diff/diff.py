@@ -224,7 +224,7 @@ class BlueprintDiffReport(BaseReport):
                                 router_info = self._get_router_info(change)
                                 report_lines.append(f"{basic_info} ({router_info})")
                             
-                            elif comp_type in ["Modules", "Workfront Modules"]:
+                            elif comp_type == "Modules":
                                 # Get service type and operation
                                 service_info = self._get_service_info(change)
                                 report_lines.append(f"{basic_info} - {service_info}")

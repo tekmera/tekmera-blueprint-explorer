@@ -23,8 +23,6 @@ class WorkfrontFusionReportingHelper:
             return "Triggers"
         elif "error" in module_type or "onerror" in module_type:
             return "Error Handlers"
-        elif "workfront" in module_type:
-            return "Workfront Modules"
         elif "http" in module_type or "webhook" in module_type:
             return "HTTP/API"
         elif "json" in module_type or "xml" in module_type:

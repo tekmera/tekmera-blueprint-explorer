@@ -102,7 +102,7 @@ def extract_summary(report_data: Any, connection_analysis: Dict[str, Any] = None
 def extract_component_groups(report_data: Any) -> Dict[str, Dict[str, List[Dict[str, Any]]]]:
     """Extract component groups as structured dict."""
     # Initialize all possible component types (Connections handled separately in Connection Summary)
-    all_component_types = ["Filters", "Routers", "Error Handlers", "Workfront Modules", "Modules"]
+    all_component_types = ["Filters", "Routers", "Error Handlers", "Modules"]
     groups = {}
     
     # Initialize empty groups for all component types
@@ -166,17 +166,18 @@ def _get_component_type(change, platform):
     """Get component type for a change."""
     module_type = change.module_type.lower()
     
-    # Skip connection changes - they are handled in Connection Summary section
-    if _is_connection_change_from_config(change):
-        return None  # Don't categorize connection changes as components
-    elif "filter" in module_type:
+    # Prioritize component type over change content
+    # This ensures filter/router/error handler nodes get categorized correctly
+    # even if they also have connection changes
+    if "filter" in module_type:
         return "Filters"
     elif "router" in module_type:
         return "Routers"
     elif "error" in module_type:
         return "Error Handlers"
-    elif "workfront" in module_type:
-        return "Workfront Modules"
+    # Skip pure connection changes - they are handled in Connection Summary section
+    elif _is_connection_change_from_config(change):
+        return None  # Don't categorize connection changes as components
     else:
         return "Modules"
 
@@ -594,12 +595,27 @@ def _generate_connection_summary_standalone(connection_analysis: Dict[str, Any])
 
 def _format_component_item(item: Dict[str, Any], comp_type: str) -> str:
     """Format a component item with detailed information based on type."""
-    base_info = f'Module {item["module_id"]}: "{html.escape(item["module_name"])}"'
+    module_id = item["module_id"]
+    module_name = html.escape(item["module_name"])
+    base_info = f'Module {module_id}: "{module_name}"'
     
     # Get standardized change description
     change_detail = _get_standardized_change_description(item, comp_type)
     if change_detail:
-        return f'{base_info}<br><span class="component-detail">{change_detail}</span>'
+        # For modules with detailed changes (cards/tables), wrap in accordion
+        if comp_type == "Modules" and ('<div class="module-changes-cards">' in change_detail or '<div class="module-changes-table">' in change_detail):
+            # Generate a concise summary for the accordion header
+            change_summary = _generate_change_summary(item, change_detail)
+            summary_line = f'{base_info} ({change_summary})'
+            return f'''<details class="module-accordion">
+                <summary class="module-summary">{summary_line}</summary>
+                <div class="accordion-content">
+                    {change_detail}
+                </div>
+            </details>'''
+        else:
+            # For simple changes, keep the original format
+            return f'{base_info}<br><span class="component-detail">{change_detail}</span>'
     
     return base_info
 
@@ -620,7 +636,7 @@ def _get_standardized_change_description(item: Dict[str, Any], comp_type: str) -
         return _get_router_change_description(item)
     elif comp_type == "Error Handlers":
         return _get_error_handler_change_description(item)
-    elif comp_type in ["Modules", "Workfront Modules"]:
+    elif comp_type == "Modules":
         return _get_module_change_description(item)
     else:
         # Fallback to configuration changes
@@ -628,84 +644,57 @@ def _get_standardized_change_description(item: Dict[str, Any], comp_type: str) -
 
 
 def _get_filter_change_description(item: Dict[str, Any]) -> str:
-    """Standardized filter change description using diff components."""
-    raw_data = item.get('raw_data', {})
-    raw_data_before = item.get('raw_data_before', {})
+    """Display filter changes from pre-computed configuration_changes."""
+    return _display_configuration_changes(item.get('configuration_changes', []))
+
+
+def _display_configuration_changes(config_changes: List[Dict]) -> str:
+    """Display all configuration changes as field: old_value → new_value format."""
+    if not config_changes:
+        return "Configuration updated"
     
-    # Use the proper filter diff components if we have raw data
-    if raw_data_before and raw_data:
-        try:
-            # Import the filter diff analyzer
-            from tekmera.functions.components.filters.diff import analyze_filter_differences
-            from tekmera.functions.meta.types import Platform
-            
-            # Get filter data for analysis
-            current_filter = raw_data.get('filter', {}) or raw_data.get('parameters', {}).get('filter', {})
-            previous_filter = raw_data_before.get('filter', {}) or raw_data_before.get('parameters', {}).get('filter', {})
-            
-            if current_filter and previous_filter:
-                platform = Platform.WORKFRONT_FUSION  # Default, could be improved
-                
-                # Get detailed filter differences
-                differences = analyze_filter_differences(previous_filter, current_filter, platform)
-                
-                if differences:
-                    # Use the most significant change
-                    significant_change = None
-                    for diff in differences:
-                        if diff.significance in ['critical', 'important']:
-                            significant_change = diff
-                            break
-                    if not significant_change and differences:
-                        significant_change = differences[0]
-                    
-                    if significant_change:
-                        # Format based on the logical impact
-                        old_display = _format_value_for_description(significant_change.old_value)
-                        new_display = _format_value_for_description(significant_change.new_value)
-                        
-                        if 'field' in significant_change.field_path:
-                            return f'Condition field: {old_display} → {new_display}'
-                        elif 'operator' in significant_change.field_path or significant_change.field_path.endswith('.o'):
-                            return f'Condition operator: {old_display} → {new_display}'
-                        elif 'value' in significant_change.field_path or significant_change.field_path.endswith('.b'):
-                            return f'Condition value: {old_display} → {new_display}'
-                        else:
-                            return html.escape(significant_change.description)
-        except Exception:
-            # Fall back to manual analysis if diff components fail
-            pass
-    
-    # Fallback to manual filter analysis
-    current_filter = raw_data.get('filter', {}) or raw_data.get('parameters', {}).get('filter', {})
-    previous_filter = raw_data_before.get('filter', {}) or raw_data_before.get('parameters', {}).get('filter', {}) if raw_data_before else {}
-    
-    # Extract condition information manually
-    if current_filter and previous_filter:
-        current_conditions = current_filter.get('conditions', [])
-        previous_conditions = previous_filter.get('conditions', [])
+    descriptions = []
+    for change in config_changes:  # Show ALL changes, no limit
+        field = change.get('field', 'unknown')
+        old_val = change.get('old_value', '')
+        new_val = change.get('new_value', '')
+        change_type = change.get('change_type', 'modified')
+        description = change.get('description', '')
         
-        if current_conditions and previous_conditions:
-            # Get the first condition for comparison (most common case)
-            current_first = current_conditions[0][0] if current_conditions and current_conditions[0] else {}
-            previous_first = previous_conditions[0][0] if previous_conditions and previous_conditions[0] else {}
-            
-            if current_first and previous_first:
-                current_field = current_first.get('a', '')
-                previous_field = previous_first.get('a', '')
-                current_op = current_first.get('o', '')
-                previous_op = previous_first.get('o', '')
-                current_val = current_first.get('b', '')
-                previous_val = previous_first.get('b', '')
-                
-                if current_field != previous_field:
-                    return f'Condition field: {html.escape(previous_field)} → {html.escape(current_field)}'
-                elif current_op != previous_op:
-                    return f'Condition operator: {html.escape(previous_op)} → {html.escape(current_op)}'
-                elif current_val != previous_val:
-                    return f'Condition value: {html.escape(str(previous_val))} → {html.escape(str(current_val))}'
+        # Use the analyzer's description if available, otherwise format field change
+        if description and description != f"Parameter '{field}' changed":
+            descriptions.append(description)
+        else:
+            if change_type == "added":
+                descriptions.append(f"{field}: added {_format_change_value(new_val)}")
+            elif change_type == "removed":
+                descriptions.append(f"{field}: removed {_format_change_value(old_val)}")
+            else:
+                # Use smart JSON detection for modified values
+                formatted_change = _detect_and_format_change_value(old_val, new_val, field)
+                descriptions.append(formatted_change)
     
-    return "Filter: Configuration updated"
+    return "; ".join(descriptions) if descriptions else "Configuration updated"
+
+
+def _format_change_value(value) -> str:
+    """Format a value for configuration change display."""
+    if value is None:
+        return "null"
+    elif isinstance(value, str):
+        return f'"{value}"' if value else '""'
+    elif isinstance(value, bool):
+        return "true" if value else "false"
+    elif isinstance(value, (int, float)):
+        return str(value)
+    elif isinstance(value, (list, dict)):
+        import json
+        try:
+            return json.dumps(value, separators=(',', ':'))
+        except:
+            return str(value)
+    else:
+        return str(value)
 
 
 def _get_router_change_description(item: Dict[str, Any]) -> str:
@@ -752,7 +741,7 @@ def _get_error_handler_change_description(item: Dict[str, Any]) -> str:
 
 
 def _get_module_change_description(item: Dict[str, Any]) -> str:
-    """Standardized module change description using diff components."""
+    """Generate module change description as a table for field-level changes."""
     raw_data = item.get('raw_data', {})
     raw_data_before = item.get('raw_data_before', {})
     
@@ -770,73 +759,221 @@ def _get_module_change_description(item: Dict[str, Any]) -> str:
             differences = analyze_module_differences(raw_data_before, raw_data, platform)
             
             if differences:
-                # Use the most significant change
-                significant_change = None
-                for diff in differences:
-                    if diff.significance in ['critical', 'important']:
-                        significant_change = diff
-                        break
-                if not significant_change and differences:
-                    significant_change = differences[0]
-                
-                if significant_change:
-                    # Format the change properly
-                    if significant_change.change_type == 'modified':
-                        old_display = _format_value_for_description(significant_change.old_value)
-                        new_display = _format_value_for_description(significant_change.new_value)
-                        field_name = significant_change.field_path.split('.')[-1]
-                        return f'{field_name}: {old_display} → {new_display}'
-                    else:
-                        return html.escape(significant_change.description)
+                return _format_module_changes_table(differences)
         except Exception:
             # Fall back to manual analysis if diff components fail
             pass
     
     # Fallback to existing configuration changes analysis
     config_changes = item.get('configuration_changes', [])
+    if config_changes:
+        return _format_config_changes_table(config_changes)
+    
+    # Final fallback
+    return "Configuration updated"
+
+
+def _format_module_changes_table(differences: list) -> str:
+    """Format module differences as clean cards."""
+    if not differences:
+        return "No changes detected"
+    
+    cards = []
+    for diff in differences:
+        field_name = diff.field_path.split('.')[-1] if '.' in diff.field_path else diff.field_path
+        
+        # Format values with diff highlighting
+        old_display, new_display = _format_card_values_with_diff(diff.old_value, diff.new_value)
+        
+        change_type = diff.change_type.capitalize()
+        
+        cards.append(f'''
+            <div class="change-card">
+                <div class="change-header">
+                    <strong>{change_type} {html.escape(field_name)}</strong>
+                </div>
+                <div class="change-content">
+                    <div class="change-line">
+                        <span class="label">Before:</span>
+                    </div>
+                    <div class="value-content old-value">{old_display}</div>
+                    <div class="change-line">
+                        <span class="label">After:</span>
+                    </div>
+                    <div class="value-content new-value">{new_display}</div>
+                </div>
+            </div>''')
+    
+    return f'''<div class="module-changes-cards">
+        {''.join(cards)}
+    </div>'''
+
+
+def _format_config_changes_table(config_changes: list) -> str:
+    """Format configuration changes as clean cards (same as module changes)."""
+    if not config_changes:
+        return "No changes detected"
+    
+    cards = []
     for change in config_changes:
-        if isinstance(change, dict):
-            field = change.get('field', '')
-            old_val = change.get('old_value', '')
-            new_val = change.get('new_value', '')
-            description = change.get('description', '')
-            
-            # Use the human description if it's detailed enough
-            if description and len(description) > 20 and '→' in description:
-                return html.escape(description)
-            
-            # Extract parameter name from various field path formats
-            param_name = None
-            if field.startswith('parameters.'):
-                param_name = field.split('.')[-1]
-            elif field.startswith('metadata.'):
-                param_name = field.split('.')[-1]
-            elif '.' in field:
-                param_name = field.split('.')[-1]
-            elif field:
-                param_name = field
-            
-            if param_name and old_val != new_val:
-                # Format values appropriately
-                old_display = _format_value_for_description(old_val)
-                new_display = _format_value_for_description(new_val)
-                return f'{param_name}: {old_display} → {new_display}'
+        field = change.get('field', 'unknown')
+        field_name = field.split('.')[-1] if '.' in field else field
+        change_type = change.get('change_type', 'modified').capitalize()
+        old_val = change.get('old_value', '')
+        new_val = change.get('new_value', '')
+        
+        # Format values with diff highlighting
+        old_display, new_display = _format_card_values_with_diff(old_val, new_val)
+        
+        cards.append(f'''
+            <div class="change-card">
+                <div class="change-header">
+                    <strong>{change_type} {html.escape(field_name)}</strong>
+                </div>
+                <div class="change-content">
+                    <div class="change-line">
+                        <span class="label">Before:</span>
+                    </div>
+                    <div class="value-content old-value">{old_display}</div>
+                    <div class="change-line">
+                        <span class="label">After:</span>
+                    </div>
+                    <div class="value-content new-value">{new_display}</div>
+                </div>
+            </div>''')
     
-    # Fallback: try to extract from impact description
-    impact_desc = item.get('impact_description', '')
-    if impact_desc and impact_desc not in ['module configuration updated', 'Configuration updated']:
-        return html.escape(impact_desc)
+    return f'''<div class="module-changes-cards">
+        {''.join(cards)}
+    </div>'''
+
+
+def _format_table_value(value) -> str:
+    """Format a value for table display - clean and truncated if needed."""
+    if value is None:
+        return '<span class="null-value">null</span>'
+    elif isinstance(value, bool):
+        return f'<span class="bool-value">{"true" if value else "false"}</span>'
+    elif isinstance(value, (int, float)):
+        return f'<span class="number-value">{value}</span>'
+    elif isinstance(value, str):
+        # Truncate long strings to keep table readable
+        if len(value) > 60:
+            display_value = value[:57] + "..."
+        else:
+            display_value = value
+        return f'<span class="string-value">{html.escape(display_value)}</span>'
+    elif isinstance(value, (list, dict)):
+        return f'<span class="complex-value">{type(value).__name__} ({len(value)} items)</span>'
+    else:
+        str_value = str(value)
+        if len(str_value) > 60:
+            str_value = str_value[:57] + "..."
+        return f'<span class="other-value">{html.escape(str_value)}</span>'
+
+
+def _format_card_value(value) -> str:
+    """Format a value for card display - no truncation, italicized values."""
+    if value is None:
+        return '<em class="null-value">null</em>'
+    elif isinstance(value, bool):
+        return f'<em class="bool-value">{"true" if value else "false"}</em>'
+    elif isinstance(value, (int, float)):
+        return f'<em class="number-value">{value}</em>'
+    elif isinstance(value, str):
+        # No truncation for cards - let them wrap properly, italicize the value
+        return f'<em class="string-value">{html.escape(value)}</em>'
+    elif isinstance(value, (list, dict)):
+        return f'<em class="complex-value">{type(value).__name__} ({len(value)} items)</em>'
+    else:
+        return f'<em class="other-value">{html.escape(str(value))}</em>'
+
+
+def _generate_change_summary(item: Dict[str, Any], change_detail: str) -> str:
+    """Generate a concise summary of what changed in a module."""
+    # Handle additions
+    if not item.get('raw_data_before'):
+        return "added"
     
-    # Final fallback: add context from module name if available
-    module_name = item.get('module_name', '')
-    if module_name and module_name != 'Unknown' and len(module_name) > 5:
-        # Extract meaningful parts from module name for context
-        if ' - ' in module_name:
-            service_action = module_name.split(' - ', 1)[1]
-            if service_action and service_action != module_name:
-                return f"Module: {service_action} updated"
+    # Try to extract meaningful information from the change detail
+    summary_parts = []
     
-    return "Configuration: Updated"
+    # Look for card headers to identify what fields changed
+    if 'Modified url' in change_detail:
+        summary_parts.append("url modified")
+    if 'Modified connection' in change_detail:
+        summary_parts.append("connection modified")
+    if 'Modified mapper' in change_detail:
+        summary_parts.append("mapper modified")
+    if 'Modified parameters' in change_detail:
+        summary_parts.append("parameters modified")
+    if 'Added ' in change_detail:
+        summary_parts.append("fields added")
+    if 'Removed ' in change_detail:
+        summary_parts.append("fields removed")
+    
+    # Count the number of change cards for field count
+    card_count = change_detail.count('<div class="change-card">')
+    
+    # Generate summary
+    if summary_parts:
+        if len(summary_parts) == 1:
+            return f"updated — {summary_parts[0]}"
+        elif len(summary_parts) <= 3:
+            return f"updated — {', '.join(summary_parts)}"
+        else:
+            return f"updated — {card_count} field changes"
+    elif card_count > 0:
+        if card_count == 1:
+            return "updated — 1 field change"
+        else:
+            return f"updated — {card_count} field changes"
+    else:
+        return "updated"
+
+
+def _format_card_values_with_diff(old_value, new_value) -> tuple[str, str]:
+    """Format old and new values with diff highlighting."""
+    # For string values, highlight character-level differences
+    if isinstance(old_value, str) and isinstance(new_value, str):
+        old_highlighted, new_highlighted = _highlight_string_diff(old_value, new_value)
+        return f'<em class="string-value">{old_highlighted}</em>', f'<em class="string-value">{new_highlighted}</em>'
+    else:
+        # For non-strings, use regular formatting
+        return _format_card_value(old_value), _format_card_value(new_value)
+
+
+def _highlight_string_diff(old_str: str, new_str: str) -> tuple[str, str]:
+    """Highlight differences between two strings using character-level comparison."""
+    import difflib
+    
+    # Use difflib to find differences
+    matcher = difflib.SequenceMatcher(None, old_str, new_str)
+    
+    old_highlighted = []
+    new_highlighted = []
+    
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == 'equal':
+            # Same parts - no highlighting
+            old_part = html.escape(old_str[i1:i2])
+            new_part = html.escape(new_str[j1:j2])
+        elif tag == 'delete':
+            # Removed from old
+            old_part = f'<span class="diff-removed">{html.escape(old_str[i1:i2])}</span>'
+            new_part = ''  # Nothing added to new string
+        elif tag == 'insert':
+            # Added to new
+            old_part = ''  # Nothing in old string
+            new_part = f'<span class="diff-added">{html.escape(new_str[j1:j2])}</span>'
+        elif tag == 'replace':
+            # Changed content
+            old_part = f'<span class="diff-removed">{html.escape(old_str[i1:i2])}</span>'
+            new_part = f'<span class="diff-added">{html.escape(new_str[j1:j2])}</span>'
+        
+        old_highlighted.append(old_part)
+        new_highlighted.append(new_part)
+    
+    return ''.join(old_highlighted), ''.join(new_highlighted)
 
 
 def _get_generic_change_description(item: Dict[str, Any]) -> str:
@@ -849,13 +986,57 @@ def _get_generic_change_description(item: Dict[str, Any]) -> str:
     return "Module: Updated"
 
 
+def _format_json_content(value: Any) -> str:
+    """Format a value showing actual JSON content for diffs."""
+    if value is None:
+        return "null"
+    elif isinstance(value, str):
+        return f'"{value}"'
+    elif isinstance(value, bool):
+        return "true" if value else "false"
+    elif isinstance(value, (int, float)):
+        return str(value)
+    elif isinstance(value, list):
+        # Show actual list content for small lists, summary for large ones
+        if len(value) <= 2:
+            import json
+            return json.dumps(value, separators=(',', ':'))
+        else:
+            return f"[{len(value)} items]"
+    elif isinstance(value, dict):
+        # Show actual dict content for small dicts, summary for large ones  
+        if len(value) <= 3:
+            import json
+            return json.dumps(value, separators=(',', ':'))
+        else:
+            return f"{{{len(value)} fields}}"
+    else:
+        return str(value)
+
+
+def _format_json_value(value: Any) -> str:
+    """Format a value for JSON diff display."""
+    if value is None:
+        return "null"
+    elif isinstance(value, str):
+        return f'"{value}"'
+    elif isinstance(value, bool):
+        return "true" if value else "false"
+    elif isinstance(value, (int, float)):
+        return str(value)
+    elif isinstance(value, list):
+        return f"[{len(value)} items]"
+    elif isinstance(value, dict):
+        return f"{{{len(value)} fields}}"
+    else:
+        return str(value)
+
+
 def _format_value_for_description(value: any) -> str:
     """Format a value for display in change descriptions."""
     if value is None:
         return "null"
     elif isinstance(value, str):
-        if len(value) > 30:
-            return f'"{value[:27]}..."'
         return f'"{value}"'
     elif isinstance(value, bool):
         return "true" if value else "false"
@@ -953,7 +1134,193 @@ def _load_css() -> str:
         body { font-family: sans-serif; color: #333; margin: 0; padding: 20px; }
         h1, h2, h3 { color: var(--tekmera-blue); }
         .sidebar { background: var(--tekmera-blue); color: white; padding: 20px; }
+        
+        /* Module Changes Card Styles */
+        .module-changes-cards {
+            margin: 15px 0;
+        }
+        
+        .change-card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin: 12px 0;
+            padding: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .change-header {
+            margin-bottom: 12px;
+        }
+        
+        .change-header strong {
+            color: var(--tekmera-blue);
+            font-size: 1em;
+            font-weight: bold;
+        }
+        
+        .change-content {
+            margin-left: 20px;
+        }
+        
+        .change-line {
+            margin: 8px 0 4px 0;
+        }
+        
+        .change-line .label {
+            font-weight: 600;
+            color: #6c757d;
+            font-style: normal;
+        }
+        
+        .value-content {
+            margin: 4px 0 12px 20px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            line-height: 1.4;
+            font-style: normal;
+        }
+        
+        .value-content em {
+            font-style: italic;
+        }
+        
+        .string-value {
+            color: #d73a49;
+        }
+        
+        .number-value {
+            color: #005cc5;
+        }
+        
+        .bool-value {
+            color: #e36209;
+        }
+        
+        .null-value {
+            color: #6f42c1;
+            font-style: italic;
+        }
+        
+        .complex-value {
+            color: #28a745;
+            font-style: italic;
+        }
+        
+        .other-value {
+            color: #6c757d;
+        }
+        
+        /* Diff highlighting styles */
+        .diff-removed {
+            background-color: #ffeef0;
+            text-decoration: line-through;
+            color: #d1242f;
+            font-weight: 600;
+        }
+        
+        .diff-added {
+            background-color: #e6ffed;
+            color: #28a745;
+            font-weight: 600;
+        }
+        
+        /* Module Accordion Styles */
+        .module-accordion {
+            margin: 8px 0;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            background: #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        
+        .module-accordion[open] {
+            border-color: var(--tekmera-sky);
+            box-shadow: 0 2px 8px rgba(66, 184, 230, 0.15);
+        }
+        
+        .module-summary {
+            padding: 12px 16px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 6px;
+            font-weight: 600;
+            color: var(--tekmera-blue);
+            transition: all 0.2s ease;
+            position: relative;
+            list-style: none;
+            outline: none;
+        }
+        
+        .module-summary .change-summary {
+            color: #6c757d;
+            font-weight: 500;
+            font-size: 0.9em;
+        }
+        
+        .module-summary:hover {
+            background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+            color: var(--tekmera-sky);
+        }
+        
+        .module-summary::-webkit-details-marker {
+            display: none;
+        }
+        
+        .module-summary::before {
+            content: '▶';
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            transition: transform 0.2s ease;
+            font-size: 0.8em;
+            color: var(--tekmera-sky);
+        }
+        
+        .module-accordion[open] .module-summary::before {
+            transform: translateY(-50%) rotate(90deg);
+        }
+        
+        .accordion-content {
+            padding: 0 16px 16px 16px;
+            animation: slideDown 0.2s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Override component-detail styling when inside accordion */
+        .accordion-content .component-detail {
+            color: inherit;
+            font-size: inherit;
+            margin-left: 0;
+            padding-left: 0;
+            border-left: none;
+            font-style: normal;
+            display: block;
+            margin-top: 12px;
+        }
+        
+        /* Responsive design for cards */
+        @media (max-width: 768px) {
+            .change-values {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>"""
+
+
 
 
 def _get_javascript() -> str:
