@@ -19,23 +19,16 @@ class ChangeType(Enum):
     REMOVED = "removed"
 
 
-class ChangeImpact(Enum):
-    """Impact classification for configuration changes."""
-    COSMETIC = "cosmetic"           # Names, positions, UI metadata
-    CONFIGURATION = "configuration" # Parameter changes
-    STRUCTURAL = "structural"       # Position/flow changes  
-    FUNCTIONAL = "functional"       # Logic/behavior changes
-    ARCHITECTURAL = "architectural" # Major restructuring
 
 
 class ChangeScale(Enum):
-    """Overall magnitude scale for blueprint changes."""
-    UNCHANGED = "unchanged"                    # 0% - No detectable structural deltas
-    MINOR = "minor"                           # 0-5% - Small localized structural differences
-    MODERATE = "moderate"                     # 5-10% - Noticeable differences affecting contained portion
-    MAJOR = "major"                          # 10-40% - Significant modification across substantial portion
-    EXTENSIVE = "extensive"                   # 40-85% - Large-scale structural divergence
-    DIFFERENT_SCENARIOS = "different scenarios"  # 85-100% - Minimal structural similarity
+    """Factual description of blueprint change scope."""
+    UNCHANGED = "unchanged"                    # 0% - No structural differences detected
+    LIMITED = "limited"                       # 0-5% - Changes in small number of components
+    MODERATE = "moderate"                     # 5-10% - Changes affecting some components
+    SUBSTANTIAL = "substantial"               # 10-40% - Changes across many components
+    WIDESPREAD = "widespread"                 # 40-85% - Changes throughout most components
+    COMPREHENSIVE = "comprehensive"           # 85-100% - Changes across nearly all components
 
 
 @dataclass
@@ -48,14 +41,13 @@ class ModuleChange:
     
     # Configuration changes (if applicable)
     configuration_changes: List[Dict[str, Any]] = field(default_factory=list)
-    change_impact: Optional[ChangeImpact] = None
     
     # Structural changes (if moved)
     old_position: Optional[Dict[str, Any]] = None
     new_position: Optional[Dict[str, Any]] = None
     
-    # Impact description
-    impact_description: str = ""
+    # Change description
+    description: str = ""
     
     # Component metadata (for filters, routers, etc.)
     component_metadata: Optional[Dict[str, Any]] = None
@@ -73,7 +65,6 @@ class StructuralChange:
     change_description: str
     affected_modules: List[str]
     change_type: str  # "edge_added", "edge_removed", "path_changed", etc.
-    impact_level: ChangeImpact
 
 
 @dataclass
@@ -397,26 +388,26 @@ class BlueprintDiffReport(BaseReport):
         return text_parts
     
     def _get_change_scale_description(self) -> str:
-        """Get detailed description for the change scale classification."""
+        """Get detailed description for the change scope classification."""
         change_scale = self.summary.change_scale
         
         if change_scale == ChangeScale.UNCHANGED:
-            return "No detectable structural deltas. After normalization and canonicalization, the node set, edge set, parameters, and mappings match exactly with zero additions, removals, or modifications."
+            return "No structural differences detected between the blueprints. Node set, edge set, parameters, and mappings are identical with zero additions, removals, or modifications."
         
-        elif change_scale == ChangeScale.MINOR:
-            return "Small localized structural differences relative to the full normalized blueprint. Examples include low-count modifications such as: a few node parameter changes, a small number of added/removed nodes, slight branch or mapping adjustments. Footprint change is present but limited."
+        elif change_scale == ChangeScale.LIMITED:
+            return "Changes affect a small number of components in the blueprint. Examples include: a few parameter modifications, a small number of added/removed nodes, or minor connection adjustments."
         
         elif change_scale == ChangeScale.MODERATE:
-            return "Noticeable structural differences affecting a contained portion of the workflow. Changes may involve multiple nodes, parameters, or localized subgraphs. The overall structure remains mostly similar, but the delta is visibly larger than MINOR."
+            return "Changes affect some components across the workflow. Multiple nodes, parameters, or subgraph sections differ between the blueprints."
         
-        elif change_scale == ChangeScale.MAJOR:
-            return "Significant structural modification across a substantial portion of the workflow. Multiple regions, branches, or module clusters differ from the original. This band covers wide, meaningful topological changes without a full rebuild."
+        elif change_scale == ChangeScale.SUBSTANTIAL:
+            return "Changes affect many components across substantial portions of the workflow. Multiple regions, branches, or module clusters differ between the blueprints."
         
-        elif change_scale == ChangeScale.EXTENSIVE:
-            return "Large-scale structural divergence. A majority of the modules, paths, or graph segments differ from the original. The workflows still share some foundational elements, but the footprint overlap is limited."
+        elif change_scale == ChangeScale.WIDESPREAD:
+            return "Changes affect most components throughout the workflow. The majority of modules, paths, or graph segments differ between the blueprints."
         
-        elif change_scale == ChangeScale.DIFFERENT_SCENARIOS:
-            return "The workflows share minimal structural similarity. Most of the normalized graph is different: nodes, edges, parameters, or full branches. At this level, the blueprints are effectively separate workflows with only incidental overlap."
+        elif change_scale == ChangeScale.COMPREHENSIVE:
+            return "Changes affect nearly all components in the workflow. Most of the blueprint structure differs: nodes, edges, parameters, or branches have been modified."
         
         else:
             return change_scale.value.title()

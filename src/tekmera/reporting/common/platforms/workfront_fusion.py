@@ -69,7 +69,7 @@ class WorkfrontFusionReportingHelper:
         topology2 = topology2_result.data
         
         # Use reporting analysis for comparison
-        from ...diff.analysis import compare_graphs, detect_node_changes, calculate_structural_change_score, classify_change_magnitude, calculate_change_counts
+        from ...diff.analysis import compare_graphs, detect_node_changes, calculate_structural_change_score, classify_change_scope, calculate_change_counts
         
         # Perform graph comparison
         graph_comparison = compare_graphs(topology1, topology2)
@@ -85,7 +85,7 @@ class WorkfrontFusionReportingHelper:
         # Calculate metrics
         structural_change_score = calculate_structural_change_score(topology1, topology2, graph_comparison)
         change_counts = calculate_change_counts(module_changes)
-        change_scale = classify_change_magnitude(structural_change_score, module_changes, graph_comparison)
+        change_scale = classify_change_scope(structural_change_score, module_changes, graph_comparison)
         
         
         # Create summary

@@ -173,9 +173,8 @@ class DiffReportJSONRenderer:
                     "module_type": change.module_type,
                     "module_name": change.module_name,
                     "change_type": change.change_type.value,
-                    "change_impact": change.change_impact.value if change.change_impact else None,
                     "configuration_changes_count": len(change.configuration_changes),
-                    "impact_description": change.impact_description
+                    "description": change.description
                 }
                 for change in self.report.module_changes
             ],
@@ -183,8 +182,7 @@ class DiffReportJSONRenderer:
                 {
                     "description": change.change_description,
                     "affected_modules_count": len(change.affected_modules),
-                    "change_type": change.change_type,
-                    "impact_level": change.impact_level.value
+                    "change_type": change.change_type
                 }
                 for change in self.report.structural_changes
             ],

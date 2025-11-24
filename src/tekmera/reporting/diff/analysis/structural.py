@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Set, Tuple
 from dataclasses import dataclass
 
 from tekmera.functions.components.topology.types import TopologyGraph, TopologyNode
-from ..diff import ModuleChange, StructuralChange, ChangeType, ChangeImpact
+from ..diff import ModuleChange, StructuralChange, ChangeType
 
 
 @dataclass
@@ -127,8 +127,7 @@ def detect_node_changes(comparison: GraphComparisonResult) -> List[ModuleChange]
             module_type=node.module_type,
             module_name=node.name,
             change_type=ChangeType.ADDED,
-            change_impact=ChangeImpact.STRUCTURAL,
-            impact_description=f"New {_get_node_type_description(node)} added to workflow",
+            description=f"New {_get_node_type_description(node)} added to workflow",
             component_metadata=component_metadata,
             raw_data=node.raw_data
         )
@@ -148,8 +147,7 @@ def detect_node_changes(comparison: GraphComparisonResult) -> List[ModuleChange]
             module_type=node.module_type,
             module_name=node.name,
             change_type=ChangeType.REMOVED,
-            change_impact=ChangeImpact.FUNCTIONAL,
-            impact_description=f"{_get_node_type_description(node)} removed from workflow",
+            description=f"{_get_node_type_description(node)} removed from workflow",
             component_metadata=component_metadata,
             raw_data=node.raw_data
         )
@@ -158,7 +156,6 @@ def detect_node_changes(comparison: GraphComparisonResult) -> List[ModuleChange]
     # Process modified nodes
     for old_node, new_node in comparison.modified_nodes:
         config_changes = _analyze_configuration_changes(old_node, new_node)
-        impact = _assess_change_impact(config_changes)
         
         # Extract component metadata for filters
         component_metadata = None
@@ -173,8 +170,7 @@ def detect_node_changes(comparison: GraphComparisonResult) -> List[ModuleChange]
             module_name=new_node.name,
             change_type=ChangeType.CONFIGURATION_CHANGED,
             configuration_changes=config_changes,
-            change_impact=impact,
-            impact_description=f"{_get_node_type_description(new_node)} configuration updated",
+            description=f"{_get_node_type_description(new_node)} configuration updated",
             component_metadata=component_metadata,
             raw_data=new_node.raw_data,
             raw_data_before=old_node.raw_data
@@ -195,10 +191,9 @@ def detect_node_changes(comparison: GraphComparisonResult) -> List[ModuleChange]
             module_type=new_node.module_type,
             module_name=new_node.name,
             change_type=ChangeType.STRUCTURALLY_MOVED,
-            change_impact=ChangeImpact.STRUCTURAL,
             old_position={"path": old_node.position.path, "depth": old_node.position.depth},
             new_position={"path": new_node.position.path, "depth": new_node.position.depth},
-            impact_description=f"{_get_node_type_description(new_node)} moved in workflow structure",
+            description=f"{_get_node_type_description(new_node)} moved in workflow structure",
             component_metadata=component_metadata,
             raw_data=new_node.raw_data,
             raw_data_before=old_node.raw_data
@@ -219,7 +214,7 @@ def detect_node_changes(comparison: GraphComparisonResult) -> List[ModuleChange]
             module_type=new_node.module_type,
             module_name=new_node.name,
             change_type=ChangeType.UNCHANGED,
-            impact_description="No changes detected",
+            description="No changes detected",
             component_metadata=component_metadata,
             raw_data=new_node.raw_data
         )
@@ -432,16 +427,3 @@ def _compare_dict_fields(old_dict: Dict[str, any], new_dict: Dict[str, any], pre
     return changes
 
 
-def _assess_change_impact(config_changes: List[Dict[str, any]]) -> ChangeImpact:
-    """Assess the impact of configuration changes."""
-    if not config_changes:
-        return ChangeImpact.COSMETIC
-    
-    # Simplified assessment - real implementation would analyze field importance
-    if any(change.get("field") == "module_type" for change in config_changes):
-        return ChangeImpact.FUNCTIONAL
-    
-    if len(config_changes) > 3:
-        return ChangeImpact.CONFIGURATION
-    
-    return ChangeImpact.COSMETIC

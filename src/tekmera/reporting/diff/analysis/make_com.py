@@ -7,7 +7,7 @@ changes across different component types (modules, triggers, routers, filters, c
 from typing import Any, Dict, List
 from dataclasses import dataclass
 
-from ..diff import ModuleChange, ChangeType, ChangeImpact
+from ..diff import ModuleChange, ChangeType
 from tekmera.functions.components.topology.types import TopologyNode
 from tekmera.functions.meta.types import Platform
 

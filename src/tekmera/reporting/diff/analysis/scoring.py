@@ -8,7 +8,7 @@ from typing import Dict, List
 import math
 
 from tekmera.functions.components.topology.types import TopologyGraph
-from ..diff import ModuleChange, ChangeType, ChangeImpact, ChangeScale
+from ..diff import ModuleChange, ChangeType, ChangeScale
 from .structural import GraphComparisonResult
 
 
@@ -62,18 +62,18 @@ def calculate_structural_change_score(
     return max(0.0, min(1.0, final_score))
 
 
-def classify_change_magnitude(
+def classify_change_scope(
     change_score: float,
     module_changes: List[ModuleChange],
     comparison: GraphComparisonResult
 ) -> ChangeScale:
     """
-    Classify the magnitude of changes based on structural differences.
+    Classify the scope of changes based on structural differences.
     
-    Change factors considered:
-    - Structural change magnitude (primary factor)
-    - Number of components modified
-    - Type of modifications (additions, removals, changes)
+    Classification is factual and based on:
+    - Percentage of components affected
+    - Structural change coverage
+    - Distribution of modifications
     
     Args:
         change_score: Structural change score (0.0-1.0)
@@ -81,21 +81,21 @@ def classify_change_magnitude(
         comparison: Graph comparison result
         
     Returns:
-        Change scale classification
+        Change scope classification
     """
-    # Primary classification based on change score
+    # Classification based on change coverage
     if change_score == 0.0:
         return ChangeScale.UNCHANGED
     elif change_score < 0.05:
-        return ChangeScale.MINOR
+        return ChangeScale.LIMITED
     elif change_score < 0.10:
         return ChangeScale.MODERATE
     elif change_score < 0.40:
-        return ChangeScale.MAJOR
+        return ChangeScale.SUBSTANTIAL
     elif change_score < 0.85:
-        return ChangeScale.EXTENSIVE
+        return ChangeScale.WIDESPREAD
     else:
-        return ChangeScale.DIFFERENT_SCENARIOS
+        return ChangeScale.COMPREHENSIVE
 
 
 def calculate_structural_similarity(change_score: float) -> float:
@@ -145,19 +145,19 @@ def _calculate_edge_change_score(
     """Calculate score based on edge (connection) changes."""
     total_edges = max(len(graph1.edges), len(graph2.edges), 1)
     
-    # Edge changes indicate flow logic modifications
+    # Edge changes represent connection modifications
     added_edges = comparison.added_edges_count
     removed_edges = comparison.removed_edges_count
     changed_edges = comparison.changed_edges_count
     
-    # Weight edge changes heavily since they affect flow logic
-    edge_change_impact = (
-        added_edges * 0.5 +
-        removed_edges * 0.7 +  # Removed connections are more impactful
-        changed_edges * 0.6
+    # Calculate proportional change in connections
+    edge_change_count = (
+        added_edges +
+        removed_edges + 
+        changed_edges
     )
     
-    return min(1.0, edge_change_impact / total_edges)
+    return min(1.0, edge_change_count / total_edges)
 
 
 def _calculate_complexity_change_score(graph1: TopologyGraph, graph2: TopologyGraph) -> float:
@@ -225,11 +225,7 @@ def _analyze_change_factors(
 ) -> Dict[str, int]:
     """Analyze various change factors from the differences."""
     factors = {
-        "architectural_changes": 0,
-        "functional_changes": 0,
-        "structural_changes": 0,
         "configuration_changes": 0,
-        "cosmetic_changes": 0,
         "trigger_modules_affected": 0,
         "router_modules_affected": 0,
         "added_modules": len(comparison.added_nodes),
@@ -237,18 +233,16 @@ def _analyze_change_factors(
         "moved_modules": len(comparison.moved_nodes)
     }
     
-    # Analyze change impact distribution
+    # Analyze change type distribution
     for change in module_changes:
-        if change.change_impact == ChangeImpact.ARCHITECTURAL:
-            factors["architectural_changes"] += 1
-        elif change.change_impact == ChangeImpact.FUNCTIONAL:
-            factors["functional_changes"] += 1
-        elif change.change_impact == ChangeImpact.STRUCTURAL:
-            factors["structural_changes"] += 1
-        elif change.change_impact == ChangeImpact.CONFIGURATION:
+        if change.change_type == ChangeType.ADDED:
+            factors["added_modules"] += 1
+        elif change.change_type == ChangeType.REMOVED:
+            factors["removed_modules"] += 1
+        elif change.change_type == ChangeType.CONFIGURATION_CHANGED:
             factors["configuration_changes"] += 1
-        elif change.change_impact == ChangeImpact.COSMETIC:
-            factors["cosmetic_changes"] += 1
+        elif change.change_type == ChangeType.STRUCTURALLY_MOVED:
+            factors["moved_modules"] += 1
     
     # Count trigger and router changes (for analysis)
     for change in module_changes:
