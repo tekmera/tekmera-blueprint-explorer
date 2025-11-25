@@ -4,17 +4,19 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from ..common.types import BaseReport, ReportMetadata, ReportType
+from tekmera.functions.meta.platform_detection import detect_platform
 from tekmera.functions.meta.trigger_types import UniversalTrigger
 from tekmera.functions.meta.types import Platform, ProjectionResult, create_result
-from tekmera.functions.meta.platform_detection import detect_platform
+
+from ..common.types import BaseReport, ReportMetadata, ReportType
 
 
 @dataclass
 class FlowStructureMap:
     """Flow structure analysis - STUB: requires real data analysis."""
+
     total_top_level_branches: int = 0
-    longest_execution_path: int = 0 
+    longest_execution_path: int = 0
     deepest_nested_router_level: int = 0
     iterator_aggregator_positions: List[str] = field(default_factory=list)
 
@@ -22,6 +24,7 @@ class FlowStructureMap:
 @dataclass
 class RoutingAndLogicPatterns:
     """Routing and logic patterns analysis - STUB: requires real data analysis."""
+
     router_branching_counts: Dict[str, int] = field(default_factory=dict)
     filters_per_branch: Dict[str, int] = field(default_factory=dict)
     has_catch_all_routes: bool = False
@@ -31,6 +34,7 @@ class RoutingAndLogicPatterns:
 @dataclass
 class ExternalDependencyTable:
     """External dependencies analysis - STUB: requires real data analysis."""
+
     api_modules_and_endpoints: List[Dict[str, str]] = field(default_factory=list)
     workfront_object_types: List[str] = field(default_factory=list)
     authentication_types: List[str] = field(default_factory=list)
@@ -40,6 +44,7 @@ class ExternalDependencyTable:
 @dataclass
 class DataSurfaceSummary:
     """Data surface analysis - STUB: requires real data analysis."""
+
     primary_input_types: List[str] = field(default_factory=list)
     major_mapped_fields: List[str] = field(default_factory=list)
     iterated_collections: List[str] = field(default_factory=list)
@@ -48,6 +53,7 @@ class DataSurfaceSummary:
 @dataclass
 class RiskIndicators:
     """Risk analysis - STUB: requires real data analysis."""
+
     deeply_nested_routers: List[str] = field(default_factory=list)
     error_handlers_masking_failures: List[str] = field(default_factory=list)
     high_fanout_modules: List[str] = field(default_factory=list)
@@ -57,6 +63,7 @@ class RiskIndicators:
 @dataclass
 class SafeToModifyHeuristics:
     """Safe modification analysis - STUB: requires real data analysis."""
+
     isolated_modules_or_branches: List[str] = field(default_factory=list)
     modules_no_upstream_deps: List[str] = field(default_factory=list)
     branches_not_feeding_critical_paths: List[str] = field(default_factory=list)
@@ -65,6 +72,7 @@ class SafeToModifyHeuristics:
 @dataclass
 class OperationalLoadSignals:
     """Operational load analysis - STUB: requires real data analysis."""
+
     iterators_on_large_collections: List[str] = field(default_factory=list)
     aggregators: List[str] = field(default_factory=list)
     loops_with_unclear_exit_conditions: List[str] = field(default_factory=list)
@@ -73,6 +81,7 @@ class OperationalLoadSignals:
 @dataclass
 class ExecutionRoleSummary:
     """Execution role analysis - STUB: requires real data analysis."""
+
     scenario_vs_module_error_handlers: Dict[str, int] = field(default_factory=dict)
     schedulers_vs_webhooks: Dict[str, int] = field(default_factory=dict)
 
@@ -80,6 +89,7 @@ class ExecutionRoleSummary:
 @dataclass
 class ChangeSurfaceIndex:
     """Change surface complexity score - STUB: requires real data analysis."""
+
     routing_depth_score: float = 0.0
     dependency_spread_score: float = 0.0
     risk_concentration_score: float = 0.0
@@ -89,7 +99,7 @@ class ChangeSurfaceIndex:
 
 class BlueprintSummaryReport(BaseReport):
     """Platform-agnostic summary report for a single blueprint."""
-    
+
     def __init__(
         self,
         blueprint_name: str,
@@ -107,22 +117,22 @@ class BlueprintSummaryReport(BaseReport):
         safe_to_modify: Optional[SafeToModifyHeuristics] = None,
         operational_load: Optional[OperationalLoadSignals] = None,
         execution_role: Optional[ExecutionRoleSummary] = None,
-        change_surface_index: Optional[ChangeSurfaceIndex] = None
+        change_surface_index: Optional[ChangeSurfaceIndex] = None,
     ):
         """Initialize summary report with data."""
         metadata = ReportMetadata(
             report_type=ReportType.SUMMARY,
             platform=platform,
-            generated_at=generated_at or datetime.now()
+            generated_at=generated_at or datetime.now(),
         )
         super().__init__(metadata)
-        
+
         # Core data
         self.blueprint_name = blueprint_name
         self.component_counts = component_counts
         self.total_components = total_components
         self.insights = insights or []
-        
+
         # Analysis sections
         self.trigger = trigger
         self.flow_structure = flow_structure or FlowStructureMap()
@@ -134,16 +144,18 @@ class BlueprintSummaryReport(BaseReport):
         self.operational_load = operational_load or OperationalLoadSignals()
         self.execution_role = execution_role or ExecutionRoleSummary()
         self.change_surface_index = change_surface_index or ChangeSurfaceIndex()
-    
+
     def to_text(self) -> str:
         """Generate formatted text report using dedicated renderer."""
         from .renderers import SummaryReportTextRenderer
+
         renderer = SummaryReportTextRenderer(self)
         return renderer.render()
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization using dedicated renderer."""
         from .renderers import SummaryReportJSONRenderer
+
         renderer = SummaryReportJSONRenderer(self)
         return renderer.render()
 
@@ -151,35 +163,37 @@ class BlueprintSummaryReport(BaseReport):
 def generate_summary_report(blueprint: Dict[str, Any]) -> ProjectionResult[BlueprintSummaryReport]:
     """
     Generate summary report using component analysis directly.
-    
-    This function analyzes components directly without delegating to 
+
+    This function analyzes components directly without delegating to
     the old projections structure, maintaining clean separation.
     """
     # Detect platform and route to platform-specific analysis
     platform = detect_platform(blueprint)
-    
+
     # Extract blueprint metadata
     blueprint_name = blueprint.get("name", "Unnamed Blueprint")
-    
+
     # Use platform-specific helpers
     if platform == Platform.WORKFRONT_FUSION:
         from ..common.platforms.workfront_fusion import WorkfrontFusionReportingHelper
+
         component_counts = WorkfrontFusionReportingHelper.analyze_components(blueprint)
         trigger = WorkfrontFusionReportingHelper.detect_trigger(blueprint)
     elif platform == Platform.MAKE_COM:
-        from ..common.platforms.make_com import MakeComReportingHelper  
+        from ..common.platforms.make_com import MakeComReportingHelper
+
         component_counts = MakeComReportingHelper.analyze_components(blueprint)
         trigger = MakeComReportingHelper.detect_trigger(blueprint)
     else:
         # Fallback for unknown platforms
         component_counts = {"modules": 0, "routers": 0, "filters": 0, "error_handlers": 0}
         trigger = None
-    
+
     total_components = sum(component_counts.values())
-    
+
     # Generate insights
     insights = generate_insights(component_counts, total_components)
-    
+
     # Create the new reporting format
     report = BlueprintSummaryReport(
         blueprint_name=blueprint_name,
@@ -188,22 +202,19 @@ def generate_summary_report(blueprint: Dict[str, Any]) -> ProjectionResult[Bluep
         total_components=total_components,
         generated_at=datetime.now(),
         insights=insights,
-        trigger=trigger
+        trigger=trigger,
     )
-    
+
     # Return in the same format but with new report type
     return create_result(
-        blueprint=blueprint,
-        platform=platform,
-        function_name="reporting.summary",
-        data=report
+        blueprint=blueprint, platform=platform, function_name="reporting.summary", data=report
     )
 
 
 def generate_insights(component_counts: Dict[str, int], total_components: int) -> List[str]:
     """Generate analysis insights based on component counts."""
     insights = []
-    
+
     # Complexity analysis
     if total_components == 0:
         insights.append("This blueprint contains no components")
@@ -215,22 +226,22 @@ def generate_insights(component_counts: Dict[str, int], total_components: int) -
         insights.append("This is a medium to high complexity blueprint")
     else:
         insights.append("This is a high complexity blueprint with many components")
-    
+
     # Router analysis
-    router_count = component_counts.get('routers', 0)
+    router_count = component_counts.get("routers", 0)
     if router_count > 0:
         insights.append(f"Contains {router_count} router(s) for conditional logic")
-    
+
     # Filter analysis
-    filter_count = component_counts.get('filters', 0)
+    filter_count = component_counts.get("filters", 0)
     if filter_count > 0:
         insights.append(f"Contains {filter_count} filter(s) for data processing")
-    
+
     # Error handling analysis
-    error_handler_count = component_counts.get('error_handlers', 0)
+    error_handler_count = component_counts.get("error_handlers", 0)
     if error_handler_count > 0:
         insights.append(f"Contains {error_handler_count} error handler(s) for fault tolerance")
     else:
         insights.append("No error handlers detected - consider adding for robustness")
-    
+
     return insights

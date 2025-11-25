@@ -35,4 +35,6 @@ def text_content(module_component: ModuleComponent, platform: Platform) -> Modul
     if platform in IMPLEMENTATIONS:
         return IMPLEMENTATIONS[platform](module_component, platform)
 
-    raise ValueError(f"Platform {platform.value} not supported for connection text content extraction")
+    raise ValueError(
+        f"Platform {platform.value} not supported for connection text content extraction"
+    )

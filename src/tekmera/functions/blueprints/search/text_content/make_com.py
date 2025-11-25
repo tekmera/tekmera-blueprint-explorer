@@ -12,7 +12,9 @@ from ....meta.types import Platform, ProjectionResult, create_result
 from ....meta.utils.make_com.extract_components import extract_all_components
 
 
-def text_content(blueprints: List[Dict[str, Any]], query: str, case_sensitive: bool = False) -> ProjectionResult:
+def text_content(
+    blueprints: List[Dict[str, Any]], query: str, case_sensitive: bool = False
+) -> ProjectionResult:
     """
     Search for text content across all components in Make.com blueprints.
 
@@ -25,7 +27,7 @@ def text_content(blueprints: List[Dict[str, Any]], query: str, case_sensitive: b
             blueprint=blueprints[0],
             platform=Platform.MAKE_COM,
             function_name="blueprints.search.text_content",
-            data=result
+            data=result,
         )
 
     # Handle multiple blueprints
@@ -39,11 +41,13 @@ def text_content(blueprints: List[Dict[str, Any]], query: str, case_sensitive: b
         blueprint={"name": f"Search across {len(blueprints)} blueprints"},
         platform=Platform.MAKE_COM,
         function_name="blueprints.search.text_content",
-        data=results
+        data=results,
     )
 
 
-def _search_single_blueprint(blueprint: Dict[str, Any], query: str, case_sensitive: bool) -> Dict[str, Any]:
+def _search_single_blueprint(
+    blueprint: Dict[str, Any], query: str, case_sensitive: bool
+) -> Dict[str, Any]:
     """Search within a single Make.com blueprint."""
     # Step 1: Extract all typed components (now includes routers, filters, error handlers)
     all_components = extract_all_components(blueprint, include_orphans=True)
@@ -60,12 +64,14 @@ def _search_single_blueprint(blueprint: Dict[str, Any], query: str, case_sensiti
 
             if _text_contains_query(text_content, query, case_sensitive):
                 matches_by_type["modules"] += 1
-                matches.append({
-                    "component_type": "module",
-                    "component_id": module_component.id,
-                    "match_text": _extract_match_context(text_content, query, case_sensitive),
-                    "context": module_component.extraction_context
-                })
+                matches.append(
+                    {
+                        "component_type": "module",
+                        "component_id": module_component.id,
+                        "match_text": _extract_match_context(text_content, query, case_sensitive),
+                        "context": module_component.extraction_context,
+                    }
+                )
         except Exception:
             # Skip components that can't be processed
             continue
@@ -78,12 +84,14 @@ def _search_single_blueprint(blueprint: Dict[str, Any], query: str, case_sensiti
 
             if _text_contains_query(text_content, query, case_sensitive):
                 matches_by_type["routers"] += 1
-                matches.append({
-                    "component_type": "router",
-                    "component_id": router_component.id,
-                    "match_text": _extract_match_context(text_content, query, case_sensitive),
-                    "context": router_component.extraction_context
-                })
+                matches.append(
+                    {
+                        "component_type": "router",
+                        "component_id": router_component.id,
+                        "match_text": _extract_match_context(text_content, query, case_sensitive),
+                        "context": router_component.extraction_context,
+                    }
+                )
         except Exception:
             continue
 
@@ -95,12 +103,14 @@ def _search_single_blueprint(blueprint: Dict[str, Any], query: str, case_sensiti
 
             if _text_contains_query(text_content, query, case_sensitive):
                 matches_by_type["filters"] += 1
-                matches.append({
-                    "component_type": "filter",
-                    "component_id": filter_component.id,
-                    "match_text": _extract_match_context(text_content, query, case_sensitive),
-                    "context": filter_component.extraction_context
-                })
+                matches.append(
+                    {
+                        "component_type": "filter",
+                        "component_id": filter_component.id,
+                        "match_text": _extract_match_context(text_content, query, case_sensitive),
+                        "context": filter_component.extraction_context,
+                    }
+                )
         except Exception:
             continue
 
@@ -112,12 +122,14 @@ def _search_single_blueprint(blueprint: Dict[str, Any], query: str, case_sensiti
 
             if _text_contains_query(text_content, query, case_sensitive):
                 matches_by_type["error_handlers"] += 1
-                matches.append({
-                    "component_type": "error_handler",
-                    "component_id": error_handler_component.id,
-                    "match_text": _extract_match_context(text_content, query, case_sensitive),
-                    "context": error_handler_component.extraction_context
-                })
+                matches.append(
+                    {
+                        "component_type": "error_handler",
+                        "component_id": error_handler_component.id,
+                        "match_text": _extract_match_context(text_content, query, case_sensitive),
+                        "context": error_handler_component.extraction_context,
+                    }
+                )
         except Exception:
             continue
 
@@ -133,9 +145,9 @@ def _search_single_blueprint(blueprint: Dict[str, Any], query: str, case_sensiti
             "modules": len(all_components["modules"]),
             "routers": len(all_components["routers"]),
             "filters": len(all_components["filters"]),
-            "error_handlers": len(all_components["error_handlers"])
+            "error_handlers": len(all_components["error_handlers"]),
         },
-        "matches": matches
+        "matches": matches,
     }
 
 
@@ -147,7 +159,9 @@ def _text_contains_query(text: str, query: str, case_sensitive: bool) -> bool:
         return query.lower() in text.lower()
 
 
-def _extract_match_context(text: str, query: str, case_sensitive: bool, context_chars: int = 100) -> str:
+def _extract_match_context(
+    text: str, query: str, case_sensitive: bool, context_chars: int = 100
+) -> str:
     """Extract context around the first match."""
     search_text = text if case_sensitive else text.lower()
     search_query = query if case_sensitive else query.lower()

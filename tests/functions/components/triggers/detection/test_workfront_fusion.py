@@ -4,8 +4,8 @@ import pytest
 
 from tekmera.functions.components.triggers.detection.workfront_fusion import detect_trigger
 from tekmera.functions.meta.trigger_types import (
-    TriggerExecutionPattern,
     TriggerDataSource,
+    TriggerExecutionPattern,
     TriggerReliability,
     TriggerScaling,
 )
@@ -23,23 +23,18 @@ class TestWorkfrontFusionTriggerDetection:
                 {
                     "id": 1,
                     "module": "workfront-workfront:watchEvents",
-                    "parameters": {
-                        "maxResults": 1,
-                        "__IMTHOOK__": 6902
-                    },
+                    "parameters": {"maxResults": 1, "__IMTHOOK__": 6902},
                     "metadata": {
                         "designer": {"name": "Watch Issues"},
-                        "restore": {
-                            "__IMTHOOK__": {"label": "Test Issue Hook"}
-                        }
-                    }
+                        "restore": {"__IMTHOOK__": {"label": "Test Issue Hook"}},
+                    },
                 }
-            ]
+            ],
         }
-        
+
         result = detect_trigger(blueprint)
         trigger = result.data
-        
+
         assert trigger.platform == Platform.WORKFRONT_FUSION
         assert trigger.module_id == 1
         assert trigger.module_type == "workfront-workfront:watchEvents"
@@ -48,13 +43,13 @@ class TestWorkfrontFusionTriggerDetection:
         assert trigger.reliability == TriggerReliability.REAL_TIME
         assert trigger.scaling == TriggerScaling.SINGLE_ITEM
         assert trigger.display_name == "Watch Issues"
-        
+
         # Check connection details
         assert trigger.connection.requires_auth is True
         assert trigger.connection.connection_type == "webhook"
         assert trigger.connection.connection_id == "6902"
         assert trigger.connection.account_reference == "Test Issue Hook"
-        
+
         # Check configuration
         assert trigger.configuration.batch_size == 1
 
@@ -66,25 +61,18 @@ class TestWorkfrontFusionTriggerDetection:
                 {
                     "id": 10,
                     "module": "gateway:CustomWebHook",
-                    "parameters": {
-                        "hook": 2177826,
-                        "maxResults": 1
-                    },
+                    "parameters": {"hook": 2177826, "maxResults": 1},
                     "metadata": {
                         "designer": {"name": "Custom Hook"},
-                        "restore": {
-                            "parameters": {
-                                "hook": {"label": "Test Custom Hook"}
-                            }
-                        }
-                    }
+                        "restore": {"parameters": {"hook": {"label": "Test Custom Hook"}}},
+                    },
                 }
-            ]
+            ],
         }
-        
+
         result = detect_trigger(blueprint)
         trigger = result.data
-        
+
         assert trigger.module_type == "gateway:CustomWebHook"
         assert trigger.execution_pattern == TriggerExecutionPattern.WEBHOOK
         assert trigger.data_source == TriggerDataSource.WEBHOOK_RECEIVER
@@ -103,20 +91,16 @@ class TestWorkfrontFusionTriggerDetection:
                         "__IMTCONN__": 3757,
                         "url": "PRGM/search",
                         "method": "GET",
-                        "qs": {
-                            "DE:typeOfProject": "Execution"
-                        }
+                        "qs": {"DE:typeOfProject": "Execution"},
                     },
-                    "metadata": {
-                        "designer": {"name": "Search Programs"}
-                    }
+                    "metadata": {"designer": {"name": "Search Programs"}},
                 }
-            ]
+            ],
         }
-        
+
         result = detect_trigger(blueprint)
         trigger = result.data
-        
+
         assert trigger.module_type == "workfront-workfront:custom"
         assert trigger.execution_pattern == TriggerExecutionPattern.SCHEDULED
         assert trigger.data_source == TriggerDataSource.EXTERNAL_API
@@ -138,18 +122,16 @@ class TestWorkfrontFusionTriggerDetection:
                         "limit": 20,
                         "fields": ["decision", "status", "stages"],
                         "decision": "all",
-                        "__IMTCONN__": 2848
+                        "__IMTCONN__": 2848,
                     },
-                    "metadata": {
-                        "designer": {"name": "Watch Proof Decisions"}
-                    }
+                    "metadata": {"designer": {"name": "Watch Proof Decisions"}},
                 }
-            ]
+            ],
         }
-        
+
         result = detect_trigger(blueprint)
         trigger = result.data
-        
+
         assert trigger.module_type == "workfront-proof:watch"
         assert trigger.execution_pattern == TriggerExecutionPattern.POLLING
         assert trigger.data_source == TriggerDataSource.EXTERNAL_API
@@ -169,18 +151,16 @@ class TestWorkfrontFusionTriggerDetection:
                         "path": "/OUTGOING/TEST/",
                         "account": 74381,
                         "maxResults": 2,
-                        "highWaterMark": 65536
+                        "highWaterMark": 65536,
                     },
-                    "metadata": {
-                        "designer": {"name": "Watch Files"}
-                    }
+                    "metadata": {"designer": {"name": "Watch Files"}},
                 }
-            ]
+            ],
         }
-        
+
         result = detect_trigger(blueprint)
         trigger = result.data
-        
+
         assert trigger.module_type == "sftp:TriggerNewFile"
         assert trigger.execution_pattern == TriggerExecutionPattern.POLLING
         assert trigger.data_source == TriggerDataSource.FILE_SYSTEM
@@ -202,18 +182,16 @@ class TestWorkfrontFusionTriggerDetection:
                         "account": 4095630,
                         "subject": "booking_1",
                         "criteria": "ALL",
-                        "maxResults": 1
+                        "maxResults": 1,
                     },
-                    "metadata": {
-                        "designer": {"name": "Watch Emails"}
-                    }
+                    "metadata": {"designer": {"name": "Watch Emails"}},
                 }
-            ]
+            ],
         }
-        
+
         result = detect_trigger(blueprint)
         trigger = result.data
-        
+
         assert trigger.module_type == "email:TriggerNewEmail"
         assert trigger.execution_pattern == TriggerExecutionPattern.POLLING
         assert trigger.data_source == TriggerDataSource.EMAIL_SYSTEM
@@ -228,19 +206,15 @@ class TestWorkfrontFusionTriggerDetection:
                 {
                     "id": 20,
                     "module": "util:SetVariables",
-                    "parameters": {
-                        "scope": "execution"
-                    },
-                    "metadata": {
-                        "designer": {"name": "Set Variables"}
-                    }
+                    "parameters": {"scope": "execution"},
+                    "metadata": {"designer": {"name": "Set Variables"}},
                 }
-            ]
+            ],
         }
-        
+
         result = detect_trigger(blueprint)
         trigger = result.data
-        
+
         assert trigger.module_type == "util:SetVariables"
         assert trigger.execution_pattern == TriggerExecutionPattern.MANUAL
         assert trigger.data_source == TriggerDataSource.USER_INTERFACE
@@ -255,22 +229,16 @@ class TestWorkfrontFusionTriggerDetection:
                 {
                     "id": 1,
                     "module": "json:ParseJSON",
-                    "parameters": {
-                        "type": ""
-                    },
-                    "mapper": {
-                        "json": '{"test": "data"}'
-                    },
-                    "metadata": {
-                        "designer": {"name": "Parse JSON"}
-                    }
+                    "parameters": {"type": ""},
+                    "mapper": {"json": '{"test": "data"}'},
+                    "metadata": {"designer": {"name": "Parse JSON"}},
                 }
-            ]
+            ],
         }
-        
+
         result = detect_trigger(blueprint)
         trigger = result.data
-        
+
         assert trigger.module_type == "json:ParseJSON"
         assert trigger.execution_pattern == TriggerExecutionPattern.MANUAL
         assert trigger.data_source == TriggerDataSource.USER_INTERFACE
@@ -287,18 +255,16 @@ class TestWorkfrontFusionTriggerDetection:
                         "datastore": 1185,
                         "limit": None,
                         "continueWhenNoRes": False,
-                        "name": "EYK | IKP"
+                        "name": "EYK | IKP",
                     },
-                    "metadata": {
-                        "designer": {"name": "Search Records"}
-                    }
+                    "metadata": {"designer": {"name": "Search Records"}},
                 }
-            ]
+            ],
         }
-        
+
         result = detect_trigger(blueprint)
         trigger = result.data
-        
+
         assert trigger.module_type == "datastore:SearchRecord"
         assert trigger.execution_pattern == TriggerExecutionPattern.SCHEDULED
         assert trigger.data_source == TriggerDataSource.DATABASE
@@ -314,16 +280,14 @@ class TestWorkfrontFusionTriggerDetection:
                     "id": 1,
                     "module": "unknown:TriggerType",
                     "parameters": {},
-                    "metadata": {
-                        "designer": {"name": "Unknown Trigger"}
-                    }
+                    "metadata": {"designer": {"name": "Unknown Trigger"}},
                 }
-            ]
+            ],
         }
-        
+
         result = detect_trigger(blueprint)
         trigger = result.data
-        
+
         assert trigger.module_type == "unknown:TriggerType"
         assert trigger.execution_pattern == TriggerExecutionPattern.MANUAL
         assert trigger.data_source == TriggerDataSource.USER_INTERFACE
@@ -333,14 +297,14 @@ class TestWorkfrontFusionTriggerDetection:
     def test_no_flow(self):
         """Test error handling when no flow is present."""
         blueprint = {"name": "No Flow Blueprint"}
-        
+
         with pytest.raises(ValueError, match="No flow found in blueprint"):
             detect_trigger(blueprint)
 
     def test_empty_flow(self):
         """Test error handling when flow is empty."""
         blueprint = {"name": "Empty Flow", "flow": []}
-        
+
         with pytest.raises(ValueError, match="No trigger module found in flow"):
             detect_trigger(blueprint)
 
@@ -353,26 +317,26 @@ class TestWorkfrontFusionTriggerDetection:
                     "id": 5,
                     "module": "workfront-workfront:custom",
                     "parameters": {},
-                    "metadata": {"designer": {"name": "Second Module"}}
+                    "metadata": {"designer": {"name": "Second Module"}},
                 },
                 {
                     "id": 1,
                     "module": "workfront-workfront:watchEvents",
                     "parameters": {"__IMTHOOK__": 123, "maxResults": 1},
-                    "metadata": {"designer": {"name": "First Module"}}
+                    "metadata": {"designer": {"name": "First Module"}},
                 },
                 {
                     "id": 3,
                     "module": "util:SetVariables",
                     "parameters": {},
-                    "metadata": {"designer": {"name": "Third Module"}}
-                }
-            ]
+                    "metadata": {"designer": {"name": "Third Module"}},
+                },
+            ],
         }
-        
+
         result = detect_trigger(blueprint)
         trigger = result.data
-        
+
         assert trigger.module_id == 1
         assert trigger.module_type == "workfront-workfront:watchEvents"
         assert trigger.display_name == "First Module"

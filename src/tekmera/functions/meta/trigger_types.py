@@ -14,44 +14,49 @@ from .types import Platform
 
 class TriggerExecutionPattern(Enum):
     """How the trigger executes - fundamental pattern across all platforms."""
-    WEBHOOK = "webhook"          # Real-time HTTP callbacks
-    POLLING = "polling"          # Periodic checking for changes  
-    SCHEDULED = "scheduled"      # Time-based execution
-    MANUAL = "manual"            # User or system initiated
+
+    WEBHOOK = "webhook"  # Real-time HTTP callbacks
+    POLLING = "polling"  # Periodic checking for changes
+    SCHEDULED = "scheduled"  # Time-based execution
+    MANUAL = "manual"  # User or system initiated
     EVENT_DRIVEN = "event_driven"  # Platform-specific event subscriptions
 
 
 class TriggerDataSource(Enum):
     """What type of system/data the trigger monitors."""
-    INTERNAL_PLATFORM = "internal_platform"    # Platform's own events (Workfront events)
-    EXTERNAL_API = "external_api"              # Third-party API calls
-    FILE_SYSTEM = "file_system"                # File/folder monitoring
-    EMAIL_SYSTEM = "email_system"              # Email inbox monitoring
-    DATABASE = "database"                      # Database queries
-    WEBHOOK_RECEIVER = "webhook_receiver"      # Generic webhook endpoint
-    MESSAGE_QUEUE = "message_queue"            # Queue-based triggers
-    USER_INTERFACE = "user_interface"          # Manual UI triggers
+
+    INTERNAL_PLATFORM = "internal_platform"  # Platform's own events (Workfront events)
+    EXTERNAL_API = "external_api"  # Third-party API calls
+    FILE_SYSTEM = "file_system"  # File/folder monitoring
+    EMAIL_SYSTEM = "email_system"  # Email inbox monitoring
+    DATABASE = "database"  # Database queries
+    WEBHOOK_RECEIVER = "webhook_receiver"  # Generic webhook endpoint
+    MESSAGE_QUEUE = "message_queue"  # Queue-based triggers
+    USER_INTERFACE = "user_interface"  # Manual UI triggers
 
 
 class TriggerReliability(Enum):
     """Reliability characteristics of the trigger."""
-    REAL_TIME = "real_time"         # Immediate execution
+
+    REAL_TIME = "real_time"  # Immediate execution
     NEAR_REAL_TIME = "near_real_time"  # Within seconds/minutes
-    BATCH = "batch"                 # Periodic bulk processing
-    BEST_EFFORT = "best_effort"     # No delivery guarantees
+    BATCH = "batch"  # Periodic bulk processing
+    BEST_EFFORT = "best_effort"  # No delivery guarantees
 
 
 class TriggerScaling(Enum):
     """How the trigger handles load/volume."""
-    SINGLE_ITEM = "single_item"     # Processes one item at a time
-    BATCH_LIMITED = "batch_limited" # Fixed batch size
+
+    SINGLE_ITEM = "single_item"  # Processes one item at a time
+    BATCH_LIMITED = "batch_limited"  # Fixed batch size
     BATCH_UNLIMITED = "batch_unlimited"  # No batch limits
-    STREAMING = "streaming"         # Continuous processing
+    STREAMING = "streaming"  # Continuous processing
 
 
 @dataclass
 class TriggerConnection:
     """Universal connection/authentication information."""
+
     requires_auth: bool = False
     connection_type: Optional[str] = None  # oauth, api_key, basic, etc.
     connection_id: Optional[str] = None
@@ -61,6 +66,7 @@ class TriggerConnection:
 @dataclass
 class TriggerConfiguration:
     """Universal trigger configuration."""
+
     batch_size: Optional[int] = None
     timeout_seconds: Optional[int] = None
     retry_policy: Optional[str] = None
@@ -72,29 +78,30 @@ class TriggerConfiguration:
 class UniversalTrigger:
     """
     Platform-agnostic trigger representation.
-    
+
     This captures the universal concepts that apply across automation platforms,
     allowing for cross-platform analysis and comparison.
     """
+
     # Core identification
     platform: Platform
     module_id: int
     module_type: str  # Platform-specific module type
-    
+
     # Universal trigger characteristics
     execution_pattern: TriggerExecutionPattern
     data_source: TriggerDataSource
     reliability: TriggerReliability
     scaling: TriggerScaling
-    
+
     # Universal configuration
     connection: TriggerConnection = field(default_factory=TriggerConnection)
     configuration: TriggerConfiguration = field(default_factory=TriggerConfiguration)
-    
+
     # Metadata
     display_name: Optional[str] = None
     description: Optional[str] = None
-    
+
     # Platform-specific raw data (preserved for detailed analysis)
     raw_parameters: Dict[str, Any] = field(default_factory=dict)
     raw_metadata: Dict[str, Any] = field(default_factory=dict)

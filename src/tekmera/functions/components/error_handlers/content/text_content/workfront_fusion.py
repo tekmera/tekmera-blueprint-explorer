@@ -1,4 +1,4 @@
-"""Workfront Fusion error handler text content extraction."""
+"""Workfront Fusion error handler text content extraction (strict literal)."""
 
 import json
 from typing import Any, Dict, List
@@ -8,99 +8,63 @@ from .....meta.types import ErrorHandlerComponent, ModuleResult, Platform, creat
 
 def text_content(error_handler_component: ErrorHandlerComponent) -> ModuleResult[str]:
     """
-    Extract text content from Workfront Fusion error handler component.
-
-    Extracts text from:
-    - Error handler module types and configurations
-    - Retry settings (count, interval, retry flags)
-    - Error handling parameters and conditions
-    - Component metadata and designer names
+    Literal text extraction for Workfront Fusion error-handler components.
+    No inference, no headings, no renaming, no labels.
+    Only emits:
+    - Tekmera component metadata (ID, context)
+    - Literal string-bearing values from raw JSON
+    - Raw JSON fallback
     """
-    text_parts = []
+    text_parts: List[str] = []
 
-    # Use typed component properties
+    # Tekmera metadata – not blueprint inference
     text_parts.append(f"Error Handler ID: {error_handler_component.id}")
-    text_parts.append(f"Handlers Count: {error_handler_component.handlers_count}")
-    text_parts.append(f"Handler Types: {', '.join(error_handler_component.handler_types)}")
     text_parts.append(f"Context: {error_handler_component.extraction_context}")
 
-    # Extract from the raw error handler data
-    raw_item = error_handler_component.raw_data
+    raw = error_handler_component.raw_data
 
-    # Extract from the onerror array
-    onerror_handlers = raw_item.get("onerror", [])
-    for handler_idx, handler in enumerate(onerror_handlers):
-        if isinstance(handler, dict):
-            handler_text = _extract_error_handler_text(handler, handler_idx + 1)
-            if handler_text:
-                text_parts.extend(handler_text)
+    # Extract literal string values everywhere in the error-handler structure
+    text_parts.extend(_extract_literal_fields(raw))
 
-    # Extract from item metadata
-    metadata = raw_item.get("metadata", {})
-    designer = metadata.get("designer", {})
-    if "name" in designer:
-        text_parts.append(f"Parent Module Designer Name: {designer['name']}")
-
-    # Fallback to JSON if no structured text found
-    if not text_parts:
-        text_parts.append(json.dumps(error_handler_component.raw_data, sort_keys=True))
-
-    combined_text = "\n".join(text_parts)
+    # Fallback if nothing but metadata was extracted
+    if len(text_parts) <= 2:
+        text_parts.append(json.dumps(raw, sort_keys=True))
 
     return create_module_result(
-        module=error_handler_component.raw_data,
+        module=raw,
         platform=Platform.WORKFRONT_FUSION,
         function_name="error_handlers.content.text_content",
-        data=combined_text,
+        data="\n".join(text_parts),
     )
 
 
-def _extract_error_handler_text(handler: Dict[str, Any], handler_number: int) -> List[str]:
-    """Extract text from individual error handler module."""
-    text_parts = [f"--- Error Handler {handler_number} ---"]
+def _extract_literal_fields(obj: Any, prefix: str = "") -> List[str]:
+    """
+    Recursively extract literal string-bearing fields.
 
-    # Handler module type
-    if "module" in handler:
-        text_parts.append(f"Module: {handler['module']}")
+    STRICT RULES:
+    - Do NOT add labels
+    - Do NOT infer meaning
+    - Do NOT rename fields
+    - Do NOT invent headings
+    - Only output: "<field_path>: <string value>"
+    """
+    text_parts: List[str] = []
 
-    # Extract from mapper (retry configurations, etc.)
-    mapper = handler.get("mapper", {})
-    if isinstance(mapper, dict):
-        # Retry configuration
-        if "retry" in mapper:
-            retry_value = mapper["retry"]
-            text_parts.append(f"Retry: {retry_value}")
+    if isinstance(obj, dict):
+        for key, value in obj.items():
+            path = f"{prefix}.{key}" if prefix else key
 
-        if "count" in mapper:
-            count_value = mapper["count"]
-            text_parts.append(f"Retry Count: {count_value}")
+            # Emit literal strings
+            if isinstance(value, str):
+                text_parts.append(f"{path}: {value}")
 
-        if "interval" in mapper:
-            interval_value = mapper["interval"]
-            text_parts.append(f"Retry Interval: {interval_value}")
+            # Recurse
+            text_parts.extend(_extract_literal_fields(value, path))
 
-        # Other mapper fields
-        for key, value in mapper.items():
-            if key not in ["retry", "count", "interval"]:
-                if isinstance(value, str) and value.strip():
-                    text_parts.append(f"{key}: {value}")
-                elif isinstance(value, (bool, int, float)):
-                    text_parts.append(f"{key}: {str(value)}")
-
-    # Extract from parameters
-    parameters = handler.get("parameters", {})
-    if isinstance(parameters, dict):
-        for key, value in parameters.items():
-            if isinstance(value, str) and value.strip():
-                text_parts.append(f"Parameter {key}: {value}")
-            elif isinstance(value, (bool, int, float)):
-                text_parts.append(f"Parameter {key}: {str(value)}")
-
-    # Handler-specific metadata
-    handler_metadata = handler.get("metadata", {})
-    if isinstance(handler_metadata, dict):
-        designer = handler_metadata.get("designer", {})
-        if isinstance(designer, dict) and "name" in designer:
-            text_parts.append(f"Handler Designer Name: {designer['name']}")
+    elif isinstance(obj, list):
+        for idx, item in enumerate(obj):
+            path = f"{prefix}[{idx}]"
+            text_parts.extend(_extract_literal_fields(item, path))
 
     return text_parts

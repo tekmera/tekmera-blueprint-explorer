@@ -3,30 +3,33 @@
 import html
 from pathlib import Path
 
-from .base import BaseFormatter, register_formatter
-from tekmera.reporting.common.types import BaseReport, ReportType, ReportFormat
+from tekmera.reporting.common.types import BaseReport, ReportFormat, ReportType
 from tekmera.reporting.summary.summary import BlueprintSummaryReport
+
+from .base import BaseFormatter, register_formatter
 
 
 @register_formatter(ReportType.SUMMARY, ReportFormat.HTML)
 class HTMLSummaryFormatter(BaseFormatter):
     """HTML formatter for summary reports."""
-    
+
     def render(self, report: BaseReport) -> str:
         """Render summary report as HTML."""
         if not isinstance(report, BlueprintSummaryReport):
-            raise ValueError(f"HTMLSummaryFormatter can only render BlueprintSummaryReport, got {type(report)}")
-        
+            raise ValueError(
+                f"HTMLSummaryFormatter can only render BlueprintSummaryReport, got {type(report)}"
+            )
+
         return self._generate_html(report)
-    
+
     def get_file_extension(self) -> str:
         """HTML files have .html extension."""
         return ".html"
-    
+
     def should_write_to_file(self) -> bool:
         """HTML output should be written to file."""
         return True
-    
+
     def _generate_html(self, report: BlueprintSummaryReport) -> str:
         """Generate complete HTML document for summary report."""
         return f"""<!DOCTYPE html>
@@ -42,13 +45,13 @@ class HTMLSummaryFormatter(BaseFormatter):
         <aside class="sidebar">
             {self._generate_sidebar(report)}
         </aside>
-        
+
         <main class="main-content">
             <div class="container">
                 <header>
                     <h1>Blueprint Summary Report</h1>
                 </header>
-                
+
                 {self._generate_overview(report)}
                 {self._generate_component_analysis(report)}
                 {self._generate_trigger_analysis(report)}
@@ -63,7 +66,7 @@ class HTMLSummaryFormatter(BaseFormatter):
         """Load CSS styles from separate file."""
         try:
             css_path = Path(__file__).parent / "styles.css"
-            with open(css_path, 'r', encoding='utf-8') as f:
+            with open(css_path, "r", encoding="utf-8") as f:
                 css_content = f.read()
             return f"    <style>\n{css_content}\n    </style>"
         except FileNotFoundError:
@@ -99,7 +102,7 @@ class HTMLSummaryFormatter(BaseFormatter):
                 <li><a href="#execution-role">Execution Role</a></li>
                 <li><a href="#change-surface">Change Surface</a></li>
             </ul>
-            
+
             <h3>Report Details</h3>
             <div class="info-item">Platform: {report._format_platform()}</div>
             <div class="info-item">Generated: {report.metadata.generated_at.strftime('%Y-%m-%d %H:%M')}</div>
@@ -124,19 +127,21 @@ class HTMLSummaryFormatter(BaseFormatter):
         """Generate component breakdown section."""
         breakdown_html = []
         for component_type, count in report.component_counts.items():
-            breakdown_html.append(f"<div class='info-item'><strong>{component_type.replace('_', ' ').title()}:</strong> {count}</div>")
-        
+            breakdown_html.append(
+                f"<div class='info-item'><strong>{component_type.replace('_', ' ').title()}:</strong> {count}</div>"
+            )
+
         insights_html = []
         for insight in report.insights:
             insights_html.append(f"<li>{html.escape(insight)}</li>")
-        
+
         return f"""
                 <section id="components">
                     <h2>Component Analysis</h2>
                     <div class="section-card">
                         <h3>Breakdown by Type</h3>
                         {''.join(breakdown_html)}
-                        
+
                         <h3>Analysis Insights</h3>
                         <ul>
                             {''.join(insights_html)}
@@ -155,22 +160,22 @@ class HTMLSummaryFormatter(BaseFormatter):
                         <div class="info-item"><strong>Reliability:</strong> {html.escape(report.trigger.reliability.value.replace('_', ' ').title())}</div>
                         <div class="info-item"><strong>Scaling:</strong> {html.escape(report.trigger.scaling.value.replace('_', ' ').title())}</div>
             """
-            
+
             if report.trigger.display_name:
                 trigger_html += f"""<div class="info-item"><strong>Display Name:</strong> {html.escape(report.trigger.display_name)}</div>"""
-            
+
             # Add connection details
             if report.trigger.connection.requires_auth:
                 conn_type = report.trigger.connection.connection_type or "Unknown"
                 trigger_html += f"""<div class="info-item"><strong>Connection Type:</strong> {html.escape(conn_type.replace('_', ' ').title())}</div>"""
-                
+
                 if report.trigger.connection.connection_id:
                     trigger_html += f"""<div class="info-item"><strong>Connection ID:</strong> {html.escape(str(report.trigger.connection.connection_id))}</div>"""
             else:
                 trigger_html += """<div class="info-item"><strong>Connection Type:</strong> No authentication required</div>"""
         else:
             trigger_html = "<div class='info-item'>No trigger information available</div>"
-        
+
         return f"""
                 <section id="trigger">
                     <h2>Trigger Analysis</h2>

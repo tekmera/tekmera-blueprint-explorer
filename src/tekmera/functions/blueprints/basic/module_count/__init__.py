@@ -71,7 +71,9 @@ IMPLEMENTATIONS = {
 }
 
 
-def module_count(blueprints: BlueprintInput, platform: Platform = None) -> ProjectionResult[Union[int, List[int]]]:
+def module_count(
+    blueprints: BlueprintInput, platform: Platform = None
+) -> ProjectionResult[Union[int, List[int]]]:
     """
     Count total modules in blueprint(s) including nested flows.
 

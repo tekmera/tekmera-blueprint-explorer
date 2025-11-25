@@ -19,15 +19,15 @@ class TestTriggerDetection:
                     "id": 1,
                     "module": "workfront-workfront:watchEvents",
                     "parameters": {"__IMTHOOK__": 123, "maxResults": 1},
-                    "metadata": {"designer": {"name": "Test"}}
+                    "metadata": {"designer": {"name": "Test"}},
                 }
             ],
-            "metadata": {"some": "workfront-specific-data"}
+            "metadata": {"some": "workfront-specific-data"},
         }
-        
+
         result = detect_trigger(blueprint)
         trigger = result.data
-        
+
         assert trigger.platform == Platform.WORKFRONT_FUSION
         assert trigger.module_type == "workfront-workfront:watchEvents"
 
@@ -41,15 +41,15 @@ class TestTriggerDetection:
                         "id": 1,
                         "module": "gateway:CustomWebHook",
                         "parameters": {"hook": 123, "maxResults": 1},
-                        "metadata": {"designer": {"name": "Test"}}
+                        "metadata": {"designer": {"name": "Test"}},
                     }
                 ]
-            }
+            },
         }
-        
+
         result = detect_trigger(blueprint)
         trigger = result.data
-        
+
         assert trigger.platform == Platform.MAKE_COM
         assert trigger.module_type == "gateway:CustomWebHook"
 
@@ -62,26 +62,26 @@ class TestTriggerDetection:
                     "id": 1,
                     "module": "workfront-workfront:watchEvents",
                     "parameters": {"__IMTHOOK__": 123, "maxResults": 1},
-                    "metadata": {"designer": {"name": "Test"}}
+                    "metadata": {"designer": {"name": "Test"}},
                 }
-            ]
+            ],
         }
-        
+
         result = detect_trigger(blueprint, platform=Platform.WORKFRONT_FUSION)
         trigger = result.data
-        
+
         assert trigger.platform == Platform.WORKFRONT_FUSION
 
     def test_unsupported_platform_error(self):
         """Test error handling for unsupported platforms."""
         blueprint = {"name": "Test"}
-        
+
         # Create a fake unsupported platform for testing
         class UnsupportedPlatform:
             value = "unsupported_platform"
-        
+
         unsupported = UnsupportedPlatform()
-        
+
         with pytest.raises(ValueError, match="Platform unsupported_platform not supported"):
             detect_trigger(blueprint, platform=unsupported)
 
@@ -94,16 +94,16 @@ class TestTriggerDetection:
                     "id": 1,
                     "module": "util:SetVariables",
                     "parameters": {"scope": "execution"},
-                    "metadata": {"designer": {"name": "Variables"}}
+                    "metadata": {"designer": {"name": "Variables"}},
                 }
-            ]
+            ],
         }
-        
+
         result = detect_trigger(blueprint)
-        
+
         assert result.platform == Platform.WORKFRONT_FUSION
         assert result.metadata.function == "components.triggers.detection"
-        assert hasattr(result.metadata, 'computed_at')
+        assert hasattr(result.metadata, "computed_at")
 
     def test_universal_trigger_abstraction(self):
         """Test that triggers are properly abstracted to universal format."""
@@ -115,12 +115,12 @@ class TestTriggerDetection:
                     "id": 1,
                     "module": "workfront-workfront:watchEvents",
                     "parameters": {"__IMTHOOK__": 123, "maxResults": 1},
-                    "metadata": {"designer": {"name": "Fusion Hook"}}
+                    "metadata": {"designer": {"name": "Fusion Hook"}},
                 }
-            ]
+            ],
         }
-        
-        # Test Make.com webhook  
+
+        # Test Make.com webhook
         make_blueprint = {
             "name": "Make Webhook",
             "scenario": {
@@ -129,19 +129,19 @@ class TestTriggerDetection:
                         "id": 1,
                         "module": "gateway:CustomWebHook",
                         "parameters": {"hook": 456, "maxResults": 1},
-                        "metadata": {"designer": {"name": "Make Hook"}}
+                        "metadata": {"designer": {"name": "Make Hook"}},
                     }
                 ]
-            }
+            },
         }
-        
+
         fusion_result = detect_trigger(fusion_blueprint)
         make_result = detect_trigger(make_blueprint)
-        
+
         # Both should be webhook triggers despite different platforms
         assert fusion_result.data.execution_pattern == TriggerExecutionPattern.WEBHOOK
         assert make_result.data.execution_pattern == TriggerExecutionPattern.WEBHOOK
-        
+
         # But have different platforms and module types
         assert fusion_result.data.platform == Platform.WORKFRONT_FUSION
         assert make_result.data.platform == Platform.MAKE_COM

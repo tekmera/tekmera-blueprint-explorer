@@ -3,9 +3,6 @@ Main CLI entry point with projection commands.
 """
 
 import json
-import os
-import platform
-import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -17,11 +14,7 @@ from ..._version import get_version_string
 from ...functions import project
 from ...functions.meta.types import UnsupportedPlatformError
 from .formatters.table import format_result
-from .render import render_and_output, _simplify_blueprint_name
-
-
-
-
+from .render import _simplify_blueprint_name, render_and_output
 
 
 def load_blueprint(file_path: str) -> Dict[str, Any]:
@@ -94,15 +87,25 @@ def cli():
 
 
 @cli.command()
-@click.argument("query", type=str)
-@click.argument("paths", nargs=-1, required=True, type=click.Path(exists=True))
+@click.argument("path", type=click.Path(exists=True))
+@click.argument("queries", nargs=-1, required=True, type=str)
 @click.option("--case-sensitive", "-c", is_flag=True, help="Case sensitive search")
+@click.option("--regex", "-r", is_flag=True, help="Treat query as regex pattern")
 @click.option(
-    "--format", type=click.Choice(["table", "json"]), default="table", help="Output format"
+    "--format", type=click.Choice(["table", "json", "html"]), default="table", help="Output format"
 )
-def search(query, paths, case_sensitive, format):
-    """Search for text content across blueprint components"""
-    blueprints = load_blueprints_from_paths(list(paths))
+def search(path, queries, case_sensitive, regex, format):
+    """Search for text content across blueprint components
+    
+    PATH: Single blueprint file or directory to search
+    QUERIES: One or more search terms (OR logic)
+    
+    Examples:
+      tekmera search ./blueprints/ "PI43"
+      tekmera search blueprint.json "term1" "term2" "term3"  
+      tekmera search ./blueprints/ "PI\\d+" --regex
+    """
+    blueprints = load_blueprints_from_paths([path])
 
     try:
         result = project(
@@ -110,8 +113,9 @@ def search(query, paths, case_sensitive, format):
             "search",
             "text_content",
             blueprints,
-            query=query,
+            queries=queries,
             case_sensitive=case_sensitive,
+            regex=regex,
         )
         format_result(result, format)
     except UnsupportedPlatformError as e:
@@ -131,12 +135,13 @@ def report(blueprint_path, format):
     try:
         # Use new reporting system to generate summary report
         from ...reporting.summary import generate_summary_report
+
         result = generate_summary_report(blueprint)
-        
+
         # Use unified rendering system
         blueprint_name = _simplify_blueprint_name(result.data.blueprint_name)
         render_and_output(result.data, format, f"{blueprint_name}_report")
-        
+
     except UnsupportedPlatformError as e:
         click.echo(f"Error: {e}", err=True)
         sys.exit(1)
@@ -157,17 +162,17 @@ def diff(blueprint1_path, blueprint2_path, format):
         # Load both blueprints
         blueprint1 = load_blueprint(blueprint1_path)
         blueprint2 = load_blueprint(blueprint2_path)
-        
+
         # Use new reporting system for diff reports
         from ...reporting.diff import generate_diff_report
-        
+
         # Generate diff report
         result = generate_diff_report(blueprint1, blueprint2)
-        
+
         # Use unified rendering system with timestamp-based filename
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         render_and_output(result.data, format, f"diff_{timestamp}")
-        
+
     except Exception as e:
         click.echo(f"Error generating diff report: {e}", err=True)
         sys.exit(1)
@@ -175,10 +180,10 @@ def diff(blueprint1_path, blueprint2_path, format):
 
 @cli.command()
 @click.option(
-    "--platform", 
-    type=click.Choice(["workfront_fusion", "make_com"]), 
-    default="workfront_fusion", 
-    help="Platform for sample report"
+    "--platform",
+    type=click.Choice(["workfront_fusion", "make_com"]),
+    default="workfront_fusion",
+    help="Platform for sample report",
 )
 @click.option(
     "--format", type=click.Choice(["table", "json", "html"]), default="table", help="Output format"
@@ -187,23 +192,23 @@ def demo(platform, format):
     """Generate sample report for demos and documentation"""
     from ...functions.meta.types import Platform
     from ...reporting.summary.sample import create_sample_report
-    
+
     # Convert string to enum
-    platform_enum = Platform.WORKFRONT_FUSION if platform == "workfront_fusion" else Platform.MAKE_COM
-    
+    platform_enum = (
+        Platform.WORKFRONT_FUSION if platform == "workfront_fusion" else Platform.MAKE_COM
+    )
+
     try:
         # Generate sample report
         result = create_sample_report(platform_enum)
-        
+
         # Use unified rendering system
         sample_filename = f"Sample_{platform.title()}_Report"
         render_and_output(result.data, format, sample_filename)
-        
+
     except Exception as e:
         click.echo(f"Error generating sample report: {e}", err=True)
         sys.exit(1)
-
-
 
 
 def main():

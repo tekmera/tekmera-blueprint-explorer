@@ -1,4 +1,4 @@
-"""Workfront Fusion filter text content extraction."""
+"""Workfront Fusion filter text content extraction (strict literal)."""
 
 import json
 from typing import Any, Dict, List
@@ -8,79 +8,52 @@ from .....meta.types import FilterComponent, ModuleResult, Platform, create_modu
 
 def text_content(filter_component: FilterComponent) -> ModuleResult[str]:
     """
-    Extract text content from Workfront Fusion filter component.
-
-    Extracts text from:
-    - Filter names and descriptions
-    - Condition variable expressions
-    - Comparison values and operators
-    - Component metadata
+    Literal text extraction from a Workfront Fusion filter.
+    No invented headings, no interpretation.
+    Only emits raw strings and raw field values.
     """
-    text_parts = []
+    text_parts: List[str] = []
 
-    # Use typed component properties
+    # Basic Tekmera component metadata (safe, non-inferred)
     text_parts.append(f"Filter ID: {filter_component.id}")
     text_parts.append(f"Filter Name: {filter_component.filter_name}")
-    text_parts.append(f"Conditions Count: {filter_component.conditions_count}")
     text_parts.append(f"Context: {filter_component.extraction_context}")
 
-    # Extract from the raw filter data
-    raw_item = filter_component.raw_data
-    filter_data = raw_item.get("filter", {})
+    raw = filter_component.raw_data
+    filter_data = raw.get("filter", {})
 
-    # Extract filter conditions text
-    filter_text = _extract_filter_conditions(filter_data)
-    if filter_text:
-        text_parts.extend(filter_text)
+    # Extract literal fields from the filter object
+    for key, value in filter_data.items():
+        # Conditions handled separately
+        if key != "conditions":
+            text_parts.append(f"{key}: {value}")
 
-    # Extract from item metadata
-    metadata = raw_item.get("metadata", {})
-    designer = metadata.get("designer", {})
-    if "name" in designer:
-        text_parts.append(f"Designer Name: {designer['name']}")
-
-    # Fallback to JSON if no structured text found
-    if not text_parts:
-        text_parts.append(json.dumps(filter_component.raw_data, sort_keys=True))
-
-    combined_text = "\n".join(text_parts)
-
-    return create_module_result(
-        module=filter_component.raw_data,
-        platform=Platform.WORKFRONT_FUSION,
-        function_name="filters.content.text_content",
-        data=combined_text,
-    )
-
-
-def _extract_filter_conditions(filter_data: Dict[str, Any]) -> List[str]:
-    """Extract text from filter condition structure."""
-    text_parts = []
-
-    # Filter name at top level
-    if "name" in filter_data:
-        text_parts.append(f"Filter: {filter_data['name']}")
-
-    # Extract from conditions array
+    # Extract literal condition fields
     conditions = filter_data.get("conditions", [])
     if isinstance(conditions, list):
-        for group_idx, condition_group in enumerate(conditions):
-            if isinstance(condition_group, list):
-                text_parts.append(f"--- Condition Group {group_idx + 1} ---")
-                for condition_idx, condition in enumerate(condition_group):
+        for group in conditions:
+            if isinstance(group, list):
+                for condition in group:
                     if isinstance(condition, dict):
-                        text_parts.append(f"Condition {condition_idx + 1}:")
+                        for cond_key, cond_value in condition.items():
+                            # emit literal key/value exactly as-is
+                            text_parts.append(f"{cond_key}: {cond_value}")
 
-                        a = condition.get("a", "")
-                        if a and isinstance(a, str):
-                            text_parts.append(f"  Left Value: {a}")
+    # Extract designer metadata literally
+    designer = raw.get("metadata", {}).get("designer", {})
+    if isinstance(designer, dict):
+        for key, value in designer.items():
+            text_parts.append(f"{key}: {value}")
 
-                        o = condition.get("o", "")
-                        if o and isinstance(o, str):
-                            text_parts.append(f"  Operator: {o}")
+    # Fallback to raw JSON if text_parts has very little actual content
+    if len(text_parts) <= 3:
+        text_parts.append(json.dumps(raw, sort_keys=True))
 
-                        b = condition.get("b", "")
-                        if b and isinstance(b, str):
-                            text_parts.append(f"  Right Value: {b}")
+    combined = "\n".join(text_parts)
 
-    return text_parts
+    return create_module_result(
+        module=raw,
+        platform=Platform.WORKFRONT_FUSION,
+        function_name="filters.content.text_content",
+        data=combined,
+    )

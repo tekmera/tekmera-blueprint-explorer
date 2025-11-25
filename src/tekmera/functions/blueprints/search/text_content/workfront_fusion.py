@@ -12,7 +12,9 @@ from ....meta.types import Platform, ProjectionResult, create_result
 from ....meta.utils.workfront_fusion.extract_components import extract_all_components
 
 
-def text_content(blueprints: List[Dict[str, Any]], query: str, case_sensitive: bool = False) -> ProjectionResult:
+def text_content(
+    blueprints: List[Dict[str, Any]], queries: List[str], case_sensitive: bool = False, regex: bool = False
+) -> ProjectionResult:
     """
     Search for text content across all components in Workfront Fusion blueprints.
 
@@ -25,18 +27,18 @@ def text_content(blueprints: List[Dict[str, Any]], query: str, case_sensitive: b
     """
     # Handle single blueprint
     if len(blueprints) == 1:
-        result = _search_single_blueprint(blueprints[0], query, case_sensitive)
+        result = _search_single_blueprint(blueprints[0], queries, case_sensitive, regex)
         return create_result(
             blueprint=blueprints[0],
             platform=Platform.WORKFRONT_FUSION,
             function_name="blueprints.search.text_content",
-            data=result
+            data=result,
         )
 
     # Handle multiple blueprints
     results = []
     for blueprint in blueprints:
-        search_result = _search_single_blueprint(blueprint, query, case_sensitive)
+        search_result = _search_single_blueprint(blueprint, queries, case_sensitive, regex)
         search_result["blueprint_name"] = blueprint.get("name", "Unnamed Blueprint")
         results.append(search_result)
 
@@ -44,11 +46,13 @@ def text_content(blueprints: List[Dict[str, Any]], query: str, case_sensitive: b
         blueprint={"name": f"Search across {len(blueprints)} blueprints"},
         platform=Platform.WORKFRONT_FUSION,
         function_name="blueprints.search.text_content",
-        data=results
+        data=results,
     )
 
 
-def _search_single_blueprint(blueprint: Dict[str, Any], query: str, case_sensitive: bool) -> Dict[str, Any]:
+def _search_single_blueprint(
+    blueprint: Dict[str, Any], queries: List[str], case_sensitive: bool, regex: bool
+) -> Dict[str, Any]:
     """Search within a single blueprint."""
     # Step 1: Extract all typed components
     all_components = extract_all_components(blueprint, include_orphans=True)
@@ -63,14 +67,18 @@ def _search_single_blueprint(blueprint: Dict[str, Any], query: str, case_sensiti
             text_result = module_text_content(module_component, Platform.WORKFRONT_FUSION)
             text_content = text_result.data
 
-            if _text_contains_query(text_content, query, case_sensitive):
+            matched_query = _text_contains_queries(text_content, queries, case_sensitive, regex)
+            if matched_query:
                 matches_by_type["modules"] += 1
-                matches.append({
-                    "component_type": "module",
-                    "component_id": module_component.id,
-                    "match_text": _extract_match_context(text_content, query, case_sensitive),
-                    "context": module_component.extraction_context
-                })
+                matches.append(
+                    {
+                        "component_type": "modules",
+                        "component_id": module_component.id,
+                        "match_text": _extract_match_context(text_content, matched_query, case_sensitive, regex),
+                        "context": module_component.extraction_context,
+                        "matched_query": matched_query,
+                    }
+                )
         except Exception:
             # Skip components that can't be processed
             continue
@@ -81,14 +89,18 @@ def _search_single_blueprint(blueprint: Dict[str, Any], query: str, case_sensiti
             text_result = router_text_content(router_component, Platform.WORKFRONT_FUSION)
             text_content = text_result.data
 
-            if _text_contains_query(text_content, query, case_sensitive):
+            matched_query = _text_contains_queries(text_content, queries, case_sensitive, regex)
+            if matched_query:
                 matches_by_type["routers"] += 1
-                matches.append({
-                    "component_type": "router",
-                    "component_id": router_component.id,
-                    "match_text": _extract_match_context(text_content, query, case_sensitive),
-                    "context": router_component.extraction_context
-                })
+                matches.append(
+                    {
+                        "component_type": "routers",
+                        "component_id": router_component.id,
+                        "match_text": _extract_match_context(text_content, matched_query, case_sensitive, regex),
+                        "context": router_component.extraction_context,
+                        "matched_query": matched_query,
+                    }
+                )
         except Exception:
             continue
 
@@ -98,31 +110,41 @@ def _search_single_blueprint(blueprint: Dict[str, Any], query: str, case_sensiti
             text_result = filter_text_content(filter_component, Platform.WORKFRONT_FUSION)
             text_content = text_result.data
 
-            if _text_contains_query(text_content, query, case_sensitive):
+            matched_query = _text_contains_queries(text_content, queries, case_sensitive, regex)
+            if matched_query:
                 matches_by_type["filters"] += 1
-                matches.append({
-                    "component_type": "filter",
-                    "component_id": filter_component.id,
-                    "match_text": _extract_match_context(text_content, query, case_sensitive),
-                    "context": filter_component.extraction_context
-                })
+                matches.append(
+                    {
+                        "component_type": "filters",
+                        "component_id": filter_component.id,
+                        "match_text": _extract_match_context(text_content, matched_query, case_sensitive, regex),
+                        "context": filter_component.extraction_context,
+                        "matched_query": matched_query,
+                    }
+                )
         except Exception:
             continue
 
     # Search error handlers
     for error_handler_component in all_components["error_handlers"]:
         try:
-            text_result = error_handler_text_content(error_handler_component, Platform.WORKFRONT_FUSION)
+            text_result = error_handler_text_content(
+                error_handler_component, Platform.WORKFRONT_FUSION
+            )
             text_content = text_result.data
 
-            if _text_contains_query(text_content, query, case_sensitive):
+            matched_query = _text_contains_queries(text_content, queries, case_sensitive, regex)
+            if matched_query:
                 matches_by_type["error_handlers"] += 1
-                matches.append({
-                    "component_type": "error_handler",
-                    "component_id": error_handler_component.id,
-                    "match_text": _extract_match_context(text_content, query, case_sensitive),
-                    "context": error_handler_component.extraction_context
-                })
+                matches.append(
+                    {
+                        "component_type": "error_handlers",
+                        "component_id": error_handler_component.id,
+                        "match_text": _extract_match_context(text_content, matched_query, case_sensitive, regex),
+                        "context": error_handler_component.extraction_context,
+                        "matched_query": matched_query,
+                    }
+                )
         except Exception:
             continue
 
@@ -130,34 +152,75 @@ def _search_single_blueprint(blueprint: Dict[str, Any], query: str, case_sensiti
     total_matches = sum(matches_by_type.values())
 
     return {
-        "query": query,
+        "queries": queries,
         "case_sensitive": case_sensitive,
+        "regex": regex,
         "total_matches": total_matches,
         "matches_by_type": matches_by_type,
         "component_counts": {
             "modules": len(all_components["modules"]),
             "routers": len(all_components["routers"]),
             "filters": len(all_components["filters"]),
-            "error_handlers": len(all_components["error_handlers"])
+            "error_handlers": len(all_components["error_handlers"]),
         },
-        "matches": matches
+        "matches": matches,
     }
 
 
-def _text_contains_query(text: str, query: str, case_sensitive: bool) -> bool:
-    """Check if text contains the query string."""
-    if case_sensitive:
-        return query in text
-    else:
-        return query.lower() in text.lower()
+def _text_contains_queries(text: str, queries: List[str], case_sensitive: bool, regex: bool) -> str:
+    """
+    Check if text contains any of the query strings (OR logic).
+    
+    Returns the first matching query, or None if no match.
+    """
+    import re
+    
+    for query in queries:
+        if regex:
+            try:
+                pattern = query if case_sensitive else f"(?i){query}"
+                if re.search(pattern, text):
+                    return query
+            except re.error:
+                # If regex is invalid, fall back to literal search
+                pass
+        
+        # Literal string search
+        if case_sensitive:
+            if query in text:
+                return query
+        else:
+            if query.lower() in text.lower():
+                return query
+    
+    return None
 
 
-def _extract_match_context(text: str, query: str, case_sensitive: bool, context_chars: int = 100) -> str:
+def _extract_match_context(
+    text: str, query: str, case_sensitive: bool, regex: bool, context_chars: int = 100
+) -> str:
     """Extract context around the first match."""
-    search_text = text if case_sensitive else text.lower()
-    search_query = query if case_sensitive else query.lower()
-
-    match_index = search_text.find(search_query)
+    import re
+    
+    if regex:
+        try:
+            pattern = query if case_sensitive else f"(?i){query}"
+            match = re.search(pattern, text)
+            if match:
+                match_index = match.start()
+            else:
+                return text[:context_chars] + "..." if len(text) > context_chars else text
+        except re.error:
+            # Fall back to literal search if regex fails
+            search_text = text if case_sensitive else text.lower()
+            search_query = query if case_sensitive else query.lower()
+            match_index = search_text.find(search_query)
+    else:
+        # Literal search
+        search_text = text if case_sensitive else text.lower()
+        search_query = query if case_sensitive else query.lower()
+        match_index = search_text.find(search_query)
+    
     if match_index == -1:
         return text[:context_chars] + "..." if len(text) > context_chars else text
 

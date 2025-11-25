@@ -45,7 +45,9 @@ class TestModuleCountIntegration:
             "metadata": {},
         }
 
-        result = project("blueprints", "basic", "module_count", blueprint, platform=Platform.WORKFRONT_FUSION)
+        result = project(
+            "blueprints", "basic", "module_count", blueprint, platform=Platform.WORKFRONT_FUSION
+        )
 
         assert result.platform == Platform.WORKFRONT_FUSION
         assert result.data == 1

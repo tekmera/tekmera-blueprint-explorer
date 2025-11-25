@@ -94,7 +94,9 @@ def extract_all_components(
                 components["error_handlers"].append(error_handler_component)
 
                 # Recursively process error handlers
-                extract_components_recursive(item["onerror"], f"{parent_context}.onerror", parent_router_id)
+                extract_components_recursive(
+                    item["onerror"], f"{parent_context}.onerror", parent_router_id
+                )
 
     # Extract components from main execution flow
     extract_components_recursive(top_level_flow)

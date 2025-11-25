@@ -458,6 +458,30 @@ section li:not(.connection-replacement li) {
     margin-top: 12px;
 }
 
+/* Search highlighting */
+.highlight {
+    background: #fff3cd;
+    color: #856404;
+    padding: 0 3px;
+    border-radius: 3px;
+    font-weight: 600;
+}
+
+.component-path {
+    color: #6c757d;
+    font-size: 0.85em;
+    display: block;
+    margin-top: 4px;
+}
+
+.result-category-title {
+    font-size: 1.05em;
+    font-weight: 500;
+    color: #6c757d;
+    margin-top: 20px;
+    margin-bottom: 12px;
+}
+
 /* Print */
 @media print {
     .sidebar { display: none; }

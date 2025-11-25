@@ -65,18 +65,16 @@ IMPLEMENTATIONS = {
 
 
 def text_content(
-    blueprints: BlueprintInput,
-    query: str,
-    case_sensitive: bool = False,
-    platform: Platform = None
+    blueprints: BlueprintInput, queries: List[str], case_sensitive: bool = False, regex: bool = False, platform: Platform = None
 ) -> ProjectionResult[Union[Dict[str, Any], List[Dict[str, Any]]]]:
     """
     Search for text content across all components in blueprint(s).
 
     Args:
         blueprints: Single blueprint or list of blueprints
-        query: Text to search for
+        queries: List of text strings to search for (OR logic)
         case_sensitive: Whether search should be case sensitive
+        regex: Whether to treat queries as regex patterns
         platform: Optional platform override
 
     Returns:
@@ -88,6 +86,6 @@ def text_content(
         platform = detect_platform(normalized_blueprints[0])
 
     if platform in IMPLEMENTATIONS:
-        return IMPLEMENTATIONS[platform](normalized_blueprints, query, case_sensitive)
+        return IMPLEMENTATIONS[platform](normalized_blueprints, queries, case_sensitive, regex)
 
     raise ValueError(f"Platform {platform.value} not supported for text search")

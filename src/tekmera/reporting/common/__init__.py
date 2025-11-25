@@ -4,14 +4,14 @@ This module contains base types, platform helpers, and shared utilities
 used by both summary and diff reporting.
 """
 
-from .types import BaseReport, ReportMetadata, ReportType, ReportFormat
-from .platforms import WorkfrontFusionReportingHelper, MakeComReportingHelper
+from .platforms import MakeComReportingHelper, WorkfrontFusionReportingHelper
+from .types import BaseReport, ReportFormat, ReportMetadata, ReportType
 
 __all__ = [
     "BaseReport",
-    "ReportMetadata", 
+    "ReportMetadata",
     "ReportType",
     "ReportFormat",
     "WorkfrontFusionReportingHelper",
-    "MakeComReportingHelper"
+    "MakeComReportingHelper",
 ]

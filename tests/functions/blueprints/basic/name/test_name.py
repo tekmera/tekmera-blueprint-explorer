@@ -33,7 +33,9 @@ class TestNameIntegration:
         """Test explicit platform override."""
         blueprint = {"name": "Override Test", "flow": [], "metadata": {}}
 
-        result = project("blueprints", "basic", "name", blueprint, platform=Platform.WORKFRONT_FUSION)
+        result = project(
+            "blueprints", "basic", "name", blueprint, platform=Platform.WORKFRONT_FUSION
+        )
 
         assert result.platform == Platform.WORKFRONT_FUSION
         assert result.data == "Override Test"

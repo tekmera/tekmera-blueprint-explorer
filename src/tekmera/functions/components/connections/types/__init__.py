@@ -4,8 +4,8 @@ Connection component type definitions.
 Defines ConnectionComponent class and platform-specific connection typing.
 """
 
-from typing import Any, Dict, List
 from dataclasses import dataclass
+from typing import Any, Dict, List
 
 from ....meta.types import ComponentBase, Platform
 
@@ -44,28 +44,30 @@ def create_connection_component(
     platform: Platform,
     extraction_context: str,
     raw_module_data: Dict[str, Any],
-    connection_data: Dict[str, Any]
+    connection_data: Dict[str, Any],
 ) -> ConnectionComponent:
     """
     Create a ConnectionComponent from module and connection data.
-    
+
     Args:
         module_id: ID of the module using this connection
         platform: Platform (Workfront Fusion, Make.com, etc.)
         extraction_context: Context where connection was extracted
         raw_module_data: Full module configuration
         connection_data: Extracted connection information
-        
+
     Returns:
         ConnectionComponent instance
     """
     if platform == Platform.WORKFRONT_FUSION:
         from .workfront_fusion import create_workfront_fusion_connection
+
         return create_workfront_fusion_connection(
             module_id, platform, extraction_context, raw_module_data, connection_data
         )
     elif platform == Platform.MAKE_COM:
         from .make_com import create_make_com_connection
+
         return create_make_com_connection(
             module_id, platform, extraction_context, raw_module_data, connection_data
         )
@@ -81,5 +83,5 @@ def create_connection_component(
             connection_label=connection_data.get("label", "Unknown Connection"),
             service_name=connection_data.get("service", "unknown"),
             user_context=connection_data.get("user", ""),
-            metadata=connection_data
+            metadata=connection_data,
         )

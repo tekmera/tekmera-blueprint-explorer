@@ -24,7 +24,7 @@ def detect_platform(blueprint: Dict[str, Any]) -> Platform:
     actual_blueprint = blueprint
     if "blueprint" in blueprint and isinstance(blueprint["blueprint"], dict):
         actual_blueprint = blueprint["blueprint"]
-    
+
     # First, check for metadata.zone (most reliable)
     metadata = actual_blueprint.get("metadata", {})
     if isinstance(metadata, dict):

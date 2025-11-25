@@ -55,7 +55,9 @@ IMPLEMENTATIONS = {
 }
 
 
-def name(blueprints: BlueprintInput, platform: Platform = None) -> ProjectionResult[Union[str, List[str]]]:
+def name(
+    blueprints: BlueprintInput, platform: Platform = None
+) -> ProjectionResult[Union[str, List[str]]]:
     """
     Extract scenario name(s) from blueprint(s).
 
