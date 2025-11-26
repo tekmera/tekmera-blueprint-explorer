@@ -43,6 +43,7 @@ class ModuleResult(Generic[T]):
     platform: Platform
     data: T
     metadata: "ProjectionMetadata"
+    entries: List[tuple] = None
 
 
 @dataclass
@@ -125,6 +126,7 @@ def create_module_result(
     function_name: str,
     data: Any,
     version: str = "1.0.0",
+    entries: List[tuple] = None,
 ) -> ModuleResult:
     """Create a standardized module result."""
     import hashlib
@@ -149,6 +151,7 @@ def create_module_result(
         platform=platform,
         data=data,
         metadata=metadata,
+        entries=entries or [],
     )
 
 

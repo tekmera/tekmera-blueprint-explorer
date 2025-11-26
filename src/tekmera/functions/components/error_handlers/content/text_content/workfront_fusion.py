@@ -23,8 +23,9 @@ def text_content(error_handler_component: ErrorHandlerComponent) -> ModuleResult
 
     raw = error_handler_component.raw_data
 
-    # Extract literal string values everywhere in the error-handler structure
-    text_parts.extend(_extract_literal_fields(raw))
+    # Extract literal string values everywhere in the error-handler structure and collect structured entries
+    literal_entries: List[tuple] = []
+    text_parts.extend(_extract_literal_fields(raw, "", literal_entries))
 
     # Fallback if nothing but metadata was extracted
     if len(text_parts) <= 2:
@@ -35,12 +36,14 @@ def text_content(error_handler_component: ErrorHandlerComponent) -> ModuleResult
         platform=Platform.WORKFRONT_FUSION,
         function_name="error_handlers.content.text_content",
         data="\n".join(text_parts),
+        entries=literal_entries,  # Add structured entries for precise search
     )
 
 
-def _extract_literal_fields(obj: Any, prefix: str = "") -> List[str]:
+def _extract_literal_fields(obj: Any, prefix: str = "", entries: List[tuple] = None) -> List[str]:
     """
     Recursively extract literal string-bearing fields.
+    Also collects structured entries for precise search.
 
     STRICT RULES:
     - Do NOT add labels
@@ -49,6 +52,9 @@ def _extract_literal_fields(obj: Any, prefix: str = "") -> List[str]:
     - Do NOT invent headings
     - Only output: "<field_path>: <string value>"
     """
+    if entries is None:
+        entries = []
+    
     text_parts: List[str] = []
 
     if isinstance(obj, dict):
@@ -58,13 +64,15 @@ def _extract_literal_fields(obj: Any, prefix: str = "") -> List[str]:
             # Emit literal strings
             if isinstance(value, str):
                 text_parts.append(f"{path}: {value}")
+                # Add to structured entries for precise search
+                entries.append((path, value))
 
             # Recurse
-            text_parts.extend(_extract_literal_fields(value, path))
+            text_parts.extend(_extract_literal_fields(value, path, entries))
 
     elif isinstance(obj, list):
         for idx, item in enumerate(obj):
             path = f"{prefix}[{idx}]"
-            text_parts.extend(_extract_literal_fields(item, path))
+            text_parts.extend(_extract_literal_fields(item, path, entries))
 
     return text_parts

@@ -116,9 +116,8 @@ def _generate_sidebar(result: ProjectionResult) -> str:
 
     for r in search_results:
         name = r.get("blueprint_name", "Unnamed Blueprint")
-        display = name[:20] + "..." if len(name) > 20 else name
         anchor = _sanitize_id(name)
-        blueprint_links.append(f'<a href="#blueprint-{anchor}">{_escape(display)}</a>')
+        blueprint_links.append(f'<a href="#blueprint-{anchor}">{_escape(name)}</a>')
 
     blueprint_html = "<br>".join(blueprint_links)
 
@@ -275,7 +274,9 @@ def _render_blueprint_results(r: Dict[str, Any]) -> List[str]:
         if not matches:
             html.append('<div class="no-changes">No matches found</div>')
         else:
-            for m in matches:
+            # Sort matches by component ID for consistent ordering
+            sorted_matches = sorted(matches, key=lambda m: int(m.get("component_id", 0)))
+            for m in sorted_matches:
                 html.extend(_render_match_card(m, case_sensitive))
 
         html.append('</div>')
@@ -290,37 +291,132 @@ def _render_blueprint_results(r: Dict[str, Any]) -> List[str]:
 def _render_match_card(match: Dict[str, Any], case_sensitive: bool) -> List[str]:
     comp_id = match.get("component_id", "?")
     context = match.get("context", "")
-    match_text = match.get("match_text", "")
-    query = match.get("matched_query", "")
+    field_matches = match.get("matches", [])
 
-    html = ['<div class="change-card">']
+    # Create summary for accordion header
+    match_count = len(field_matches)
+    if match_count > 1:
+        summary_text = f"Component #{comp_id} ({match_count} field matches)"
+    else:
+        summary_text = f"Component #{comp_id}"
 
-    # Header
-    html.append('<div class="change-header">')
-    html.append(f"<strong>Component #{comp_id}</strong>")
+    html = ['<details class="module-accordion">']
+    html.append(f'<summary class="module-summary">{_escape(summary_text)}</summary>')
+    html.append('<div class="accordion-content">')
+
+    # Show context path at the top of the expanded content
     if context:
-        html.append(f'<span class="component-path">{_escape(context)}</span>')
-    html.append('</div>')
+        html.append(f'<div class="component-path" style="margin-bottom: 12px; font-weight: 600;">{_escape(context)}</div>')
 
     # Body
     html.append('<div class="change-content">')
 
-    if query:
-        html.append('<div class="change-line"><span class="label">Matched Query:</span></div>')
-        html.append(f'<div class="value-content"><em>"{_escape(query)}"</em></div>')
+    # Render each field match
+    for i, field_match in enumerate(field_matches):
+        field_path = field_match.get("field_path", "")
+        value = field_match.get("value", "")
+        query = field_match.get("matched_query", "")
+        
+        if i > 0:
+            html.append('<hr class="field-separator">')
+        
+        html.append('<div class="field-match">')
+        html.append(f'<div class="component-path">{_escape(field_path)}</div>')
+        
+        if query:
+            html.append('<div class="change-line"><span class="label">Matched Query:</span></div>')
+            html.append(f'<div class="value-content"><em>"{_escape(query)}"</em></div>')
+        
+        if value:
+            html.append('<div class="change-line"><span class="label">Field Value:</span></div>')
+            # Trim long field values to show context around the match
+            trimmed_value = _trim_field_value_around_match(value, query, case_sensitive, field_match.get("start", -1), field_match.get("end", -1))
+            highlighted = _highlight_context(trimmed_value, query, case_sensitive)
+            html.append(f'<div class="value-content">{highlighted}</div>')
+        
+        html.append('</div>')
 
-    if match_text:
-        html.append('<div class="change-line"><span class="label">Match Context:</span></div>')
-        highlighted = _highlight_context(match_text, query, case_sensitive)
-        html.append(f'<div class="value-content">{highlighted}</div>')
+    # Fallback for old format (backward compatibility)
+    if not field_matches:
+        match_text = match.get("match_text", "")
+        query = match.get("matched_query", "")
+        
+        if query:
+            html.append('<div class="change-line"><span class="label">Matched Query:</span></div>')
+            html.append(f'<div class="value-content"><em>"{_escape(query)}"</em></div>')
 
-    html.append('</div></div>')
+        if match_text:
+            html.append('<div class="change-line"><span class="label">Match Context:</span></div>')
+            highlighted = _highlight_context(match_text, query, case_sensitive)
+            html.append(f'<div class="value-content">{highlighted}</div>')
+
+    html.append('</div>')  # close change-content
+    html.append('</div>')  # close accordion-content
+    html.append('</details>')  # close module-accordion
     return html
 
 
 # ---------------------------------------------
 # Highlighting Logic
 # ---------------------------------------------
+
+def _trim_field_value_around_match(
+    text: str, query: str, case_sensitive: bool, start: int, end: int, context_chars: int = 150
+) -> str:
+    """
+    Trim long field values to show context around the match.
+    
+    Args:
+        text: Full field value
+        query: Search query
+        case_sensitive: Whether search was case sensitive
+        start: Match start position (-1 if not available)
+        end: Match end position (-1 if not available)  
+        context_chars: Characters to show around the match
+    
+    Returns:
+        Trimmed text with context around the match
+    """
+    if not text or len(text) <= context_chars * 2:
+        return text
+    
+    # Use provided positions if available, otherwise find the match
+    if start == -1 or end == -1:
+        if case_sensitive:
+            match_pos = text.find(query)
+        else:
+            match_pos = text.lower().find(query.lower())
+        
+        if match_pos == -1:
+            # No match found, return beginning of text
+            return text[:context_chars] + "..."
+        
+        start = match_pos
+        end = match_pos + len(query)
+    
+    # Calculate context window around the match
+    match_center = (start + end) // 2
+    window_start = max(0, match_center - context_chars // 2)
+    window_end = min(len(text), match_center + context_chars // 2)
+    
+    # Extend window if we have room
+    if window_end - window_start < context_chars:
+        if window_start == 0:
+            window_end = min(len(text), window_start + context_chars)
+        elif window_end == len(text):
+            window_start = max(0, window_end - context_chars)
+    
+    # Extract the context window
+    trimmed = text[window_start:window_end]
+    
+    # Add ellipsis indicators
+    if window_start > 0:
+        trimmed = "..." + trimmed
+    if window_end < len(text):
+        trimmed = trimmed + "..."
+    
+    return trimmed
+
 
 def _highlight_context(text: str, query: str, case_sensitive: bool) -> str:
     """Highlight ALL occurrences of query in text."""

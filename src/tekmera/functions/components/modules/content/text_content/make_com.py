@@ -1,7 +1,7 @@
-"""Make.com module text content extraction (strict literal)."""
+"""Make.com module text content extraction (strict literal with structured entries)."""
 
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from .....meta.types import ModuleComponent, ModuleResult, Platform, create_module_result
 
@@ -11,27 +11,30 @@ def text_content(
     platform: Platform,
 ) -> ModuleResult[str]:
     """
-    Literal text extraction for Make.com modules.
-    No inference, no headings, no labels, no interpretation.
-    Only emits:
-    - Tekmera component metadata (ID, type, context)
-    - Raw string-bearing field values from the module
-    - Raw JSON fallback
+    Literal text extraction for Make.com modules with structured entries.
+    Produces:
+    - Combined literal text (for backward compatibility)
+    - Structured (field_path, value) entries (for precise field-level search)
     """
     text_parts: List[str] = []
 
-    # Always allowed — Tekmera metadata, not blueprint inference
+    # Tekmera metadata (safe and expected)
     text_parts.append(f"Module ID: {module_component.id}")
     text_parts.append(f"Module Type: {module_component.module_type}")
     text_parts.append(f"Context: {module_component.extraction_context}")
 
     raw = module_component.raw_data
 
-    # Extract literal string values from the module object
-    text_parts.extend(_extract_literal_fields(raw))
+    # Extract structured entries for field-level search
+    literal_entries: List[Tuple[str, str]] = []
+    _extract_literal_fields(raw, "", literal_entries)
 
-    # Fallback to raw JSON if nothing beyond ID/type/context was found
-    if len(text_parts) <= 3:
+    # Add entries to text output for backward compatibility
+    for field_path, value in literal_entries:
+        text_parts.append(f"{field_path}: {value}")
+
+    # Fallback if nothing but metadata was found
+    if len(literal_entries) == 0:
         text_parts.append(json.dumps(raw, sort_keys=True))
 
     return create_module_result(
@@ -39,35 +42,33 @@ def text_content(
         platform=platform,
         function_name="modules.content.text_content",
         data="\n".join(text_parts),
+        entries=literal_entries,  # Structured entries for precise search
     )
 
 
-def _extract_literal_fields(obj: Any, prefix: str = "") -> List[str]:
+def _extract_literal_fields(
+    obj: Any,
+    prefix: str,
+    out: List[Tuple[str, str]],
+) -> None:
     """
-    Recursively extract literal string-bearing fields from the module JSON.
-    Does not:
-    - rename fields
-    - add headings
-    - interpret meaning
-    - special-case any keys
-    - format values beyond str()
+    Recursively extract literal string-bearing fields as structured entries.
+    STRICT RULES:
+    - No inferred labels
+    - No renaming keys
+    - No headings
+    - Only literal (field_path, value) tuples
     """
-    text_parts: List[str] = []
-
     if isinstance(obj, dict):
         for key, value in obj.items():
             field_path = f"{prefix}.{key}" if prefix else key
 
-            # Emit literal string values
             if isinstance(value, str):
-                text_parts.append(f"{field_path}: {value}")
+                out.append((field_path, value))
 
-            # Recurse
-            text_parts.extend(_extract_literal_fields(value, field_path))
+            _extract_literal_fields(value, field_path, out)
 
     elif isinstance(obj, list):
         for idx, item in enumerate(obj):
             field_path = f"{prefix}[{idx}]"
-            text_parts.extend(_extract_literal_fields(item, field_path))
-
-    return text_parts
+            _extract_literal_fields(item, field_path, out)

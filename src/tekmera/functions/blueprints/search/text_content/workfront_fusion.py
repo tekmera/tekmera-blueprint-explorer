@@ -28,6 +28,7 @@ def text_content(
     # Handle single blueprint
     if len(blueprints) == 1:
         result = _search_single_blueprint(blueprints[0], queries, case_sensitive, regex)
+        result["blueprint_name"] = blueprints[0].get("name", "Unnamed Blueprint")
         return create_result(
             blueprint=blueprints[0],
             platform=Platform.WORKFRONT_FUSION,
@@ -59,94 +60,87 @@ def _search_single_blueprint(
 
     # Step 2: Extract text content from each component type
     matches = []
-    matches_by_type = {"modules": 0, "routers": 0, "filters": 0, "error_handlers": 0}
+    matches_by_type = {"modules": 0, "filters": 0}
 
     # Search modules
     for module_component in all_components["modules"]:
         try:
             text_result = module_text_content(module_component, Platform.WORKFRONT_FUSION)
-            text_content = text_result.data
-
-            matched_query = _text_contains_queries(text_content, queries, case_sensitive, regex)
-            if matched_query:
-                matches_by_type["modules"] += 1
-                matches.append(
-                    {
+            
+            # Use structured entries if available, fallback to text search
+            if hasattr(text_result, 'entries') and text_result.entries:
+                field_matches = _find_matches_in_entries(text_result.entries, queries, case_sensitive, regex)
+                if field_matches:
+                    matches_by_type["modules"] += 1
+                    matches.append({
                         "component_type": "modules",
                         "component_id": module_component.id,
-                        "match_text": _extract_match_context(text_content, matched_query, case_sensitive, regex),
                         "context": module_component.extraction_context,
-                        "matched_query": matched_query,
-                    }
-                )
+                        "matches": field_matches,
+                    })
+            else:
+                # Fallback to text-based search for backward compatibility
+                text_content = text_result.data
+                matched_query = _text_contains_queries(text_content, queries, case_sensitive, regex)
+                if matched_query:
+                    matches_by_type["modules"] += 1
+                    matches.append({
+                        "component_type": "modules",
+                        "component_id": module_component.id,
+                        "context": module_component.extraction_context,
+                        "matches": [{
+                            "field_path": "component",
+                            "value": text_content[:200] + "..." if len(text_content) > 200 else text_content,
+                            "matched_query": matched_query,
+                            "match_context": _extract_match_context(text_content, matched_query, case_sensitive, regex),
+                            "start": -1,
+                            "end": -1
+                        }]
+                    })
+                
         except Exception:
             # Skip components that can't be processed
             continue
 
-    # Search routers
-    for router_component in all_components["routers"]:
-        try:
-            text_result = router_text_content(router_component, Platform.WORKFRONT_FUSION)
-            text_content = text_result.data
-
-            matched_query = _text_contains_queries(text_content, queries, case_sensitive, regex)
-            if matched_query:
-                matches_by_type["routers"] += 1
-                matches.append(
-                    {
-                        "component_type": "routers",
-                        "component_id": router_component.id,
-                        "match_text": _extract_match_context(text_content, matched_query, case_sensitive, regex),
-                        "context": router_component.extraction_context,
-                        "matched_query": matched_query,
-                    }
-                )
-        except Exception:
-            continue
 
     # Search filters
     for filter_component in all_components["filters"]:
         try:
             text_result = filter_text_content(filter_component, Platform.WORKFRONT_FUSION)
-            text_content = text_result.data
-
-            matched_query = _text_contains_queries(text_content, queries, case_sensitive, regex)
-            if matched_query:
-                matches_by_type["filters"] += 1
-                matches.append(
-                    {
+            
+            # Use structured entries if available, fallback to text search
+            if hasattr(text_result, 'entries') and text_result.entries:
+                field_matches = _find_matches_in_entries(text_result.entries, queries, case_sensitive, regex)
+                if field_matches:
+                    matches_by_type["filters"] += 1
+                    matches.append({
                         "component_type": "filters",
                         "component_id": filter_component.id,
-                        "match_text": _extract_match_context(text_content, matched_query, case_sensitive, regex),
                         "context": filter_component.extraction_context,
-                        "matched_query": matched_query,
-                    }
-                )
+                        "matches": field_matches,
+                    })
+            else:
+                # Fallback to text-based search for backward compatibility
+                text_content = text_result.data
+                matched_query = _text_contains_queries(text_content, queries, case_sensitive, regex)
+                if matched_query:
+                    matches_by_type["filters"] += 1
+                    matches.append({
+                        "component_type": "filters",
+                        "component_id": filter_component.id,
+                        "context": filter_component.extraction_context,
+                        "matches": [{
+                            "field_path": "component",
+                            "value": text_content[:200] + "..." if len(text_content) > 200 else text_content,
+                            "matched_query": matched_query,
+                            "match_context": _extract_match_context(text_content, matched_query, case_sensitive, regex),
+                            "start": -1,
+                            "end": -1
+                        }]
+                    })
         except Exception:
             continue
 
-    # Search error handlers
-    for error_handler_component in all_components["error_handlers"]:
-        try:
-            text_result = error_handler_text_content(
-                error_handler_component, Platform.WORKFRONT_FUSION
-            )
-            text_content = text_result.data
-
-            matched_query = _text_contains_queries(text_content, queries, case_sensitive, regex)
-            if matched_query:
-                matches_by_type["error_handlers"] += 1
-                matches.append(
-                    {
-                        "component_type": "error_handlers",
-                        "component_id": error_handler_component.id,
-                        "match_text": _extract_match_context(text_content, matched_query, case_sensitive, regex),
-                        "context": error_handler_component.extraction_context,
-                        "matched_query": matched_query,
-                    }
-                )
-        except Exception:
-            continue
 
     # Step 3: Return structured results
     total_matches = sum(matches_by_type.values())
@@ -159,12 +153,62 @@ def _search_single_blueprint(
         "matches_by_type": matches_by_type,
         "component_counts": {
             "modules": len(all_components["modules"]),
-            "routers": len(all_components["routers"]),
             "filters": len(all_components["filters"]),
-            "error_handlers": len(all_components["error_handlers"]),
         },
         "matches": matches,
     }
+
+
+def _find_matches_in_entries(
+    entries: List[tuple], queries: List[str], case_sensitive: bool, regex: bool
+) -> List[Dict[str, Any]]:
+    """
+    Find matches in structured field entries with precise position data.
+    
+    Returns list of match objects with field_path, value, matched_query, 
+    match_context, start, and end positions.
+    """
+    results = []
+    for field_path, value in entries:
+        matched_query = _text_contains_queries(value, queries, case_sensitive, regex)
+        if matched_query:
+            # Find match position in the field value
+            start, end = _find_match_position(value, matched_query, case_sensitive, regex)
+            match_context = value[start:end] if start != -1 else matched_query
+            
+            results.append({
+                "field_path": field_path,
+                "value": value,
+                "matched_query": matched_query,
+                "match_context": match_context,
+                "start": start,
+                "end": end
+            })
+    return results
+
+
+def _find_match_position(text: str, query: str, case_sensitive: bool, regex: bool) -> tuple[int, int]:
+    """
+    Find start and end positions of the match within the text.
+    
+    Returns (start, end) tuple. Returns (-1, -1) if no match found.
+    """
+    import re
+    
+    if regex:
+        try:
+            pattern = query if case_sensitive else f"(?i){query}"
+            match = re.search(pattern, text)
+            return (match.start(), match.end()) if match else (-1, -1)
+        except re.error:
+            # Fall back to literal search if regex fails
+            pass
+    
+    # Literal string search
+    search_text = text if case_sensitive else text.lower()
+    search_query = query if case_sensitive else query.lower()
+    start = search_text.find(search_query)
+    return (start, start + len(query)) if start != -1 else (-1, -1)
 
 
 def _text_contains_queries(text: str, queries: List[str], case_sensitive: bool, regex: bool) -> str:
