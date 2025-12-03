@@ -77,6 +77,7 @@ def _search_single_blueprint(
                         "component_id": module_component.id,
                         "context": module_component.extraction_context,
                         "matches": field_matches,
+                        "literal_entries": text_result.entries,   # <<< ADD THIS
                     })
             else:
                 # Fallback to text-based search for backward compatibility
@@ -95,7 +96,8 @@ def _search_single_blueprint(
                             "match_context": _extract_match_context(text_content, matched_query, case_sensitive, regex),
                             "start": -1,
                             "end": -1
-                        }]
+                        }],
+                        "literal_entries": text_result.entries or [],   # <<< ADD THIS
                     })
                 
         except Exception:
@@ -118,6 +120,7 @@ def _search_single_blueprint(
                         "component_id": filter_component.id,
                         "context": filter_component.extraction_context,
                         "matches": field_matches,
+                        "literal_entries": text_result.entries,    # <<< ADD THIS
                     })
             else:
                 # Fallback to text-based search for backward compatibility
@@ -136,7 +139,8 @@ def _search_single_blueprint(
                             "match_context": _extract_match_context(text_content, matched_query, case_sensitive, regex),
                             "start": -1,
                             "end": -1
-                        }]
+                        }],
+                        "literal_entries": text_result.entries or [],   # <<< ADD THIS
                     })
         except Exception:
             continue

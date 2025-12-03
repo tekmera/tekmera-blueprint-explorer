@@ -505,6 +505,41 @@ section li:not(.connection-replacement li) {
     margin-left: 8px;
 }
 
+/* Filter condition context styling */
+.condition-context {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 12px;
+    margin: 8px 0;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+}
+
+.context-header {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.context-entries {
+    margin-left: 8px;
+}
+
+.context-entry {
+    margin: 2px 0;
+    color: #6c757d;
+}
+
+.context-entry.matched {
+    background-color: #fff3cd;
+    color: #856404;
+    font-weight: 500;
+    padding: 1px 4px;
+    border-radius: 2px;
+}
+
 /* Print */
 @media print {
     .sidebar { display: none; }
