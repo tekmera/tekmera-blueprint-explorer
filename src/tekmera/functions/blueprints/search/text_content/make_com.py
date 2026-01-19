@@ -13,7 +13,10 @@ from ....meta.utils.make_com.extract_components import extract_all_components
 
 
 def text_content(
-    blueprints: List[Dict[str, Any]], query: str, case_sensitive: bool = False
+    blueprints: List[Dict[str, Any]], 
+    query: str, 
+    case_sensitive: bool = False,
+    regex:bool = False
 ) -> ProjectionResult:
     """
     Search for text content across all components in Make.com blueprints.

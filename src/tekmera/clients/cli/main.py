@@ -36,7 +36,6 @@ def load_blueprints_from_paths(paths: List[str], max_depth: int = 3) -> List[Dic
 
     for path_str in paths:
         path = Path(path_str)
-
         if path.is_file():
             # Single file
             if path.suffix.lower() == ".json":
@@ -106,7 +105,6 @@ def search(path, queries, case_sensitive, regex, format):
       tekmera search ./blueprints/ "PI\\d+" --regex
     """
     blueprints = load_blueprints_from_paths([path])
-
     try:
         result = project(
             "blueprints",

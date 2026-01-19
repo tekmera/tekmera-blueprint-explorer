@@ -49,7 +49,6 @@ def project(
         # Blueprint functions auto-detect platform and handle flexible input
         # Import the main function directly (not platform-specific implementation)
         import importlib
-
         module_path = f"tekmera.functions.{category}.{subcategory}.{function}"
         module = importlib.import_module(module_path)
         func = getattr(module, function)

@@ -19,8 +19,8 @@ Tekmera replaces manual inspection with structured, high-speed insight into how 
 
 ```bash
 # 1. Setup (one-time)
-./scripts/setup-dev.sh
-source venv/bin/activate
+./scripts/init.sh
+source venv/Scripts/activate
 
 # 2. Analyze your blueprints
 tekmera analyze ./blueprints
@@ -40,7 +40,7 @@ tekmera analyze ./blueprints
 ### Manual Installation
 ```bash
 python3 -m venv venv
-source venv/bin/activate
+source venv/Scripts/activate
 pip install -r requirements.txt
 pip install -e .
 ```

@@ -85,10 +85,8 @@ def text_content(
         ProjectionResult containing search results
     """
     normalized_blueprints = normalize_blueprint_input(blueprints)
-
     if platform is None:
         platform = detect_platform(normalized_blueprints[0])
-
     if platform in IMPLEMENTATIONS:
         return IMPLEMENTATIONS[platform](normalized_blueprints, queries, case_sensitive, regex)
 
