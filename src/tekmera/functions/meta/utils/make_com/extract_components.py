@@ -29,7 +29,7 @@ def extract_all_components(
 
     # Make.com uses flow array (like Fusion) not scenario.modules
     top_level_flow = blueprint.get("flow", [])
-
+    
     def extract_components_recursive(flow_items, parent_context="main"):
         """Recursively extract all component types from flow."""
         for item in flow_items:
@@ -106,7 +106,7 @@ def extract_all_components(
         for orphan_idx, orphan_group in enumerate(orphans):
             if isinstance(orphan_group, list):
                 extract_components_recursive(orphan_group, f"orphan[{orphan_idx}]")
-
+    
     return components
 
 

@@ -109,7 +109,6 @@ def _format_search_table(result):
     """Format search results as a clean table grouped by blueprint then component types."""
     data = result.data
     search_results = data if isinstance(data, list) else [data]
-
     # Extract search info
     queries = search_results[0].get("queries", []) if search_results else []
     query_str = ", ".join(f'"{q}"' for q in queries)
@@ -147,10 +146,12 @@ def _format_single_blueprint_search(search_result):
     for comp_type in matches_by_type.keys():
         component_groups[comp_type] = []
 
-    for match in all_matches:
+    for match in all_matches: 
         component_type = match.get("component_type", "unknown")
-        if component_type in component_groups:
-            component_groups[component_type].append(match)
+
+        # Check if component_type exists in component_groups as substrings (e.g., module in modules)
+        if any(component_type in item for item in component_groups):    
+            component_groups[f"{component_type}s"].append(match)
 
     # Display each component type
     for component_type in sorted(matches_by_type.keys()):
@@ -206,7 +207,7 @@ def _format_single_blueprint_search(search_result):
             else:
                 # Fallback for old format (backward compatibility)
                 match_text = match.get("match_text", "").replace("\n", " ").strip()
-                match_display = match_text[:47] + "..." if len(match_text) > 50 else match_text
+                match_display = match_text[40:87] + "..." if len(match_text) > 90 else match_text
 
             print(f"{component_id:<6} {context_display:<25} {match_display}")
 

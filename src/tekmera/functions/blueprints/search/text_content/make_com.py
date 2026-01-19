@@ -16,7 +16,7 @@ def text_content(
     blueprints: List[Dict[str, Any]], 
     query: str, 
     case_sensitive: bool = False,
-    regex:bool = False
+    regex: bool = False
 ) -> ProjectionResult:
     """
     Search for text content across all components in Make.com blueprints.
@@ -64,6 +64,7 @@ def _search_single_blueprint(
         try:
             text_result = module_text_content(module_component, Platform.MAKE_COM)
             text_content = text_result.data
+            
 
             if _text_contains_query(text_content, query, case_sensitive):
                 matches_by_type["modules"] += 1
@@ -121,7 +122,6 @@ def _search_single_blueprint(
 
     # Step 3: Return structured results
     total_matches = sum(matches_by_type.values())
-
     return {
         "query": query,
         "case_sensitive": case_sensitive,
@@ -137,32 +137,38 @@ def _search_single_blueprint(
     }
 
 
-def _text_contains_query(text: str, query: str, case_sensitive: bool) -> bool:
+def _text_contains_query(text: str, query: List[str], case_sensitive: bool) -> bool:
     """Check if text contains the query string."""
-    if case_sensitive:
-        return query in text
-    else:
-        return query.lower() in text.lower()
+    for string in query:
+        if case_sensitive:
+            if string in text:
+                return True
+        else:
+            if string.lower() in text.lower():
+                return True
+    return False
 
 
 def _extract_match_context(
-    text: str, query: str, case_sensitive: bool, context_chars: int = 100
+    text: str, query: List[str], case_sensitive: bool, context_chars: int = 100
 ) -> str:
     """Extract context around the first match."""
     search_text = text if case_sensitive else text.lower()
-    search_query = query if case_sensitive else query.lower()
+    search_query = query if case_sensitive else [q.lower() for q in query]
 
-    match_index = search_text.find(search_query)
+    for query in search_query:
+        match_index = search_text.find(query)
+        if match_index != -1:
+            break
+    
     if match_index == -1:
         return text[:context_chars] + "..." if len(text) > context_chars else text
 
     start = max(0, match_index - context_chars // 2)
     end = min(len(text), match_index + len(query) + context_chars // 2)
-
     context = text[start:end]
     if start > 0:
         context = "..." + context
     if end < len(text):
         context = context + "..."
-
     return context
