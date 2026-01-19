@@ -39,7 +39,9 @@ def text_content(filter_component: FilterComponent) -> ModuleResult[str]:
                     if isinstance(condition, dict):
                         for cond_key, cond_value in condition.items():
                             if isinstance(cond_value, str):
-                                field_path = f"filter.conditions[{group_idx}][{cond_idx}].{cond_key}"
+                                field_path = (
+                                    f"filter.conditions[{group_idx}][{cond_idx}].{cond_key}"
+                                )
                                 literal_entries.append((field_path, cond_value))
                                 text_parts.append(f"{field_path}: {cond_value}")
 

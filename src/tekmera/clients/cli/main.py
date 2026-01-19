@@ -96,13 +96,13 @@ def cli():
 )
 def search(path, queries, case_sensitive, regex, format):
     """Search for text content across blueprint components
-    
+
     PATH: Single blueprint file or directory to search
     QUERIES: One or more search terms (OR logic)
-    
+
     Examples:
       tekmera search ./blueprints/ "PI43"
-      tekmera search blueprint.json "term1" "term2" "term3"  
+      tekmera search blueprint.json "term1" "term2" "term3"
       tekmera search ./blueprints/ "PI\\d+" --regex
     """
     blueprints = load_blueprints_from_paths([path])

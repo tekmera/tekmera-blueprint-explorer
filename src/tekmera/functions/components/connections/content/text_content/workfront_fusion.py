@@ -6,9 +6,7 @@ from typing import Any, Dict, List
 from .....meta.types import ModuleComponent, ModuleResult, Platform, create_module_result
 
 
-def text_content(
-    module_component: ModuleComponent, platform: Platform
-) -> ModuleResult[str]:
+def text_content(module_component: ModuleComponent, platform: Platform) -> ModuleResult[str]:
     """
     Literal text extraction for Workfront Fusion connection components.
     No inference, no guessing, no classification.

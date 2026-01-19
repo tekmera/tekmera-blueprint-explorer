@@ -42,9 +42,8 @@ def analyze_make_com_filter(
 # CONDITION GROUPS
 # ---------------------------------------------------------------------
 
-def _analyze_make_conditions(
-    old_conditions: List, new_conditions: List
-) -> List[FilterDifference]:
+
+def _analyze_make_conditions(old_conditions: List, new_conditions: List) -> List[FilterDifference]:
     differences = []
 
     old_count = len(old_conditions) if old_conditions else 0
@@ -103,6 +102,7 @@ def _analyze_make_conditions(
 # ---------------------------------------------------------------------
 # CONDITION GROUP DETAIL
 # ---------------------------------------------------------------------
+
 
 def _analyze_condition_group(
     old_group: List, new_group: List, group_index: int
@@ -168,6 +168,7 @@ def _analyze_condition_group(
 # INDIVIDUAL CONDITION LOGIC
 # ---------------------------------------------------------------------
 
+
 def _analyze_individual_condition(
     old_condition: Dict, new_condition: Dict, group_index: int, condition_index: int
 ) -> List[FilterDifference]:
@@ -200,9 +201,7 @@ def _analyze_individual_condition(
 
     if old_value != new_value:
         significance = (
-            "critical"
-            if _is_business_critical_value_change(old_value, new_value)
-            else "important"
+            "critical" if _is_business_critical_value_change(old_value, new_value) else "important"
         )
 
         differences.append(
@@ -240,6 +239,7 @@ def _analyze_individual_condition(
 # HEURISTICS + FIELD LOGIC
 # ---------------------------------------------------------------------
 
+
 def _is_business_critical_value_change(old_value: str, new_value: str) -> bool:
     business_keywords = {
         "queue",
@@ -254,15 +254,14 @@ def _is_business_critical_value_change(old_value: str, new_value: str) -> bool:
         "operations",
         "workflow",
         "stage",
-        "phase"
+        "phase",
     }
 
     old_lower = str(old_value).lower()
     new_lower = str(new_value).lower()
 
     return any(
-        f" {kw} " in f" {old_lower} " or f" {kw} " in f" {new_lower} "
-        for kw in business_keywords
+        f" {kw} " in f" {old_lower} " or f" {kw} " in f" {new_lower} " for kw in business_keywords
     )
 
 
@@ -314,5 +313,5 @@ def _extract_field_name(field_expression: str) -> str:
     if "." in field_expression:
         parts = field_expression.split(".")
         return parts[-1].replace("_", " ").title()
-    
+
     return field_expression.replace("_", " ").title()

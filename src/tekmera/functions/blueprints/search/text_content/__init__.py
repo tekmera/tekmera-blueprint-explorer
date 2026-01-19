@@ -65,7 +65,11 @@ IMPLEMENTATIONS = {
 
 
 def text_content(
-    blueprints: BlueprintInput, queries: List[str], case_sensitive: bool = False, regex: bool = False, platform: Platform = None
+    blueprints: BlueprintInput,
+    queries: List[str],
+    case_sensitive: bool = False,
+    regex: bool = False,
+    platform: Platform = None,
 ) -> ProjectionResult[Union[Dict[str, Any], List[Dict[str, Any]]]]:
     """
     Search for text content across all components in blueprint(s).

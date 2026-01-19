@@ -42,6 +42,7 @@ def analyze_workfront_fusion_filter(
 # CONDITION GROUPS
 # ---------------------------------------------------------------------
 
+
 def _analyze_workfront_conditions(
     old_conditions: List, new_conditions: List
 ) -> List[FilterDifference]:
@@ -103,6 +104,7 @@ def _analyze_workfront_conditions(
 # ---------------------------------------------------------------------
 # CONDITION GROUP DETAIL
 # ---------------------------------------------------------------------
+
 
 def _analyze_condition_group(
     old_group: List, new_group: List, group_index: int
@@ -168,6 +170,7 @@ def _analyze_condition_group(
 # INDIVIDUAL CONDITION LOGIC
 # ---------------------------------------------------------------------
 
+
 def _analyze_individual_condition(
     old_condition: Dict, new_condition: Dict, group_index: int, condition_index: int
 ) -> List[FilterDifference]:
@@ -200,9 +203,7 @@ def _analyze_individual_condition(
 
     if old_value != new_value:
         significance = (
-            "critical"
-            if _is_business_critical_value_change(old_value, new_value)
-            else "important"
+            "critical" if _is_business_critical_value_change(old_value, new_value) else "important"
         )
 
         differences.append(
@@ -240,6 +241,7 @@ def _analyze_individual_condition(
 # HEURISTICS + FIELD LOGIC
 # ---------------------------------------------------------------------
 
+
 def _is_business_critical_value_change(old_value: str, new_value: str) -> bool:
     business_keywords = {
         "queue",
@@ -258,8 +260,7 @@ def _is_business_critical_value_change(old_value: str, new_value: str) -> bool:
     new_lower = str(new_value).lower()
 
     return any(
-        f" {kw} " in f" {old_lower} " or f" {kw} " in f" {new_lower} "
-        for kw in business_keywords
+        f" {kw} " in f" {old_lower} " or f" {kw} " in f" {new_lower} " for kw in business_keywords
     )
 
 

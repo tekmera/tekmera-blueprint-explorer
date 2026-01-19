@@ -14,9 +14,10 @@ from tekmera.functions.meta.types import ProjectionResult
 # Utility Helpers
 # ---------------------------------------------
 
+
 def _sanitize_id(text: str) -> str:
-    safe = re.sub(r'[^a-zA-Z0-9]+', '-', text)
-    safe = re.sub(r'-+', '-', safe).strip('-')
+    safe = re.sub(r"[^a-zA-Z0-9]+", "-", text)
+    safe = re.sub(r"-+", "-", safe).strip("-")
     return safe.lower()
 
 
@@ -45,6 +46,7 @@ def _component_display_name(comp_type: str) -> str:
 # Public Entry Point
 # ---------------------------------------------
 
+
 def format_search_html(result: ProjectionResult) -> str:
     return _generate_html(result)
 
@@ -52,6 +54,7 @@ def format_search_html(result: ProjectionResult) -> str:
 # ---------------------------------------------
 # HTML Generator
 # ---------------------------------------------
+
 
 def _generate_html(result: ProjectionResult) -> str:
     return f"""<!DOCTYPE html>
@@ -84,6 +87,7 @@ def _generate_html(result: ProjectionResult) -> str:
 # CSS Loader
 # ---------------------------------------------
 
+
 def _load_css() -> str:
     try:
         css_path = Path(__file__).parent / "styles.css"
@@ -97,6 +101,7 @@ def _load_css() -> str:
 # Sidebar
 # ---------------------------------------------
 
+
 def _generate_sidebar(result: ProjectionResult) -> str:
     search_results = result.data if isinstance(result.data, list) else [result.data]
 
@@ -104,11 +109,13 @@ def _generate_sidebar(result: ProjectionResult) -> str:
     blueprints_with_matches = sum(1 for r in search_results if r.get("total_matches", 0) > 0)
     total_matches = sum(r.get("total_matches", 0) for r in search_results)
 
+    # Only include blueprints with matches in sidebar links
     links = []
     for r in search_results:
-        name = r.get("blueprint_name", "Unnamed Blueprint")
-        anchor = _sanitize_id(name)
-        links.append(f'<a href="#blueprint-{anchor}">{_escape(name)}</a>')
+        if r.get("total_matches", 0) > 0:  # Only show blueprints with matches
+            name = r.get("blueprint_name", "Unnamed Blueprint")
+            anchor = _sanitize_id(name)
+            links.append(f'<a href="#blueprint-{anchor}">{_escape(name)}</a>')
 
     return f"""
 <div class="sidebar">
@@ -135,6 +142,7 @@ def _generate_sidebar(result: ProjectionResult) -> str:
 # Overview Section
 # ---------------------------------------------
 
+
 def _generate_overview_section(result: ProjectionResult) -> str:
     search_results = result.data if isinstance(result.data, list) else [result.data]
     if not search_results:
@@ -150,6 +158,8 @@ def _generate_overview_section(result: ProjectionResult) -> str:
     total_blueprints = len(search_results)
     blueprints_with_matches = sum(1 for r in search_results if r.get("total_matches", 0) > 0)
     total_matches = sum(r.get("total_matches", 0) for r in search_results)
+    total_modules = sum(r.get("component_counts", {}).get("modules", 0) for r in search_results)
+    matched_modules = sum(r.get("matches_by_type", {}).get("modules", 0) for r in search_results)
 
     return f"""
 <section id="overview">
@@ -158,8 +168,12 @@ def _generate_overview_section(result: ProjectionResult) -> str:
         <div class="info-item"><strong>Search Query:</strong> {_escape(query_str)}</div>
         <div class="info-item"><strong>Case Sensitive:</strong> {"Yes" if r0.get("case_sensitive") else "No"}</div>
         <div class="info-item"><strong>Regex Mode:</strong> {"Yes" if r0.get("regex") else "No"}</div>
-        <div class="info-item"><strong>Total Blueprints:</strong> {total_blueprints}</div>
-        <div class="info-item"><strong>Blueprints with Matches:</strong> {blueprints_with_matches}</div>
+        
+        <div class="info-item" style="margin-top: 20px;"><strong>Total Blueprints:</strong> {total_blueprints}</div>
+        <div class="info-item"><strong>Total Modules:</strong> {total_modules}</div>
+        
+        <div class="info-item" style="margin-top: 20px;"><strong>Blueprints with Matches:</strong> {blueprints_with_matches}</div>
+        <div class="info-item"><strong>Modules with Matches:</strong> {matched_modules}</div>
         <div class="info-item"><strong>Total Matches:</strong> {total_matches}</div>
         <div class="info-item"><strong>Platform:</strong> {result.platform.value.replace('_', ' ').title()}</div>
         <div class="info-item"><strong>Generated:</strong> {_format_datetime(result.metadata.computed_at)}</div>
@@ -172,35 +186,47 @@ def _generate_overview_section(result: ProjectionResult) -> str:
 # Blueprint Section
 # ---------------------------------------------
 
+
 def _generate_blueprint_section(result: ProjectionResult) -> str:
     search_results = result.data if isinstance(result.data, list) else [result.data]
 
-    out = ['<section id="blueprints">', '<h2>Blueprint Information</h2>']
+    out = ['<section id="blueprints">', "<h2>Blueprint Information</h2>"]
 
-    for r in search_results:
-        name = r.get("blueprint_name", "Unnamed Blueprint")
-        matches = r.get("total_matches", 0)
-        breakdown = r.get("matches_by_type", {})
-
+    # Only show blueprints with matches
+    blueprints_with_matches = [r for r in search_results if r.get("total_matches", 0) > 0]
+    
+    if not blueprints_with_matches:
         out.append('<div class="section-card">')
-        out.append(f'<h3>{_escape(name)}</h3>')
-        out.append(f'<div class="info-item"><strong>Total Matches:</strong> {matches}</div>')
-
-        if breakdown:
-            labels = []
-            for t, count in sorted(breakdown.items()):
-                labels.append(f"{_component_display_name(t)}: {count}")
-            out.append(f'<div class="info-item"><strong>By Component Type:</strong> {", ".join(labels)}</div>')
-
+        out.append('<div class="no-changes">No blueprints with matches found</div>')
         out.append('</div>')
+    else:
+        for r in blueprints_with_matches:
+            name = r.get("blueprint_name", "Unnamed Blueprint")
+            matches = r.get("total_matches", 0)
+            breakdown = r.get("matches_by_type", {})
 
-    out.append('</section>')
+            out.append('<div class="section-card">')
+            out.append(f"<h3>{_escape(name)}</h3>")
+            out.append(f'<div class="info-item"><strong>Total Matches:</strong> {matches}</div>')
+
+            if breakdown:
+                labels = []
+                for t, count in sorted(breakdown.items()):
+                    labels.append(f"{_component_display_name(t)}: {count}")
+                out.append(
+                    f'<div class="info-item"><strong>By Component Type:</strong> {", ".join(labels)}</div>'
+                )
+
+            out.append("</div>")
+
+    out.append("</section>")
     return "\n".join(out)
 
 
 # ---------------------------------------------
 # Results
 # ---------------------------------------------
+
 
 def _generate_results_section(result: ProjectionResult) -> str:
     search_results = result.data if isinstance(result.data, list) else [result.data]
@@ -213,10 +239,12 @@ def _generate_results_section(result: ProjectionResult) -> str:
     <div class="section-card"><div class="no-changes">No matches found</div></div>
 </section>"""
 
-    out = ['<section id="results">', '<h2>Search Results</h2>']
+    out = ['<section id="results">', "<h2>Search Results</h2>"]
 
+    # Only show blueprints with matches
     for r in search_results:
-        out.extend(_render_blueprint_results(r))
+        if r.get("total_matches", 0) > 0:  # Only render blueprints with matches
+            out.extend(_render_blueprint_results(r))
 
     out.append("</section>")
     return "\n".join(out)
@@ -225,6 +253,7 @@ def _generate_results_section(result: ProjectionResult) -> str:
 # ---------------------------------------------
 # Per-blueprint renderer
 # ---------------------------------------------
+
 
 def _render_blueprint_results(r: Dict[str, Any]) -> List[str]:
     out = []
@@ -249,20 +278,20 @@ def _render_blueprint_results(r: Dict[str, Any]) -> List[str]:
         if t in groups:
             groups[t].append(m)
 
+    # Only show component types that have matches
     for t in sorted(groups.keys()):
-        comp_name = _component_display_name(t)
         matches = groups[t]
-
+        if not matches:  # Skip component types with no matches
+            continue
+            
+        comp_name = _component_display_name(t)
         out.append(f'<h4 class="result-category-title">{comp_name} ({len(matches)} matches)</h4>')
         out.append('<div class="section-card">')
 
-        if not matches:
-            out.append('<div class="no-changes">No matches found</div>')
-        else:
-            for m in sorted(matches, key=lambda x: int(x.get("component_id", 0))):
-                out.extend(_render_match_card(m, case_sensitive))
+        for m in sorted(matches, key=lambda x: int(x.get("component_id", 0))):
+            out.extend(_render_match_card(m, case_sensitive))
 
-        out.append('</div>')
+        out.append("</div>")
 
     return out
 
@@ -270,6 +299,7 @@ def _render_blueprint_results(r: Dict[str, Any]) -> List[str]:
 # ---------------------------------------------
 # Structural Context Grouping
 # ---------------------------------------------
+
 
 def _get_condition_prefix(path: str) -> str | None:
     if "filter.conditions" not in path:
@@ -291,7 +321,7 @@ def _render_condition_block(entries: List[tuple], matched: str) -> str:
     out = [
         '<div class="condition-context">',
         '<div class="context-header">Filter Condition Context:</div>',
-        '<div class="context-entries">'
+        '<div class="context-entries">',
     ]
 
     for p, v in entries:
@@ -307,6 +337,7 @@ def _render_condition_block(entries: List[tuple], matched: str) -> str:
 # ---------------------------------------------
 # Match Card Rendering
 # ---------------------------------------------
+
 
 def _render_match_card(match: Dict[str, Any], case_sensitive: bool) -> List[str]:
     comp_id = match.get("component_id", "?")
@@ -325,7 +356,9 @@ def _render_match_card(match: Dict[str, Any], case_sensitive: bool) -> List[str]
     out.append('<div class="accordion-content">')
 
     if context:
-        out.append(f'<div class="component-path" style="margin-bottom: 12px; font-weight: 600;">{_escape(context)}</div>')
+        out.append(
+            f'<div class="component-path" style="margin-bottom: 12px; font-weight: 600;">{_escape(context)}</div>'
+        )
 
     out.append('<div class="change-content">')
 
@@ -340,7 +373,6 @@ def _render_match_card(match: Dict[str, Any], case_sensitive: bool) -> List[str]
             ctx_entries = _collect_condition_entries(literal_entries, prefix)
             block = _render_condition_block(ctx_entries, field_path)
             if block:
-                out.append('<div class="change-line"><span class="label">Filter Condition Context:</span></div>')
                 out.append(f'<div class="value-content">{block}</div>')
 
         if i > 0:
@@ -356,23 +388,23 @@ def _render_match_card(match: Dict[str, Any], case_sensitive: bool) -> List[str]
         if value:
             out.append('<div class="change-line"><span class="label">Field Value:</span></div>')
             trimmed = _trim_field_value_around_match(
-                value, query, case_sensitive,
-                m.get("start", -1), m.get("end", -1)
+                value, query, case_sensitive, m.get("start", -1), m.get("end", -1)
             )
             high = _highlight_context(trimmed, query, case_sensitive)
             out.append(f'<div class="value-content">{high}</div>')
 
-        out.append('</div>')  # field-match
+        out.append("</div>")  # field-match
 
-    out.append('</div>')  # change-content
-    out.append('</div>')  # accordion-content
-    out.append('</details>')
+    out.append("</div>")  # change-content
+    out.append("</div>")  # accordion-content
+    out.append("</details>")
     return out
 
 
 # ---------------------------------------------
 # Highlighting
 # ---------------------------------------------
+
 
 def _trim_field_value_around_match(
     text: str, query: str, case_sensitive: bool, start: int, end: int, context_chars: int = 150
@@ -393,8 +425,10 @@ def _trim_field_value_around_match(
     right = min(len(text), center + context_chars // 2)
 
     snippet = text[left:right]
-    if left > 0: snippet = "..." + snippet
-    if right < len(text): snippet += "..."
+    if left > 0:
+        snippet = "..." + snippet
+    if right < len(text):
+        snippet += "..."
     return snippet
 
 

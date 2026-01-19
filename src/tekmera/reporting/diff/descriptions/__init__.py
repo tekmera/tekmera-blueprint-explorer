@@ -17,10 +17,10 @@ from .modules import generate_module_addition_description
 def generate_component_addition_description(node: TopologyNode) -> str:
     """
     Generate detailed description for newly added component.
-    
+
     Args:
         node: The topology node representing the added component
-        
+
     Returns:
         Human-readable description of the component and its configuration
     """
@@ -37,19 +37,21 @@ def generate_component_addition_description(node: TopologyNode) -> str:
 def _detect_platform(node: TopologyNode) -> Platform:
     """
     Detect platform from node characteristics.
-    
+
     Uses same detection logic as the Functions System.
     """
-    raw_data = getattr(node, 'raw_data', {})
-    
+    raw_data = getattr(node, "raw_data", {})
+
     if isinstance(raw_data, dict):
-        module_type = raw_data.get('module', '')
+        module_type = raw_data.get("module", "")
         if isinstance(module_type, str):
-            if 'workfront' in module_type.lower():
+            if "workfront" in module_type.lower():
                 return Platform.WORKFRONT_FUSION
-            elif any(prefix in module_type for prefix in ['builtin:', 'google:', 'slack:', 'microsoft:']):
+            elif any(
+                prefix in module_type for prefix in ["builtin:", "google:", "slack:", "microsoft:"]
+            ):
                 return Platform.MAKE_COM
-    
+
     # Default to Workfront Fusion if detection fails
     return Platform.WORKFRONT_FUSION
 

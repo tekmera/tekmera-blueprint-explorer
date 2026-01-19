@@ -24,10 +24,12 @@ def text_content(module_component: ModuleComponent, platform: Platform) -> Modul
     # Extract connection parameters literally
     params = raw.get("parameters", {})
     metadata = raw.get("metadata", {})
-    
+
     # Find and extract connection ID
-    connection_param_name, connection_id = _find_connection_parameter(params, metadata.get("parameters", []))
-    
+    connection_param_name, connection_id = _find_connection_parameter(
+        params, metadata.get("parameters", [])
+    )
+
     if connection_param_name and connection_id:
         text_parts.append(f"Connection Parameter: {connection_param_name}")
         text_parts.append(f"Connection ID: {connection_id}")
@@ -35,7 +37,7 @@ def text_content(module_component: ModuleComponent, platform: Platform) -> Modul
     # Extract raw metadata.restore connection data if present
     restore = metadata.get("restore", {})
     restore_params = restore.get("parameters", {})
-    
+
     if connection_param_name and connection_param_name in restore_params:
         conn_restore = restore_params[connection_param_name]
         if isinstance(conn_restore, dict):
@@ -100,8 +102,6 @@ def text_content(module_component: ModuleComponent, platform: Platform) -> Modul
         function_name="connections.content.text_content",
         data=combined,
     )
-
-
 
 
 def _find_connection_parameter(

@@ -755,9 +755,11 @@ def _display_configuration_changes(config_changes: List[Dict]) -> str:
     """Display all configuration changes as field: old_value → new_value format."""
     if not config_changes:
         return "Configuration updated"
-    
+
     # If we have minimal changes, try to provide a more descriptive summary
-    if len(config_changes) <= 3 and all(not change.get("description", "") for change in config_changes):
+    if len(config_changes) <= 3 and all(
+        not change.get("description", "") for change in config_changes
+    ):
         summary = _generate_minimal_change_summary(config_changes)
         if summary:
             return summary

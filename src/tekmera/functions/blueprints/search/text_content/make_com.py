@@ -54,7 +54,7 @@ def _search_single_blueprint(
 
     # Step 2: Extract text content from each component type
     matches = []
-    matches_by_type = {"modules": 0, "routers": 0, "filters": 0, "error_handlers": 0}
+    matches_by_type = {"modules": 0, "routers": 0, "error_handlers": 0}
 
     # Search modules
     for module_component in all_components["modules"]:
@@ -95,24 +95,7 @@ def _search_single_blueprint(
         except Exception:
             continue
 
-    # Search filters (now properly detected in Make.com)
-    for filter_component in all_components["filters"]:
-        try:
-            text_result = filter_text_content(filter_component, Platform.MAKE_COM)
-            text_content = text_result.data
-
-            if _text_contains_query(text_content, query, case_sensitive):
-                matches_by_type["filters"] += 1
-                matches.append(
-                    {
-                        "component_type": "filter",
-                        "component_id": filter_component.id,
-                        "match_text": _extract_match_context(text_content, query, case_sensitive),
-                        "context": filter_component.extraction_context,
-                    }
-                )
-        except Exception:
-            continue
+    # Note: Filters are excluded from search as they are sub-components of modules
 
     # Search error handlers (now properly detected in Make.com)
     for error_handler_component in all_components["error_handlers"]:

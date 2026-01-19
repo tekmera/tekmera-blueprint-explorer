@@ -54,7 +54,7 @@ def _extract_literal_fields(obj: Any, prefix: str = "", entries: List[tuple] = N
     """
     if entries is None:
         entries = []
-    
+
     text_parts: List[str] = []
 
     if isinstance(obj, dict):
