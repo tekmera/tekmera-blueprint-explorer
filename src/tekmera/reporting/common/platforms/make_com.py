@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Any, Dict
 
 from tekmera.functions.meta.types import Platform, ProjectionResult, create_result
+from tekmera.reporting import diff
 
 from ...diff.diff import BlueprintDiffReport, ChangeScale, DiffSummary, ModuleChange
 
@@ -68,24 +69,65 @@ class MakeComReportingHelper:
         # For now, create a simple stub report for Make.com
         # TODO: Implement topology analysis for Make.com similar to Workfront Fusion
 
+        from tekmera.functions.components.topology import extract_topology
+
+        topology1_result = extract_topology(blueprint1)
+        topology2_result = extract_topology(blueprint2)
+        topology1 = topology1_result.data
+        topology2 = topology2_result.data
+
+        from ...diff.analysis import (
+            calculate_change_counts,
+            calculate_structural_change_score,
+            classify_change_scope,
+            compare_graphs,
+            detect_node_changes,
+        )
+
+        # Perform graph comparison
+        graph_comparison = compare_graphs(topology1, topology2)
+
+        # Convert to module changes
+        module_changes = detect_node_changes(graph_comparison)
+        
         # Connection analysis for Make.com (when topology analysis is implemented)
         from ...diff.analysis.connection_analysis import (
             analyze_connection_changes,
             format_connection_summary_for_html,
         )
 
-        # For now, empty module changes until topology analysis is implemented
-        connection_summary = analyze_connection_changes([], "make_com")
+        connection_summary = analyze_connection_changes(module_changes, "make_com")
         connection_analysis = format_connection_summary_for_html(connection_summary)
+        
+        # Calculate metrics
+        structural_change_score = calculate_structural_change_score(
+            topology1, topology2, graph_comparison
+        )
+        change_counts = calculate_change_counts(module_changes)
+        change_scale = classify_change_scope(
+            structural_change_score, module_changes, graph_comparison
+        )
 
         # Create minimal summary
         summary = DiffSummary(
-            total_changes=0,
-            change_counts={"unchanged": 0, "added": 0, "removed": 0, "modified": 0, "moved": 0},
-            structural_change_score=0.0,
-            change_scale=ChangeScale.UNCHANGED,
-            change_magnitude=0.0,
+            total_changes=len([c for c in module_changes if c.change_type.value != "unchanged"]),
+            change_counts=change_counts,
+            structural_change_score=structural_change_score,
+            change_scale=change_scale,
+            change_magnitude=structural_change_score,
         )
+
+        # Create topology analysis data
+        topology_analysis = {
+            "topology_extracted": True,
+            "nodes_blueprint1": len(topology1.nodes),
+            "edges_blueprint1": len(topology1.edges),
+            "entry_points_blueprint1": len(topology1.entry_points),
+            "nodes_blueprint2": len(topology2.nodes),
+            "edges_blueprint2": len(topology2.edges),
+            "entry_points_blueprint2": len(topology2.entry_points),
+            # Enhanced visualization removed as requested
+        }
 
         # Create minimal diff report
         report = BlueprintDiffReport(
@@ -93,10 +135,10 @@ class MakeComReportingHelper:
             blueprint2_name=blueprint2_name,
             platform=Platform.MAKE_COM,
             summary=summary,
-            module_changes=[],
+            module_changes=module_changes,
             structural_changes=[],
             generated_at=datetime.now(),
-            topology_analysis={"stub": "Make.com topology analysis not yet implemented"},
+            topology_analysis=topology_analysis,
             configuration_analysis={"connection_analysis": connection_analysis},
         )
 

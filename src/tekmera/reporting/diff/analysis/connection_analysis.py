@@ -52,7 +52,7 @@ def analyze_connection_changes(
     """
     # Extract connection-related changes
     connection_changes = _extract_connection_changes(module_changes, platform)
-
+    
     # Group changes by connection transition pattern
     replacement_groups = _group_connection_replacements(connection_changes)
 

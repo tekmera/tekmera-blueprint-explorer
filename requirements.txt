@@ -3,3 +3,4 @@ InquirerPy==0.3.4
 rich==13.7.0
 openai>=1.0.0
 requests>=2.25.0
+deepdiff

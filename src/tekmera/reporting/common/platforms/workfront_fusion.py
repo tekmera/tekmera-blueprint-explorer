@@ -64,7 +64,7 @@ class WorkfrontFusionReportingHelper:
         blueprint1: Dict[str, Any], blueprint2: Dict[str, Any]
     ) -> ProjectionResult[BlueprintDiffReport]:
         """Generate diff report for Workfront Fusion blueprints using topology analysis."""
-
+        
         # Extract basic metadata
         blueprint1_name = blueprint1.get("name", "Unnamed Blueprint 1")
         blueprint2_name = blueprint2.get("name", "Unnamed Blueprint 2")
@@ -74,6 +74,7 @@ class WorkfrontFusionReportingHelper:
 
         topology1_result = extract_topology(blueprint1)
         topology2_result = extract_topology(blueprint2)
+        
         topology1 = topology1_result.data
         topology2 = topology2_result.data
 
@@ -85,10 +86,10 @@ class WorkfrontFusionReportingHelper:
             compare_graphs,
             detect_node_changes,
         )
-
+        
         # Perform graph comparison
         graph_comparison = compare_graphs(topology1, topology2)
-
+        
         # Convert to module changes
         module_changes = detect_node_changes(graph_comparison)
 

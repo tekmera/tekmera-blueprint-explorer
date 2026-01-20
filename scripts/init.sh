@@ -39,7 +39,7 @@ echo -e "${GREEN}✅ Virtual environment created${NC}"
 
 # Activate virtual environment
 echo -e "\n${BLUE}⚡ Activating virtual environment...${NC}"
-source venv/bin/activate
+source venv/Scripts/activate
 
 # Verify activation
 if [[ -z "$VIRTUAL_ENV" ]]; then

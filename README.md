@@ -34,7 +34,7 @@ tekmera analyze ./blueprints
 
 ### Automated Setup (Recommended)
 ```bash
-./scripts/setup-dev.sh  # Handles everything automatically
+./scripts/init.sh  # Handles everything automatically
 ```
 
 ### Manual Installation

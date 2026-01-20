@@ -193,9 +193,16 @@ MAKE_COM_TRIGGER_PATTERNS = {
         "reliability": TriggerReliability.REAL_TIME,
         "scaling": TriggerScaling.SINGLE_ITEM,
     },
+    "twilio:MessageEvent": {
+        "execution_pattern": TriggerExecutionPattern.WEBHOOK,
+        "data_source": TriggerDataSource.WEBHOOK_RECEIVER,
+        "reliability": TriggerReliability.REAL_TIME,
+        "scaling": TriggerScaling.SINGLE_ITEM,
+    },
 }
 
 # Future platform patterns can be added here:
 # N8N_TRIGGER_PATTERNS = {...}
 # POWER_PLATFORM_TRIGGER_PATTERNS = {...}
 # ZAPIER_TRIGGER_PATTERNS = {...}
+
