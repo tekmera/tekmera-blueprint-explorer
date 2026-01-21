@@ -30,12 +30,13 @@ def extract_all_components(
     # Make.com uses flow array (like Fusion) not scenario.modules
     top_level_flow = blueprint.get("flow", [])
     
-    def extract_components_recursive(flow_items, parent_context="main"):
+    def extract_components_recursive(flow_items, parent_context="main", parent_router_id=None):
         """Recursively extract all component types from flow."""
         for item in flow_items:
             # Add context about where this component was found
             item_with_context = {**item, "_extraction_context": parent_context}
-
+            if parent_router_id:
+                item_with_context["source_router_id"] = parent_router_id
             # 1. Check if it's a module (has 'module' field)
             if "module" in item:
                 module_component = ModuleComponent(
@@ -64,7 +65,7 @@ def extract_all_components(
                     route_flow = route.get("flow", [])
                     if route_flow:
                         extract_components_recursive(
-                            route_flow, f"{parent_context}.route[{route_idx}]"
+                            route_flow, f"{parent_context}.route[{route_idx}]", parent_router_id=router_component.id
                         )
 
             # 3. Check if it has a filter (Make.com filters are on individual modules)
@@ -76,6 +77,7 @@ def extract_all_components(
                     raw_data=item_with_context,
                     filter_name=item["filter"].get("name", "Unnamed Filter"),
                     conditions_count=len(item["filter"].get("conditions", [])),
+                    source_router_id=parent_router_id,
                 )
                 components["filters"].append(filter_component)
 

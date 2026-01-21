@@ -16,9 +16,9 @@ class MakeComReportingHelper:
     def get_component_type(change: ModuleChange) -> str:
         """Get Make.com component type for reporting display."""
         module_type = change.module_type.lower()
-
         # Based on real blueprint data analysis - stick to verified patterns
-        if "filter" in module_type:
+        if ("filter" in module_type or change.raw_data.__contains__("filter")) \
+                and change.change_type != diff.ChangeType.REMOVED:
             return "Filters"
         elif "router" in module_type:
             return "Routers"
@@ -89,7 +89,7 @@ class MakeComReportingHelper:
 
         # Convert to module changes
         module_changes = detect_node_changes(graph_comparison)
-        
+
         # Connection analysis for Make.com (when topology analysis is implemented)
         from ...diff.analysis.connection_analysis import (
             analyze_connection_changes,
@@ -98,7 +98,7 @@ class MakeComReportingHelper:
 
         connection_summary = analyze_connection_changes(module_changes, "make_com")
         connection_analysis = format_connection_summary_for_html(connection_summary)
-        
+
         # Calculate metrics
         structural_change_score = calculate_structural_change_score(
             topology1, topology2, graph_comparison

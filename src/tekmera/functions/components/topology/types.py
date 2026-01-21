@@ -60,7 +60,7 @@ class TopologyNode:
     @property
     def is_filter(self) -> bool:
         """Check if this node is a filter."""
-        return "filter" in self.module_type.lower()
+        return self.raw_data.__contains__("filter")
 
     @property
     def is_error_handler(self) -> bool:

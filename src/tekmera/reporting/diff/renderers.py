@@ -23,7 +23,7 @@ class DiffReportTextRenderer:
             self._render_component_changes(),
             self._render_footer(),
         ]
-
+        
         return "\n".join(sections)
 
     def _render_header(self) -> str:
@@ -75,7 +75,7 @@ class DiffReportTextRenderer:
         component_types = self._get_unique_component_types(changed_components)
 
         sections = []
-
+        
         for comp_type in sorted(component_types):
             sections.append(self._render_component_type_section(comp_type, changed_components))
 
@@ -90,7 +90,7 @@ class DiffReportTextRenderer:
         for change in all_changes:
             if self.report._get_component_type(change) == comp_type:
                 type_components.append(change)
-
+        
         # Sort by module ID
         type_components.sort(key=self._sort_key)
 
@@ -142,6 +142,8 @@ class DiffReportTextRenderer:
         if change.configuration_changes:
             if len(change.configuration_changes) == 1:
                 config = change.configuration_changes[0]
+                if "filter" in config.get("description", "").lower():
+                    return f"Filter updated ({config.get('field', 'unknown field')})"
                 return f"Configuration updated ({config.get('field', 'unknown field')})"
             else:
                 return f"Configuration updated ({len(change.configuration_changes)} changes)"

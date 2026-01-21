@@ -159,7 +159,6 @@ def detect_node_changes(comparison: GraphComparisonResult) -> List[ModuleChange]
     # Process modified nodes
     for old_node, new_node in comparison.modified_nodes:
         config_changes = _analyze_configuration_changes(old_node, new_node)
-
         # Extract component metadata for filters
         component_metadata = None
         if new_node.is_filter and "source_router_id" in new_node.raw_data:
@@ -168,7 +167,7 @@ def detect_node_changes(comparison: GraphComparisonResult) -> List[ModuleChange]
             component_metadata = {
                 "source_router_id": getattr(new_node.raw_data, "source_router_id")
             }
-
+            
         change = ModuleChange(
             module_id=new_node.id,
             module_type=new_node.module_type,

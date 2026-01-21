@@ -74,7 +74,7 @@ def analyze_make_com_differences(
         from tekmera.functions.components.filters.diff import (
             analyze_filter_differences,
         )
-
+        
         # Analyze filter-specific differences
         filter_diffs = analyze_filter_differences(
             old_config.get("filter", {}), new_config.get("filter", {}), Platform.MAKE_COM

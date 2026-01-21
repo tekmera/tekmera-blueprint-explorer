@@ -13,28 +13,30 @@ def analyze_make_com_filter(
     """
     differences = []
 
-    # Filter name (cosmetic)
-    old_name = old_filter.get("name", "")
-    new_name = new_filter.get("name", "")
-
-    if old_name != new_name:
-        differences.append(
-            FilterDifference(
-                field_path="name",
-                old_value=old_name,
-                new_value=new_name,
-                change_type="modified",
-                significance="cosmetic",
-                description=f"Filter name changed from '{old_name}' to '{new_name}'",
-                logical_impact="cosmetic",
-            )
-        )
-
     # Conditions
     old_conditions = old_filter.get("conditions", [])
     new_conditions = new_filter.get("conditions", [])
 
     differences.extend(_analyze_make_conditions(old_conditions, new_conditions))
+    if not differences:
+        # Filter name (cosmetic)
+        old_name = old_filter.get("name", "")
+        new_name = new_filter.get("name", "")
+
+        if old_name != new_name:
+            differences.append(
+                FilterDifference(
+                    field_path="name",
+                    old_value=old_name,
+                    new_value=new_name,
+                    change_type="modified",
+                    significance="cosmetic",
+                    description=f"Filter name changed from '{old_name}' to '{new_name}'",
+                    logical_impact="cosmetic",
+                )
+            )
+        
+    
     return differences
 
 
@@ -48,7 +50,7 @@ def _analyze_make_conditions(old_conditions: List, new_conditions: List) -> List
 
     old_count = len(old_conditions) if old_conditions else 0
     new_count = len(new_conditions) if new_conditions else 0
-
+    
     # Structural change to group count
     if old_count != new_count:
         differences.append(
@@ -108,7 +110,6 @@ def _analyze_condition_group(
     old_group: List, new_group: List, group_index: int
 ) -> List[FilterDifference]:
     differences = []
-
     old_count = len(old_group) if old_group else 0
     new_count = len(new_group) if new_group else 0
 
@@ -174,13 +175,17 @@ def _analyze_individual_condition(
 ) -> List[FilterDifference]:
     differences = []
 
-    # Extract operator first (following Workfront Fusion pattern)
-    old_operator = old_condition.get("operator", "")
-    new_operator = new_condition.get("operator", "")
+    # Extract operator first 
+    old_operator = old_condition.get("o", "")
+    new_operator = new_condition.get("o", "")
+    
+    # Field (left side) - Make.com typically uses 'a' for field name
+    old_field = old_condition.get("a", "")
+    new_field = new_condition.get("a", "")
 
-    # Field (left side) - Make.com typically uses 'label' for field name
-    old_field = old_condition.get("label", old_condition.get("field", ""))
-    new_field = new_condition.get("label", new_condition.get("field", ""))
+    # Value (right side)
+    old_value = old_condition.get("b", "")
+    new_value = new_condition.get("b", "")
 
     if old_field != new_field:
         differences.append(
@@ -195,11 +200,7 @@ def _analyze_individual_condition(
             )
         )
 
-    # Value (right side)
-    old_value = old_condition.get("value", "")
-    new_value = new_condition.get("value", "")
-
-    if old_value != new_value:
+    elif old_value != new_value:
         significance = (
             "critical" if _is_business_critical_value_change(old_value, new_value) else "important"
         )
@@ -219,7 +220,7 @@ def _analyze_individual_condition(
         )
 
     # Operator
-    if old_operator != new_operator:
+    elif old_operator != new_operator:
         differences.append(
             FilterDifference(
                 field_path=f"conditions.{group_index}.{condition_index}.operator",
@@ -231,7 +232,6 @@ def _analyze_individual_condition(
                 logical_impact="changes_logic",
             )
         )
-
     return differences
 
 
