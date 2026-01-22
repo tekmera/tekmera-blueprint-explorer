@@ -106,17 +106,15 @@ class SummaryReportTextRenderer:
 
     def _render_advanced_analysis(self) -> List[str]:
         """Render advanced analysis sections."""
+        separator = '\n + '
         return [
             "",
             "",
-            "1. FLOW STRUCTURE MAP",
+            "1. CONNECTIONS",
             "-" * 30,
-            "🔴 STUB: Requires real data analysis",
-            f"Total top-level branches: {self.report.flow_structure.total_top_level_branches}",
-            f"Longest execution path: {self.report.flow_structure.longest_execution_path}",
-            f"Deepest nested router level: {self.report.flow_structure.deepest_nested_router_level}",
-            f"Iterator/aggregator positions: {', '.join(self.report.flow_structure.iterator_aggregator_positions) or 'None identified'}",
-            "Purpose: gives reviewers a skeletal understanding before diving into detail.",
+            f"Total # of connections: {self.report.built_in_connections.total_connections}",
+            f"List of connections:\n {'+ ' + separator.join(component.connection_label for component in self.report.built_in_connections.connection_types) or 'None identified'}",
+            "Purpose: gives reviewers a list of current connections.",
             "",
             "2. ROUTING AND LOGIC PATTERNS",
             "-" * 30,
@@ -201,7 +199,7 @@ class SummaryReportJSONRenderer:
             "generated_at": self.report.metadata.generated_at.isoformat(),
             "insights": self.report.insights.copy(),
             "trigger": self._render_trigger_data(),
-            "flow_structure": self._render_flow_structure(),
+            "flow_structure": self._render_connections(),
             "routing_patterns": self._render_routing_patterns(),
             "external_dependencies": self._render_external_dependencies(),
             "data_surface": self._render_data_surface(),
@@ -241,13 +239,11 @@ class SummaryReportJSONRenderer:
             },
         }
 
-    def _render_flow_structure(self) -> Dict[str, Any]:
+    def _render_connections(self) -> Dict[str, Any]:
         """Render flow structure data for JSON."""
         return {
-            "total_top_level_branches": self.report.flow_structure.total_top_level_branches,
-            "longest_execution_path": self.report.flow_structure.longest_execution_path,
-            "deepest_nested_router_level": self.report.flow_structure.deepest_nested_router_level,
-            "iterator_aggregator_positions": self.report.flow_structure.iterator_aggregator_positions.copy(),
+            "total_number_of_connections": self.report.built_in_connections.total_connections,
+            "connections": self.report.built_in_connections.connection_types.copy(),
         }
 
     def _render_routing_patterns(self) -> Dict[str, Any]:

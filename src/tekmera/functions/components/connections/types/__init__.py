@@ -7,6 +7,8 @@ Defines ConnectionComponent class and platform-specific connection typing.
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
+from tekmera.functions.meta.platform_detection import detect_platform
+
 from ....meta.types import ComponentBase, Platform
 
 
@@ -41,7 +43,7 @@ class ConnectionComponent(ComponentBase):
 
 def create_connection_component(
     module_id: str,
-    platform: Platform,
+    blueprint: Dict[str, Any],
     extraction_context: str,
     raw_module_data: Dict[str, Any],
     connection_data: Dict[str, Any],
@@ -51,7 +53,7 @@ def create_connection_component(
 
     Args:
         module_id: ID of the module using this connection
-        platform: Platform (Workfront Fusion, Make.com, etc.)
+        blueprint: Blueprint configuration
         extraction_context: Context where connection was extracted
         raw_module_data: Full module configuration
         connection_data: Extracted connection information
@@ -59,17 +61,18 @@ def create_connection_component(
     Returns:
         ConnectionComponent instance
     """
+    platform = detect_platform(blueprint)
     if platform == Platform.WORKFRONT_FUSION:
         from .workfront_fusion import create_workfront_fusion_connection
 
         return create_workfront_fusion_connection(
-            module_id, platform, extraction_context, raw_module_data, connection_data
+            module_id, platform, extraction_context, raw_module_data
         )
     elif platform == Platform.MAKE_COM:
         from .make_com import create_make_com_connection
 
         return create_make_com_connection(
-            module_id, platform, extraction_context, raw_module_data, connection_data
+            module_id, platform, extraction_context, raw_module_data
         )
     else:
         # Generic fallback

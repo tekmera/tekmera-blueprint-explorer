@@ -3,7 +3,7 @@
 import re
 from typing import Any, Dict, List
 
-from .....meta.types import Platform
+from tekmera.functions.meta.types import Platform
 from . import ConnectionComponent
 
 
@@ -12,7 +12,6 @@ def create_make_com_connection(
     platform: Platform,
     extraction_context: str,
     raw_module_data: Dict[str, Any],
-    connection_data: Dict[str, Any],
 ) -> ConnectionComponent:
     """
     Create a ConnectionComponent for Make.com.

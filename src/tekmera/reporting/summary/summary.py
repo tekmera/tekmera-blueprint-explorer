@@ -4,11 +4,25 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+from tekmera.functions.components.connections.types import ConnectionComponent, create_connection_component
 from tekmera.functions.meta.platform_detection import detect_platform
 from tekmera.functions.meta.trigger_types import UniversalTrigger
 from tekmera.functions.meta.types import Platform, ProjectionResult, create_result
+from tekmera.functions.meta.utils.make_com.extract_components import extract_all_components
 
 from ..common.types import BaseReport, ReportMetadata, ReportType
+
+@dataclass
+class BuiltInConnections:
+    """Connections analysis - STUB: requires real data analysis."""
+
+    def __init__(
+            self,
+            total_connections: int,
+            connections: List[ConnectionComponent]
+    ):
+        self.total_connections = total_connections
+        self.connection_types = connections
 
 
 @dataclass
@@ -109,7 +123,7 @@ class BlueprintSummaryReport(BaseReport):
         generated_at: Optional[datetime] = None,
         insights: Optional[List[str]] = None,
         trigger: Optional[UniversalTrigger] = None,
-        flow_structure: Optional[FlowStructureMap] = None,
+        built_in_connections: Optional[BuiltInConnections] = None,
         routing_patterns: Optional[RoutingAndLogicPatterns] = None,
         external_dependencies: Optional[ExternalDependencyTable] = None,
         data_surface: Optional[DataSurfaceSummary] = None,
@@ -135,7 +149,7 @@ class BlueprintSummaryReport(BaseReport):
 
         # Analysis sections
         self.trigger = trigger
-        self.flow_structure = flow_structure or FlowStructureMap()
+        self.built_in_connections = built_in_connections or BuiltInConnections(0, {})
         self.routing_patterns = routing_patterns or RoutingAndLogicPatterns()
         self.external_dependencies = external_dependencies or ExternalDependencyTable()
         self.data_surface = data_surface or DataSurfaceSummary()
@@ -194,6 +208,8 @@ def generate_summary_report(blueprint: Dict[str, Any]) -> ProjectionResult[Bluep
     # Generate insights
     insights = generate_insights(component_counts, total_components)
 
+    connections = generate_connections(blueprint)
+
     # Create the new reporting format
     report = BlueprintSummaryReport(
         blueprint_name=blueprint_name,
@@ -203,6 +219,7 @@ def generate_summary_report(blueprint: Dict[str, Any]) -> ProjectionResult[Bluep
         generated_at=datetime.now(),
         insights=insights,
         trigger=trigger,
+        built_in_connections=connections,
     )
 
     # Return in the same format but with new report type
@@ -245,3 +262,29 @@ def generate_insights(component_counts: Dict[str, int], total_components: int) -
         insights.append("No error handlers detected - consider adding for robustness")
 
     return insights
+
+def generate_connections(blueprint: Dict[str, Any]) -> BuiltInConnections:
+    """Generate built-in connections analysis given the blueprint data."""
+    # Placeholder implementation
+    connections = []
+    
+    components = extract_all_components(blueprint)
+    for component in components["modules"]:
+        if ('__IMTCONN__' in component.raw_data.get('parameters', {})):
+            connection = create_connection_component(
+                component.id,
+                blueprint,
+                component.extraction_context,
+                component.raw_data,
+                component.raw_data.get('parameters', {}).get('__IMTCONN__', {})
+            )
+            connections.append(connection)
+
+    # Remove duplicates based on connection_label
+    seen = set()
+    connections = [obj for obj in connections if obj.connection_label not in seen and not seen.add(obj.connection_label)]
+    
+    return BuiltInConnections(
+        total_connections=len(connections),
+        connections=connections
+    )

@@ -187,17 +187,16 @@ class HTMLSummaryFormatter(BaseFormatter):
 
     def _generate_advanced_sections(self, report: BlueprintSummaryReport) -> str:
         """Generate the advanced analysis sections (currently stubs)."""
+        separator = '<br> + '
         return f"""
-                <section id="flow-structure">
-                    <h2>1. Flow Structure Map</h2>
+                <section id="connections">
+                    <h2>1. Connections</h2>
                     <div class="section-card">
-                        <div class="stub-warning">🔴 STUB: Requires real data analysis</div>
-                        <div class="info-item">Total top-level branches: {report.flow_structure.total_top_level_branches}</div>
-                        <div class="info-item">Longest execution path: {report.flow_structure.longest_execution_path}</div>
-                        <div class="info-item">Deepest nested router level: {report.flow_structure.deepest_nested_router_level}</div>
-                        <p><em>Purpose: gives reviewers a skeletal understanding before diving into detail.</em></p>
+                        <div class="info-item">Total # of connections: {report.built_in_connections.total_connections}</div>
+                        <div class="info-item">List of connections:<br> {'+ ' + separator.join(component.connection_label for component in report.built_in_connections.connection_types) or 'None identified'}</div>
+                        <p><em>Purpose: gives reviewers a list of current connections.</em></p>
                     </div>
-                </section>
+                </section>  
 
                 <section id="routing-patterns">
                     <h2>2. Routing and Logic Patterns</h2>

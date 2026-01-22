@@ -43,7 +43,7 @@ def render_and_output(report: BaseReport, format_type: str, base_filename: str =
 
     # Render the report
     rendered_output = formatter.render(report)
-
+    
     # Handle output
     if formatter.should_write_to_file():
         # Write to file and open it

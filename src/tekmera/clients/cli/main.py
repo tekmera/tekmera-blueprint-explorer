@@ -135,7 +135,7 @@ def report(blueprint_path, format):
         from ...reporting.summary import generate_summary_report
 
         result = generate_summary_report(blueprint)
-
+        
         # Use unified rendering system
         blueprint_name = _simplify_blueprint_name(result.data.blueprint_name)
         render_and_output(result.data, format, f"{blueprint_name}_report")
