@@ -23,12 +23,9 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "InquirerPy>=0.3.4",
     "rich>=13.0.0",
     "click>=8.0.0",
-    "requests>=2.31.0",  # Required for Lemon Squeezy API
-    "openai>=1.0.0",  # Optional for AI features
-    "tiktoken>=0.5.0",  # Required by OpenAI library
+    "deepdiff>=6.0.0",
 ]
 
 [project.optional-dependencies]

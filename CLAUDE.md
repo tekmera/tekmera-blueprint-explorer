@@ -4,161 +4,104 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Tekmera Explorer is a professional command-line tool for analyzing exported blueprint JSON files from multiple automation platforms. It provides comprehensive diagnostic capabilities and cross-blueprint analysis with a freemium licensing model.
+Tekmera Explorer is a command-line tool for analyzing exported blueprint JSON files from automation platforms (Workfront Fusion and Make.com). It reads blueprint JSON, projects it through a pure-functional analysis engine, and emits summary reports, diff reports, and cross-blueprint search results in table, JSON, or HTML form.
 
 ## Architecture
 
-**CURRENT**: Pure functional system with clean separation of concerns.
+Three top-level packages under `src/tekmera/`:
 
-- **Functions System** (`src/tekmera/functions/`): Pure functional analysis engine
-- **Reporting System** (`src/tekmera/reporting/`): Report generation and visualization  
-- **Client System** (`src/tekmera/clients/`): CLI and output formatting
+- **`functions/`** — Pure functional analysis engine. Platform-aware (auto-detected). No side effects, no dependencies on other tekmera packages. Entry point: `tekmera.functions.project(category, subcategory, function, input, **kwargs)`.
+- **`reporting/`** — Composes `functions/` outputs into structured `summary` and `diff` reports.
+- **`clients/cli/`** — Click-based CLI and output formatters (table/JSON/HTML).
 
-The `tekmera` command provides direct analysis commands using the functional system.
+See `docs/architecture/README.md` for the longer description of package relationships and the dispatch model.
 
 ## Current CLI Commands
 
 ```bash
-# Analysis commands
-tekmera report blueprint.json                              # Generate comprehensive summary report
-tekmera search "query" ./blueprints/                       # Search text content across blueprints  
-tekmera diff blueprint1.json blueprint2.json               # Compare blueprints and generate diff report
-
-# Demo and sample generation
-tekmera demo --platform workfront_fusion                   # Generate sample Workfront Fusion report
-tekmera demo --platform make_com --format html             # Generate sample Make.com HTML report
+tekmera report blueprint.json                              # Summary report for a single blueprint
+tekmera search ./blueprints/ "query"                       # Search text content across blueprints
+tekmera diff blueprint1.json blueprint2.json               # Compare two blueprints
+tekmera demo --platform workfront_fusion                   # Sample report (for demos/docs)
+tekmera demo --platform make_com --format html             # Sample Make.com HTML report
 ```
+
+All commands accept `--format {table|json|html}`. HTML output is written into `reports/`.
 
 ## Development Commands
 
 ### Environment Setup
+
 ```bash
-# First-time setup
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
-pip install -e .
-
-# Daily development workflow 
-source venv/bin/activate
-tekmera report ./blueprints/blueprint-14926.json
+pip install -e ".[dev]"
+pip install -r requirements-dev.txt
 ```
 
-### Code Quality and CI
+### Code Quality
+
 ```bash
-# Auto-fix code issues and run all checks
-black src/ tests/
-flake8 src/ tests/
+black src tests
+isort src tests
+flake8 src/ --extend-ignore=E203,W503,E501,F541
 mypy src/
-pytest tests/ -v
 ```
 
 ### Testing
+
 ```bash
-# Run tests with coverage
 pytest tests/ -v --cov=tekmera --cov-report=term-missing
-
-# Run specific test module
-pytest tests/test_core/ -v
-```
-
-### Linting and Formatting
-```bash
-# Auto-format code (done by check-dev.sh)
-black src tests
-isort src tests
-autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive src/
-
-# Manual linting check
-flake8 src/ --extend-ignore=E203,W503,E501,F541
 ```
 
 ### Binary Build
+
 ```bash
-# Test binary build
+./scripts/build.sh
+# Or directly:
 pyinstaller --onefile --name tekmera-test-local src/tekmera/__main__.py
 ```
 
-## Architecture
+## Blueprint Data Structure and Examples
 
-### Core Components
+Blueprint JSON files live under `blueprints/`:
 
-- **`src/tekmera/core/`**: Blueprint parsing and module analysis
-  - `parser.py`: JSON parsing, module extraction from nested flows/routes/error handlers  
-  - `analyzer.py`: Field extraction and module analysis
+- **`blueprints/*.json`** — Workfront Fusion examples
+- **`blueprints/make/*.blueprint.json`** — Make.com examples
+- **`blueprints/CLIENTS/`** — Real client exports (not for redistribution)
 
-- **`src/tekmera/interfaces/cli/`**: Command-line interfaces
-  - `main.py`: Main CLI entry point with click commands
-  - `interactive.py`: Interactive menu system with feature gating
-  - `explorer.py`: Module-by-module scenario exploration
-  - `search.py`: Cross-blueprint search capabilities
-  - `trace.py`: Live scenario walkthrough (premium)
+### Workfront Fusion Structure
 
-- **`src/tekmera/analysis/`**: Analysis engines  
-  - `corpus_analyzer.py`: Cross-blueprint analysis and reporting
-  - `connections.py`: Connection environment analysis
-  - `flow_tracer.py`: Execution flow tracing
-  - `flow_walker.py`: Live scenario walkthrough engine
-
-
-- **`src/tekmera/comparison/`**: Blueprint comparison tools
-  - `diff_engine.py`: Main diff interface
-  - `detailed_diff.py`: Module-level change detection  
-  - `simple_diff.py`: Basic diff utilities
-
-- **`src/tekmera/config/`**: Configuration and feature management
-  - `menu_system.py`: Centralized menu configuration with feature gating
-
-- **`src/tekmera/infra/`**: Infrastructure and licensing
-  - `license.py`: Core license management and validation
-  - `license_ui.py`: License user interface components
-  - `lemon_squeezy.py`: Lemon Squeezy API integration
-
-### Key Architectural Patterns
-
-1. **Modular CLI**: Click-based command structure with subcommands for different features
-2. **Interactive Menus**: InquirerPy-based menu system with rich formatting
-3. **Feature Gating**: Premium features automatically enabled based on license status
-4. **Recursive Parsing**: Blueprint parser handles nested flows, routes, and error handlers
-
-### Blueprint Data Structure and Examples
-
-Automation platform blueprints are JSON files located in the `blueprints/` directory:
-
-- **`blueprints/*.json`** - Workfront Fusion blueprint examples
-- **`blueprints/make/*.blueprint.json`** - Make.com blueprint examples  
-- **`blueprints/CLIENTS/`** - Real client blueprint examples (organized by client)
-
-#### Workfront Fusion Structure
 ```json
 {
   "name": "Scenario Name",
   "flow": [
     {
       "id": 1,
-      "module": "workfront-workfront:searchv3", 
-      "routes": [{"flow": [...]}],  // Nested flows
-      "onerror": [...]  // Error handler flows
+      "module": "workfront-workfront:searchv3",
+      "routes": [{"flow": [...]}],
+      "onerror": [...]
     }
   ],
   "metadata": {
     "designer": {
-      "orphans": [[...]]  // Disconnected modules
+      "orphans": [[...]]
     }
   }
 }
 ```
 
-#### Make.com Structure
+### Make.com Structure
+
 ```json
 {
-  "name": "Scenario Name", 
+  "name": "Scenario Name",
   "flow": [
     {
       "id": 1,
       "module": "builtin:BasicRouter",
-      "routes": [{"flow": [...]}],  // Similar to Fusion
-      "filter": {                   // Filters on individual modules
+      "routes": [{"flow": [...]}],
+      "filter": {
         "name": "Filter Name",
         "conditions": [[...]]
       }
@@ -167,56 +110,29 @@ Automation platform blueprints are JSON files located in the `blueprints/` direc
 }
 ```
 
-#### Key Differences
-- **Workfront Fusion**: Uses `workfront-service:action` module naming
-- **Make.com**: Uses `service:action` or `builtin:action` module naming  
-- **Make.com Routers**: Specifically `builtin:BasicRouter` modules
-- **Make.com Filters**: Attached to individual modules, not separate components
+### Key Differences
 
-### License Integration
+- **Workfront Fusion**: `workfront-service:action` module naming
+- **Make.com**: `service:action` or `builtin:action` module naming
+- **Make.com Routers**: specifically `builtin:BasicRouter`
+- **Make.com Filters**: attached to individual modules, not separate components
 
-- Simple local licensing system without external dependencies  
-- Premium features are gated but gracefully degrade to free functionality
-- CLI commands: `tekmera license status|activate|deactivate|local`
-- License data stored in `~/.tekmera/license.json` with machine fingerprinting
-- Local pro mode: Set `TEKMERA_LOCAL_PRO=true` for development/testing
-- License key format: `TEKMERA-PRO-{edition}-{hash}`
+## Code Style
 
-### Configuration Management
+- Black, 100-character line length
+- isort with black profile
+- Flake8 (ignores E203, W503, E501, F541)
+- Type hints with mypy
 
-- **New `init` command**: Interactive setup wizard for credentials
-- **Secure storage**: Credentials stored in `~/.tekmera/config.json` (mode 600)
-- **Automatic detection**: License and OpenAI keys read from config or environment
-- **Fallback support**: Environment variables still work if config not available
-- **Config manager**: `src/tekmera/config/config_manager.py` handles all credential management
+## Testing Strategy
 
-### Development Workflow
-
-1. Make changes to source code
-2. Run `./scripts/check-dev.sh` to auto-fix and validate
-3. Test with `./scripts/run-dev.sh analyze ./blueprints`
-4. Run specific tests if needed
-5. Commit when all checks pass
-
-### Code Style
-
-- Black formatting with 100 character line length
-- isort for import sorting with black profile
-- Flake8 linting (ignores E203, W503, E501, F541)
-- Type hints enforced with mypy (warnings only during development)
-- Auto-removal of unused imports/variables with autoflake
-
-### Testing Strategy
-
-- pytest with coverage reporting
-- Tests organized by module: `test_core/`, `test_analysis/`, etc.
-- Binary build testing in CI
-- License integration testing
+- pytest with coverage
+- Tests under `tests/functions/` mirror the `src/tekmera/functions/` tree
 - Security scanning with bandit
 - Dependency auditing with pip-audit
 
 ## Entry Points
 
-- CLI entry: `src/tekmera/interfaces/cli/main.py:main()`
+- CLI entry: `src/tekmera/clients/cli/main.py:main()`
 - PyInstaller entry: `src/tekmera/__main__.py`
-- Package script: `tekmera` command defined in pyproject.toml
+- Package script: `tekmera` (defined in `pyproject.toml`)
