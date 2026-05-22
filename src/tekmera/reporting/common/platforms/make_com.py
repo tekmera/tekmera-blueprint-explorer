@@ -4,9 +4,11 @@ from datetime import datetime
 from typing import Any, Dict
 
 from tekmera.functions.meta.types import Platform, ProjectionResult, create_result
-# from tekmera.reporting import diff
 
 from ...diff.diff import BlueprintDiffReport, DiffSummary, ModuleChange
+
+# from tekmera.reporting import diff
+
 
 
 class MakeComReportingHelper:
