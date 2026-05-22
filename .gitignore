@@ -261,6 +261,9 @@ cache/
 api_keys.txt
 credentials.json
 
+# Real client blueprint exports — never commit
+blueprints/CLIENTS/
+
 # Development tools
 .pytest_cache/
 .coverage

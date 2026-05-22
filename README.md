@@ -46,7 +46,7 @@ Installation / Setup
 Windows (PowerShell / Git Bash)
 ```powershell
 # Clone the repo
-git clone https://github.com/YOUR_ORG/tekmera-fusion-explorer.git
+git clone https://github.com/tekmera/tekmera-fusion-explorer.git
 cd tekmera-fusion-explorer
 
 # Create & activate a venv
@@ -61,7 +61,7 @@ pip install -e .
 macOS / Linux
 ```bash
 # Clone
-git clone https://github.com/YOUR_ORG/tekmera-fusion-explorer.git
+git clone https://github.com/tekmera/tekmera-fusion-explorer.git
 cd tekmera-fusion-explorer
 
 # Create & activate a venv
