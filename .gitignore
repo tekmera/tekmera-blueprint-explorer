@@ -232,6 +232,7 @@ $RECYCLE.BIN/
 *.json
 config.ini
 secrets.env
+CityLens.blueprint.json
 
 # Output files
 reports/
