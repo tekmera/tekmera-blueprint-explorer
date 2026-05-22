@@ -3,7 +3,9 @@ Table formatter for CLI output.
 """
 
 import json
-from typing import Dict, List, Any, Callable
+from typing import Callable, Dict
+
+from .html_search import format_search_html
 
 
 def format_result(result, format_type="table"):
@@ -33,11 +35,11 @@ def format_result(result, format_type="table"):
             html_content = HTML_FORMATTERS[function_name](result)
 
             # Create output file
-            from pathlib import Path
-            from datetime import datetime
+            import os
             import platform
             import subprocess
-            import os
+            from datetime import datetime
+            from pathlib import Path
 
             reports_dir = Path("reports")
             reports_dir.mkdir(exist_ok=True)
@@ -146,11 +148,11 @@ def _format_single_blueprint_search(search_result):
     for comp_type in matches_by_type.keys():
         component_groups[comp_type] = []
 
-    for match in all_matches: 
+    for match in all_matches:
         component_type = match.get("component_type", "unknown")
 
         # Check if component_type exists in component_groups as substrings (e.g., module in modules)
-        if any(component_type in item for item in component_groups):    
+        if any(component_type in item for item in component_groups):
             component_groups[f"{component_type}s"].append(match)
 
     # Display each component type
@@ -359,7 +361,6 @@ TABLE_FORMATTERS: Dict[str, Callable] = {
 }
 
 # HTML formatter registry for ProjectionResult objects
-from .html_search import format_search_html
 
 HTML_FORMATTERS: Dict[str, Callable] = {
     "blueprints.search.text_content": format_search_html,

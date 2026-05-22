@@ -1,7 +1,7 @@
 """Workfront Fusion connection text content extraction (strict literal)."""
 
 import json
-from typing import Any, Dict, List
+from typing import List
 
 from .....meta.types import ModuleComponent, ModuleResult, Platform, create_module_result
 

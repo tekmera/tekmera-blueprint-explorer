@@ -5,10 +5,10 @@ Provides detailed descriptions for newly added components in diff reports,
 following the established Functions System pattern for platform abstraction.
 """
 
-from typing import Any
+# from typing import Any
 
-from tekmera.functions.meta.types import Platform
 from tekmera.functions.components.topology.types import TopologyNode
+from tekmera.functions.meta.types import Platform
 
 from .filters import generate_filter_addition_description
 from .modules import generate_module_addition_description

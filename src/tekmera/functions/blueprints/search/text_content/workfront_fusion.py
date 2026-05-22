@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List
 
-from ....components.filters.content.text_content import text_content as filter_text_content
+# from ....components.filters.content.text_content import text_content as filter_text_content
 from ....components.modules.content.text_content import text_content as module_text_content
 from ....components.routers.content.text_content import text_content as router_text_content
 from ....meta.types import Platform, ProjectionResult, create_result

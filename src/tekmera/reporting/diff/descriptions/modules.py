@@ -7,8 +7,8 @@ following the Functions System registry pattern for platform abstraction.
 
 from typing import Dict
 
-from tekmera.functions.meta.types import Platform
 from tekmera.functions.components.topology.types import TopologyNode
+from tekmera.functions.meta.types import Platform
 
 
 def generate_module_addition_description(node: TopologyNode) -> str:

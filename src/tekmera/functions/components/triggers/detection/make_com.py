@@ -28,7 +28,7 @@ def detect_trigger(blueprint: Dict[str, Any]) -> ProjectionResult[UniversalTrigg
 
     if not modules:
         raise ValueError("No modules found in Make.com blueprint")
-    
+
     # Find the first module (lowest ID) - this is the trigger
     trigger_module = min(modules, key=lambda m: m.get("id", float("inf")))
     if not trigger_module:

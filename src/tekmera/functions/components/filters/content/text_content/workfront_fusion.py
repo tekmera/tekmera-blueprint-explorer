@@ -1,7 +1,7 @@
 """Workfront Fusion filter text content extraction (strict literal)."""
 
 import json
-from typing import Any, Dict, List, Tuple
+from typing import List, Tuple
 
 from .....meta.types import FilterComponent, ModuleResult, Platform, create_module_result
 

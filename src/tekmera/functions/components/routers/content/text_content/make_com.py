@@ -1,7 +1,7 @@
 """Make.com router text content extraction (strict literal)."""
 
 import json
-from typing import Any, Dict, List
+from typing import Any, List
 
 from .....meta.types import ModuleResult, Platform, RouterComponent, create_module_result
 

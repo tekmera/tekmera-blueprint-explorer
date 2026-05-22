@@ -1,7 +1,7 @@
 """Make.com module text content extraction (strict literal with structured entries)."""
 
 import json
-from typing import Any, Dict, List, Tuple
+from typing import Any, List, Tuple
 
 from .....meta.types import ModuleComponent, ModuleResult, Platform, create_module_result
 
