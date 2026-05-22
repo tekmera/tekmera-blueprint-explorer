@@ -10,7 +10,6 @@ from ...diff.diff import BlueprintDiffReport, DiffSummary, ModuleChange
 # from tekmera.reporting import diff
 
 
-
 class MakeComReportingHelper:
     """Helper class for Make.com specific reporting logic."""
 

@@ -62,7 +62,7 @@ def detect_trigger(blueprint: Dict[str, Any]) -> ProjectionResult[UniversalTrigg
     # Extract connection information
     connection = TriggerConnection()
     # Custom webhook
-    if "hook" in parameters.lower():
+    if "hook" in parameters:
         connection.requires_auth = False
         connection.connection_type = "custom_webhook"
         connection.connection_id = str(parameters["hook"])
