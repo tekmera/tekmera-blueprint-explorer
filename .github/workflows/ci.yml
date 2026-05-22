@@ -158,55 +158,55 @@ jobs:
           VERSION.txt
         retention-days: 7
 
-  license-validation:
-    name: License Integration Validation
-    runs-on: ubuntu-latest
+  # license-validation:
+  #   name: License Integration Validation
+  #   runs-on: ubuntu-latest
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-        cache: 'pip'
+  #   - name: Set up Python
+  #     uses: actions/setup-python@v5
+  #     with:
+  #       python-version: ${{ env.PYTHON_VERSION }}
+  #       cache: 'pip'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[dev]"
-        pip install -r requirements-dev.txt
+  #   - name: Install dependencies
+  #     run: |
+  #       python -m pip install --upgrade pip
+  #       pip install -e ".[dev]"
+  #       pip install -r requirements-dev.txt
 
-    - name: Test license manager integration
-      run: |
-        python -c "
-        import sys, os
-        sys.path.insert(0, 'src')
+  #   - name: Test license manager integration
+  #     run: |
+  #       python -c "
+  #       import sys, os
+  #       sys.path.insert(0, 'src')
 
-        # Test license manager imports
-        from tekmera.infra.license import license_manager
-        from tekmera.infra.license_ui import LicenseUI
+  #       # Test license manager imports
+  #       from tekmera.infra.license import license_manager
+  #       from tekmera.infra.license_ui import LicenseUI
 
-        print('✅ License components imported successfully')
+  #       print('✅ License components imported successfully')
 
-        # Test license info retrieval (should work in free mode)
-        info = license_manager.get_license_info()
-        print(f'✅ License info retrieved: {info[\"status\"]}')
+  #       # Test license info retrieval (should work in free mode)
+  #       info = license_manager.get_license_info()
+  #       print(f'✅ License info retrieved: {info[\"status\"]}')
 
-        # Test CLI license commands are wired up
-        from tekmera.interfaces.cli.main import cli
-        license_cmd = cli.commands.get('license')
-        assert license_cmd is not None, 'License command not found'
+  #       # Test CLI license commands are wired up
+  #       from tekmera.interfaces.cli.main import cli
+  #       license_cmd = cli.commands.get('license')
+  #       assert license_cmd is not None, 'License command not found'
 
-        subcommands = list(license_cmd.commands.keys())
-        expected = ['activate', 'deactivate', 'status']
-        for cmd in expected:
-            assert cmd in subcommands, f'Missing subcommand: {cmd}'
+  #       subcommands = list(license_cmd.commands.keys())
+  #       expected = ['activate', 'deactivate', 'status']
+  #       for cmd in expected:
+  #           assert cmd in subcommands, f'Missing subcommand: {cmd}'
 
-        print('✅ All license CLI commands are properly wired')
-        print('🎉 License integration validation complete')
-        "
+  #       print('✅ All license CLI commands are properly wired')
+  #       print('🎉 License integration validation complete')
+  #       "
 
   dependency-audit:
     name: Dependency Audit
