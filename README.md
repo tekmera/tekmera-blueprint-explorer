@@ -1,10 +1,20 @@
 ![Tekmera logo](./assets/tekmera_icon.png)
 
-# Tekmera Fusion Explorer
+# Tekmera Fusion Explorer: An Intelligence Command-line Tool for Automation Analysis
+| | |
+| --- | --- |
+| Packages | [![click v8.x](https://img.shields.io/badge/click-v8.x-00599C.svg)](https://click.palletsprojects.com/) [![deepdiff v6.x](https://img.shields.io/badge/deepdiff-v6.x-2E8B57.svg)](https://zepworks.com/deepdiff/) [![rich v13.x](https://img.shields.io/badge/rich-v13.x-008080.svg)](https://rich.readthedocs.io/) |
+| Testing | [![pytest v7.x](https://img.shields.io/badge/pytest-v7.x-0A9EDC.svg)](https://pytest.org/) [![pytest-cov v4.x](https://img.shields.io/badge/pytest--cov-v4.x-6E56CF.svg)](https://pytest-cov.readthedocs.io/) |
+| Code Quality | [![black v25.x](https://img.shields.io/badge/black-v25.x-000000.svg)](https://black.readthedocs.io/) [![isort v6.x](https://img.shields.io/badge/isort-v6.x-ef8336.svg)](https://pycqa.github.io/isort/) [![flake8 v7.x](https://img.shields.io/badge/flake8-v7.x-4B8BBE.svg)](https://flake8.pycqa.org/) [![mypy v1.x](https://img.shields.io/badge/mypy-v1.x-2B5B84.svg)](https://mypy.readthedocs.io/) |
+| Security & Audit | [![bandit v1.x](https://img.shields.io/badge/bandit-v1.x-8A2BE2.svg)](https://bandit.readthedocs.io/) [![pip-audit v2.x](https://img.shields.io/badge/pip--audit-v2.x-F7B500.svg)](https://github.com/pypa/pip-audit) |
+| Build & Packaging | [![pyinstaller v6.x](https://img.shields.io/badge/pyinstaller-v6.x-306998.svg)](https://pyinstaller.org/) |
+
+# What is it?
 Tekmera Fusion Explorer is a command-line intelligence tool that analyzes exported automation "blueprint" JSON files (Workfront Fusion, Make.com, etc.) and turns them into searchable, auditable, and explainable reports. It helps integration teams discover field usage, module counts, differences between versions, and with an OpenAI API key setup — AI-generated natural-language summaries.
 
 Table of Contents
 -----------------
+- [Main Features](#main-features)
 - [Prerequisites](#prerequisites)
 - [Installation / Setup](#installation--setup)
 - [Usage (with Examples)](#usage-with-examples)
@@ -13,6 +23,14 @@ Table of Contents
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact / Acknowledgements](#contact--acknowledgements)
+
+Main Features
+-------------
+- Analyze automation (Workfront Fusion and Make.com) blueprint JSON files with platform-aware parsing.
+- Generate summary reports for a single blueprint in table, JSON, or HTML formats.
+- Search text content across blueprint files to find modules, fields, and other references.
+- Compare two blueprints to spot structural and behavioral differences.
+- Use the CLI with built-in reporting for automation analysis workflows.
 
 Prerequisites
 -------------
