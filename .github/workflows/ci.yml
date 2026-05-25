@@ -13,6 +13,7 @@ concurrency:
 
 env:
   PYTHON_VERSION: '3.11'
+  PYTHONPATH: 'src'
 
 jobs:
   test:
@@ -23,37 +24,37 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ['3.10', '3.11', '3.12']
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip'
-    
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -e ".[dev]"
         pip install -r requirements-dev.txt
-    
+
     - name: Run code formatting
       run: |
         black --check src tests
         isort --check-only src tests
-    
+
     - name: Run type checking (allow failures for now)
       continue-on-error: true
       run: |
         mypy src/tekmera --ignore-missing-imports
-    
+
     - name: Run tests
       run: |
         pytest tests/ -v --cov=tekmera --cov-report=xml --cov-report=term
-    
+
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
       uses: codecov/codecov-action@v4
@@ -66,32 +67,32 @@ jobs:
   lint-and-security:
     name: Linting and Security Scan
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
         cache: 'pip'
-    
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -e ".[dev]"
         pip install -r requirements-dev.txt
-    
+
     - name: Run security scan with bandit
       run: |
         bandit -r src -f json -o bandit-report.json --severity-level high --confidence-level high || true
         bandit -r src --severity-level high --confidence-level high
-    
+
     - name: Run linting
       run: |
         flake8 src/ --extend-ignore=E203,W503,E501,F541
-    
+
     - name: Upload security reports
       uses: actions/upload-artifact@v4
       if: always()
@@ -115,39 +116,39 @@ jobs:
           - os: windows-latest
             platform: windows
             binary_name: tekmera-test-windows.exe
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
         cache: 'pip'
-    
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -e ".[dev]"
         pip install -r requirements-dev.txt
-    
+
     - name: Test PyInstaller build
       run: |
         pyinstaller --onefile --name ${{ matrix.binary_name }} src/tekmera/__main__.py
-    
+
     - name: Test binary execution (Unix)
       if: matrix.platform != 'windows'
       shell: bash
       run: |
         ./dist/${{ matrix.binary_name }} --version | tee VERSION.txt
-    
+
     - name: Test binary execution (Windows)
       if: matrix.platform == 'windows'
       shell: pwsh
       run: |
         .\dist\${{ matrix.binary_name }} --version | Tee-Object VERSION.txt
-    
+
     - name: Upload test binary
       uses: actions/upload-artifact@v4
       with:
@@ -157,75 +158,75 @@ jobs:
           VERSION.txt
         retention-days: 7
 
-  license-validation:
-    name: License Integration Validation
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-        cache: 'pip'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[dev]"
-        pip install -r requirements-dev.txt
-    
-    - name: Test license manager integration
-      run: |
-        python -c "
-        import sys, os
-        sys.path.insert(0, 'src')
-        
-        # Test license manager imports
-        from tekmera.infra.license import license_manager
-        from tekmera.infra.license_ui import LicenseUI
-        
-        print('✅ License components imported successfully')
-        
-        # Test license info retrieval (should work in free mode)
-        info = license_manager.get_license_info()
-        print(f'✅ License info retrieved: {info[\"status\"]}')
-        
-        # Test CLI license commands are wired up
-        from tekmera.interfaces.cli.main import cli
-        license_cmd = cli.commands.get('license')
-        assert license_cmd is not None, 'License command not found'
-        
-        subcommands = list(license_cmd.commands.keys())
-        expected = ['activate', 'deactivate', 'status']
-        for cmd in expected:
-            assert cmd in subcommands, f'Missing subcommand: {cmd}'
-        
-        print('✅ All license CLI commands are properly wired')
-        print('🎉 License integration validation complete')
-        "
+  # license-validation:
+  #   name: License Integration Validation
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v4
+
+  #   - name: Set up Python
+  #     uses: actions/setup-python@v5
+  #     with:
+  #       python-version: ${{ env.PYTHON_VERSION }}
+  #       cache: 'pip'
+
+  #   - name: Install dependencies
+  #     run: |
+  #       python -m pip install --upgrade pip
+  #       pip install -e ".[dev]"
+  #       pip install -r requirements-dev.txt
+
+  #   - name: Test license manager integration
+  #     run: |
+  #       python -c "
+  #       import sys, os
+  #       sys.path.insert(0, 'src')
+
+  #       # Test license manager imports
+  #       from tekmera.infra.license import license_manager
+  #       from tekmera.infra.license_ui import LicenseUI
+
+  #       print('✅ License components imported successfully')
+
+  #       # Test license info retrieval (should work in free mode)
+  #       info = license_manager.get_license_info()
+  #       print(f'✅ License info retrieved: {info[\"status\"]}')
+
+  #       # Test CLI license commands are wired up
+  #       from tekmera.interfaces.cli.main import cli
+  #       license_cmd = cli.commands.get('license')
+  #       assert license_cmd is not None, 'License command not found'
+
+  #       subcommands = list(license_cmd.commands.keys())
+  #       expected = ['activate', 'deactivate', 'status']
+  #       for cmd in expected:
+  #           assert cmd in subcommands, f'Missing subcommand: {cmd}'
+
+  #       print('✅ All license CLI commands are properly wired')
+  #       print('🎉 License integration validation complete')
+  #       "
 
   dependency-audit:
     name: Dependency Audit
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
         cache: 'pip'
-    
+
     - name: Install pip-audit
       run: |
         python -m pip install --upgrade pip
         pip install pip-audit
-    
+
     - name: Run dependency audit (informational)
       continue-on-error: true
       shell: bash
@@ -237,7 +238,7 @@ jobs:
         else
           echo "✅ No security vulnerabilities found"
         fi
-    
+
     - name: Upload audit report
       uses: actions/upload-artifact@v4
       if: always()

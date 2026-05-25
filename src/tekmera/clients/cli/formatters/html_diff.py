@@ -788,6 +788,30 @@ def _display_configuration_changes(config_changes: List[Dict]) -> str:
     return "; ".join(descriptions) if descriptions else "Configuration updated"
 
 
+def _generate_minimal_change_summary(config_changes: List[Dict]) -> str:
+    """Generate a short summary for small config-change sets."""
+    if not config_changes:
+        return "Configuration updated"
+
+    summary_parts = []
+    for change in config_changes:
+        field = change.get("field", "unknown")
+        field_name = field.split(".")[-1] if "." in field else field
+        change_type = change.get("change_type", "modified")
+
+        if change_type == "added":
+            summary_parts.append(f"{field_name} added")
+        elif change_type == "removed":
+            summary_parts.append(f"{field_name} removed")
+        else:
+            summary_parts.append(f"{field_name} changed")
+
+    if len(summary_parts) == 1:
+        return summary_parts[0]
+
+    return f"{len(summary_parts)} fields changed"
+
+
 def _format_change_value(value) -> str:
     """Format a value for configuration change display."""
     if value is None:

@@ -1,9 +1,9 @@
 """Workfront Fusion router text content extraction (strict literal)."""
 
 import json
-from typing import Any, Dict, List
+from typing import Any, List
 
-from .....meta.types import RouterComponent, ModuleResult, Platform, create_module_result
+from .....meta.types import ModuleResult, Platform, RouterComponent, create_module_result
 
 
 def text_content(router: RouterComponent) -> ModuleResult[str]:

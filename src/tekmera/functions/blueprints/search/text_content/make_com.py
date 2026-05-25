@@ -5,7 +5,8 @@ from typing import Any, Dict, List
 from ....components.error_handlers.content.text_content import (
     text_content as error_handler_text_content,
 )
-from ....components.filters.content.text_content import text_content as filter_text_content
+
+# from ....components.filters.content.text_content import text_content as filter_text_content
 from ....components.modules.content.text_content import text_content as module_text_content
 from ....components.routers.content.text_content import text_content as router_text_content
 from ....meta.types import Platform, ProjectionResult, create_result
@@ -13,10 +14,7 @@ from ....meta.utils.make_com.extract_components import extract_all_components
 
 
 def text_content(
-    blueprints: List[Dict[str, Any]], 
-    query: str, 
-    case_sensitive: bool = False,
-    regex: bool = False
+    blueprints: List[Dict[str, Any]], query: str, case_sensitive: bool = False, regex: bool = False
 ) -> ProjectionResult:
     """
     Search for text content across all components in Make.com blueprints.
@@ -64,7 +62,6 @@ def _search_single_blueprint(
         try:
             text_result = module_text_content(module_component, Platform.MAKE_COM)
             text_content = text_result.data
-            
 
             if _text_contains_query(text_content, query, case_sensitive):
                 matches_by_type["modules"] += 1
@@ -160,7 +157,7 @@ def _extract_match_context(
         match_index = search_text.find(query)
         if match_index != -1:
             break
-    
+
     if match_index == -1:
         return text[:context_chars] + "..." if len(text) > context_chars else text
 

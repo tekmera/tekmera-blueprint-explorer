@@ -1,7 +1,7 @@
 """Workfront Fusion error handler text content extraction (strict literal)."""
 
 import json
-from typing import Any, Dict, List
+from typing import Any, List
 
 from .....meta.types import ErrorHandlerComponent, ModuleResult, Platform, create_module_result
 

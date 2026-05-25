@@ -46,7 +46,7 @@ def compare_graphs(graph1: TopologyGraph, graph2: TopologyGraph) -> GraphCompari
     """
     # Step 1: Match nodes between graphs using multiple strategies
     node_matches = _match_nodes_between_graphs(graph1, graph2)
-    
+
     # Step 2: Classify nodes based on matching results
     added_nodes = []
     removed_nodes = []
@@ -59,21 +59,21 @@ def compare_graphs(graph1: TopologyGraph, graph2: TopologyGraph) -> GraphCompari
     for node in graph2.nodes:
         if node.id not in matched_ids_graph2:
             added_nodes.append(node)
-    
+
     # Find nodes that exist in graph1 but not in graph2 (removed)
     matched_ids_graph1 = {match[0].id for match in node_matches if match[0] is not None}
     for node in graph1.nodes:
         if node.id not in matched_ids_graph1:
             removed_nodes.append(node)
-    count = 1
+    # count = 1
     # Analyze matched nodes for changes
     for old_node, new_node in node_matches:
         if old_node is None or new_node is None:
             continue
-        
+
         # Check if node configuration changed
         config_changed = _has_configuration_changed(old_node, new_node)
-        
+
         # Check if node moved position in the flow
         position_changed = _has_position_changed(old_node, new_node)
 
@@ -88,7 +88,7 @@ def compare_graphs(graph1: TopologyGraph, graph2: TopologyGraph) -> GraphCompari
 
     # Step 3: Analyze edge changes
     edge_changes = _compare_edges(graph1, graph2)
-   
+
     return GraphComparisonResult(
         added_nodes=added_nodes,
         removed_nodes=removed_nodes,
@@ -259,7 +259,7 @@ def _match_nodes_between_graphs(
             matches.append((graph1_by_id[node_id], graph2_by_id[node_id]))
             used_graph1_ids.add(node_id)
             used_graph2_ids.add(node_id)
-    
+
     # Strategy 2: Module type + position matching for unmatched nodes
     remaining_graph1 = [node for node in graph1.nodes if node.id not in used_graph1_ids]
     remaining_graph2 = [node for node in graph2.nodes if node.id not in used_graph2_ids]
@@ -297,10 +297,10 @@ def _match_nodes_between_graphs(
 def _has_configuration_changed(node1: TopologyNode, node2: TopologyNode) -> bool:
     """Check if two matched nodes have configuration changes."""
     # Compare module types
-    
+
     if node1.module_type != node2.module_type:
         return True
-    
+
     # Compare node classifications
     if (
         node1.is_trigger != node2.is_trigger
@@ -309,22 +309,22 @@ def _has_configuration_changed(node1: TopologyNode, node2: TopologyNode) -> bool
         or node1.is_error_handler != node2.is_error_handler
     ):
         return True
-    
+
     # Compare raw data (excluding position/metadata changes)
     raw1 = node1.raw_data.copy()
     raw2 = node2.raw_data.copy()
-    
+
     # Remove position-related metadata
     for data in [raw1, raw2]:
         data.pop("_extraction_context", None)
         if "metadata" in data:
             metadata = data["metadata"]
             metadata.pop("designer", None)
-            
+
         # Remove route info if is a router (router config hasn't changed)
         if data.get("module", None) == "builtin:BasicRouter":
             data.pop("routes", None)
-    
+
     return raw1 != raw2
 
 

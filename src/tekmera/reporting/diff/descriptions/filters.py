@@ -5,10 +5,10 @@ Generates detailed descriptions for newly added filter components,
 following the Functions System registry pattern for platform abstraction.
 """
 
-from typing import Dict, List
+from typing import List
 
-from tekmera.functions.meta.types import Platform
 from tekmera.functions.components.topology.types import TopologyNode
+from tekmera.functions.meta.types import Platform
 
 
 def generate_filter_addition_description(node: TopologyNode) -> str:

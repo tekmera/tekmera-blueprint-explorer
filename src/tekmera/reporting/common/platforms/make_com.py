@@ -4,9 +4,10 @@ from datetime import datetime
 from typing import Any, Dict
 
 from tekmera.functions.meta.types import Platform, ProjectionResult, create_result
-from tekmera.reporting import diff
 
-from ...diff.diff import BlueprintDiffReport, ChangeScale, DiffSummary, ModuleChange
+from ...diff.diff import BlueprintDiffReport, DiffSummary, ModuleChange
+
+# from tekmera.reporting import diff
 
 
 class MakeComReportingHelper:
@@ -89,7 +90,7 @@ class MakeComReportingHelper:
 
         # Convert to module changes
         module_changes = detect_node_changes(graph_comparison)
-        
+
         # Connection analysis for Make.com (when topology analysis is implemented)
         from ...diff.analysis.connection_analysis import (
             analyze_connection_changes,
@@ -98,7 +99,7 @@ class MakeComReportingHelper:
 
         connection_summary = analyze_connection_changes(module_changes, "make_com")
         connection_analysis = format_connection_summary_for_html(connection_summary)
-        
+
         # Calculate metrics
         structural_change_score = calculate_structural_change_score(
             topology1, topology2, graph_comparison

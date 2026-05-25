@@ -5,10 +5,9 @@ HTML formatter for search results (refactored, maintainable version).
 import html
 import re
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 from tekmera.functions.meta.types import ProjectionResult
-
 
 # ---------------------------------------------
 # Utility Helpers
@@ -168,10 +167,10 @@ def _generate_overview_section(result: ProjectionResult) -> str:
         <div class="info-item"><strong>Search Query:</strong> {_escape(query_str)}</div>
         <div class="info-item"><strong>Case Sensitive:</strong> {"Yes" if r0.get("case_sensitive") else "No"}</div>
         <div class="info-item"><strong>Regex Mode:</strong> {"Yes" if r0.get("regex") else "No"}</div>
-        
+
         <div class="info-item" style="margin-top: 20px;"><strong>Total Blueprints:</strong> {total_blueprints}</div>
         <div class="info-item"><strong>Total Modules:</strong> {total_modules}</div>
-        
+
         <div class="info-item" style="margin-top: 20px;"><strong>Blueprints with Matches:</strong> {blueprints_with_matches}</div>
         <div class="info-item"><strong>Modules with Matches:</strong> {matched_modules}</div>
         <div class="info-item"><strong>Total Matches:</strong> {total_matches}</div>
@@ -194,11 +193,11 @@ def _generate_blueprint_section(result: ProjectionResult) -> str:
 
     # Only show blueprints with matches
     blueprints_with_matches = [r for r in search_results if r.get("total_matches", 0) > 0]
-    
+
     if not blueprints_with_matches:
         out.append('<div class="section-card">')
         out.append('<div class="no-changes">No blueprints with matches found</div>')
-        out.append('</div>')
+        out.append("</div>")
     else:
         for r in blueprints_with_matches:
             name = r.get("blueprint_name", "Unnamed Blueprint")
@@ -283,7 +282,7 @@ def _render_blueprint_results(r: Dict[str, Any]) -> List[str]:
         matches = groups[t]
         if not matches:  # Skip component types with no matches
             continue
-            
+
         comp_name = _component_display_name(t)
         out.append(f'<h4 class="result-category-title">{comp_name} ({len(matches)} matches)</h4>')
         out.append('<div class="section-card">')

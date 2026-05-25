@@ -1,6 +1,7 @@
 """Workfront Fusion filter-specific diff analysis."""
 
 from typing import Any, Dict, List
+
 from . import FilterDifference
 
 
