@@ -1,6 +1,6 @@
-# Contribute to 🤗 Tekmera Fusion Explorer
+# Contribute to 🤗 Tekmera Blueprint Explorer
 
-First off, thank you for considering contributing to Tekmera Fusion Explorer! It's people like you that make open source such a great community. 
+First off, thank you for considering contributing to Tekmera Blueprint Explorer! It's people like you that make open source such a great community. 
 
 This document provides guidelines and workflows for contributing to this project.
 

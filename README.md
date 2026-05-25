@@ -1,6 +1,6 @@
-![Tekmera logo](./assets/tekmera_icon.png)
+<img src="./assets/tekmera_icon.png" alt="Tekmera logo" width="120" />
 
-# Tekmera Fusion Explorer — A command-line intelligence tool for automation blueprint analysis
+# Tekmera Blueprint Explorer — A command-line intelligence tool for automation blueprint analysis
 | | |
 | --- | --- |
 | Packages | [![click v8.x](https://img.shields.io/badge/click-v8.x-00599C.svg)](https://click.palletsprojects.com/) [![deepdiff v6.x](https://img.shields.io/badge/deepdiff-v6.x-2E8B57.svg)](https://zepworks.com/deepdiff/) [![rich v13.x](https://img.shields.io/badge/rich-v13.x-008080.svg)](https://rich.readthedocs.io/) [![pyinstaller v6.x](https://img.shields.io/badge/pyinstaller-v6.x-306998.svg)](https://pyinstaller.org/) |
@@ -9,7 +9,7 @@
  
 
 # What is it?
-Tekmera Fusion Explorer is a command-line intelligence tool that analyzes exported automation "blueprint" JSON files (Workfront Fusion, Make.com, etc.) and turns them into searchable, auditable, and explainable reports. It helps integration teams discover field usage, module counts, differences between versions, and with an OpenAI API key setup — AI-generated natural-language summaries.
+Tekmera Blueprint Explorer is a command-line intelligence tool that analyzes exported automation "blueprint" JSON files (Workfront Fusion, Make.com, etc.) and turns them into searchable, auditable, and explainable reports. It helps integration teams discover field usage, module counts, differences between versions, and with an OpenAI API key setup — AI-generated natural-language summaries.
 
 Table of Contents
 -----------------
@@ -45,8 +45,8 @@ Installation / Setup
 Windows (PowerShell / Git Bash)
 ```powershell
 # Clone the repo
-git clone https://github.com/tekmera/tekmera-fusion-explorer.git
-cd tekmera-fusion-explorer
+git clone https://github.com/tekmera/tekmera-blueprint-explorer.git
+cd tekmera-blueprint-explorer
 
 # Create & activate a venv
 python -m venv venv
@@ -60,8 +60,8 @@ pip install -e .
 macOS / Linux
 ```bash
 # Clone
-git clone https://github.com/tekmera/tekmera-fusion-explorer.git
-cd tekmera-fusion-explorer
+git clone https://github.com/tekmera/tekmera-blueprint-explorer.git
+cd tekmera-blueprint-explorer
 
 # Create & activate a venv
 python3 -m venv venv
@@ -151,12 +151,12 @@ For implementation details see `src/tekmera/` and `docs/architecture/README.md`.
 
 Contributing
 ------------
-Welcome and thank you for considering contributing to Tekmera Fusion Explorer! — please read the contributor guide: [CONTRIBUTING.md](CONTRIBUTING.md)
+Welcome and thank you for considering contributing to Tekmera Blueprint Explorer! — please read the contributor guide: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 
 License
 -------
-Tekmera Fusion Explorer is open-source software licensed under the [MIT License](LICENSE).
+Tekmera Blueprint Explorer is open-source software licensed under the [MIT License](LICENSE).
 
 Thank You!
 --------------------------
